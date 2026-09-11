@@ -668,11 +668,11 @@ html.boot-has-grain .page-bg-grain,
   opacity: 1;
 }
 
-/* 流光模式：压暗/提亮叠层（与图片模式共用 --bg-neutral-wash） */
+/* 流光模式：不需要压暗叠层，WebGL 渲染自带视觉效果 */
 .page-bg.has-grain .page-bg-overlay {
   position: absolute;
   inset: 0;
-  background: var(--bg-neutral-wash, transparent);
+  background: transparent;
   pointer-events: none;
   z-index: 2;
 }

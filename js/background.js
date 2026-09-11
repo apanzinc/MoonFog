@@ -79,8 +79,7 @@ function applyBgWash(value, options) {
   const overlay = document.getElementById('pageBgOverlay');
   if (overlay) {
     const activeMode = typeof isImageBackgroundActive === 'function' && isImageBackgroundActive();
-    const isGrain = typeof currentBgMode === 'string' && normalizeBgMode(currentBgMode) === 'grain';
-    if (activeMode || isGrain) overlay.style.setProperty('background', css, 'important');
+    if (activeMode) overlay.style.setProperty('background', css, 'important');
     else overlay.style.removeProperty('background');
   }
   updateBgWashUI();
