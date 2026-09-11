@@ -695,7 +695,7 @@ body.has-image-bg .mf-scrollbar.is-dragging .mf-scrollbar-thumb {
 .settings-nav-item {
   position: relative;
   display: grid;
-  grid-template-columns: 28px 1fr 14px;
+  grid-template-columns: 28px 1fr;
   align-items: center;
   column-gap: 10px;
   width: 100%;
@@ -766,14 +766,6 @@ body.has-image-bg .mf-scrollbar.is-dragging .mf-scrollbar-thumb {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-.settings-nav-chevron {
-  color: var(--text-tertiary);
-  font-size: 14px;
-  line-height: 1;
-  opacity: 0.7;
-  justify-self: end;
 }
 
 /* 二级卡片内设置块 */
