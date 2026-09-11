@@ -1,0 +1,1222 @@
+/**
+ * MoonFog - Base Layout
+ */
+
+*, *::before, *::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* MingCute 图标统一继承颜色 */
+[class^="mgc_"]::before,
+[class*=" mgc_"]::before {
+  color: inherit !important;
+}
+
+html {
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  background-color: var(--bg-warm);
+  color-scheme: light;
+  touch-action: manipulation;
+}
+
+html[data-mode="dark"] {
+  color-scheme: dark;
+}
+
+body {
+  font-family: var(--font);
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--text-primary);
+  background: var(--bg-warm);
+  min-height: 100vh;
+  min-height: 100dvh;
+  overflow: hidden;
+  padding:
+    env(safe-area-inset-top, 0)
+    env(safe-area-inset-right, 0)
+    env(safe-area-inset-bottom, 0)
+    env(safe-area-inset-left, 0);
+  -webkit-tap-highlight-color: transparent;
+}
+
+/*
+ * 明暗 / 色调切换：仅过渡颜色，不改布局位置
+ * 由 html.theme-animating 短暂开启，避免拖拽/首屏也动画
+ */
+html.theme-animating,
+html.theme-animating body,
+html.theme-animating .greeting-title,
+html.theme-animating .greeting-sub,
+html.theme-animating .search-box,
+html.theme-animating .search-input,
+html.theme-animating .search-btn,
+html.theme-animating .shortcut-btn,
+html.theme-animating .shortcut-folder-trigger,
+html.theme-animating .shortcut-label,
+html.theme-animating .shortcut-icon,
+html.theme-animating .shortcut-fallback-icon,
+html.theme-animating .settings-btn,
+html.theme-animating .settings-panel,
+html.theme-animating .settings-panel *,
+html.theme-animating .page-bg-overlay,
+html.theme-animating .bing-credit {
+  transition:
+    background-color 0.36s var(--ease),
+    background 0.36s var(--ease),
+    color 0.36s var(--ease),
+    border-color 0.36s var(--ease),
+    box-shadow 0.36s var(--ease),
+    opacity 0.28s var(--ease),
+    filter 0.28s var(--ease) !important;
+}
+
+/* 明暗切换时禁止改动定位相关属性，保证控件“原地”变色 */
+html.theme-animating .content,
+html.theme-animating .greeting-section,
+html.theme-animating .search-section,
+html.theme-animating .shortcuts-section,
+html.theme-animating .settings-wrapper {
+  transition: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.theme-animating,
+  html.theme-animating body,
+  html.theme-animating .greeting-title,
+  html.theme-animating .greeting-sub,
+  html.theme-animating .search-box,
+  html.theme-animating .search-input,
+  html.theme-animating .search-btn,
+  html.theme-animating .shortcut-btn,
+  html.theme-animating .shortcut-folder-trigger,
+  html.theme-animating .settings-btn,
+  html.theme-animating .settings-panel,
+  html.theme-animating .page-bg-overlay {
+    transition: none !important;
+  }
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* 页面进入：上浮 + 淡入
+ * 毛玻璃元素：动画必须加在「带 backdrop-filter 的节点自己」上，
+ * 不能加在祖先（祖先 transform 会切断毛玻璃采样）。
+ */
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 18px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes page-enter-soft {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 10px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+/* 整页壁纸首屏：从「已放大」收到正常（图一开始就在放大态，不先闪正常再动画） */
+@keyframes bg-enter {
+  from {
+    opacity: 1;
+    transform: scale(calc(var(--bg-scale, 1.04) * 1.07));
+  }
+  to {
+    opacity: 1;
+    transform: scale(var(--bg-scale, 1.04));
+  }
+}
+
+/* 无缓存首帧：才用淡入 + 缩放 */
+@keyframes bg-enter-fade {
+  from {
+    opacity: 0;
+    transform: scale(calc(var(--bg-scale, 1.04) * 1.07));
+  }
+  to {
+    opacity: 1;
+    transform: scale(var(--bg-scale, 1.04));
+  }
+}
+
+@keyframes quote-shimmer {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
+}
+
+@keyframes quote-skeleton-out {
+  from {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    opacity: 0;
+    transform: translate3d(0, -6px, 0);
+  }
+}
+
+@keyframes quote-text-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 10px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+.content {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  padding: var(--space-xl);
+  gap: var(--space-lg);
+  max-width: 720px;
+  margin: 0 auto;
+  position: relative;
+  left: 0;
+  top: 0;
+  /* 不用 transform 让位：transform 会切断搜索框/标签的 backdrop-filter */
+  transition: left 0.3s var(--ease), top 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 文件夹展开时：用负 top 整体上移内容，可以突破视口顶部（问候区也能推出屏幕） */
+body.folder-open .content {
+  top: calc(var(--folder-shift, 0px) * -1);
+}
+
+/*
+ * 设置面板打开时略向左让位；仅在宽屏启用，避免中窄屏裁切标题/搜索框
+ * 用 relative + left，避免 transform 破坏毛玻璃
+ */
+@media (min-width: 1200px) {
+  body.settings-open .content {
+    left: -160px;
+  }
+}
+
+@media (min-width: 980px) and (max-width: 1199px) {
+  body.settings-open .content {
+    left: -72px;
+  }
+}
+
+/*
+ * 文案/主题先就绪，透明等待；boot-ready 后整段流畅进场
+ * 注意：若 JS 挂掉未加 boot-ready，2s 后强制显示，避免整页空白「打不开」
+ */
+/* 首屏未就绪：整块先藏；boot-ready 后立刻进场（不再等整段 JS）
+ * failsafe：若 JS 挂掉，约 0.6s 后强制显示，避免整页空白 */
+html:not(.boot-ready) .content > .greeting-section,
+html:not(.boot-ready) .content > .search-section,
+html:not(.boot-ready) .content > .shortcuts-section,
+html:not(.boot-ready) .bing-credit,
+html:not(.boot-ready) .settings-wrapper {
+  opacity: 0;
+  animation: boot-failsafe-show 0.01s linear 0.6s forwards;
+}
+
+/* boot-ready 后父级立刻可见，由子项播上浮（避免父级 opacity 动画把子项卡死） */
+html.boot-ready .content > .search-section,
+html.boot-ready .content > .shortcuts-section {
+  opacity: 1;
+  animation: none;
+}
+
+@keyframes boot-failsafe-show {
+  to { opacity: 1; }
+}
+
+.greeting-section {
+  text-align: left;
+  width: 100%;
+  max-width: 100%;
+  transform: none;
+  /* 文件夹展开时：透明度降低，不隐藏 */
+  transition:
+    opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 文件夹展开时：所有非文件夹内容透明度 80%（opacity 0.2），仍可见但不抢眼 */
+body.folder-open .greeting-section,
+body.folder-open .search-section,
+body.folder-open .bing-credit,
+body.folder-open .settings-wrapper,
+body.folder-open .shortcuts-row > .shortcut-drag-wrapper > .shortcut-btn,
+body.folder-open .shortcuts-row > .shortcut-drag-wrapper > .shortcut-folder:not(.open) .shortcut-folder-trigger {
+  opacity: 0.2 !important;
+  transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 一言：占满内容区宽度，减少左右大片空 */
+.greeting-section[data-mode="quote"],
+.greeting-section[data-mode="custom"] {
+  max-width: min(100%, 40rem);
+}
+
+/* 文案与壁纸同一时刻开跑（无 delay） */
+html.boot-ready .greeting-section {
+  animation: page-enter 0.72s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+
+/*
+ * 壁纸首屏与文案同步：
+ * - boot-ready 前：已放大、可见（缓存图直接铺上）
+ * - boot-ready 瞬间：与 greeting 同一帧开始缩小（不靠 is-entering 二次排队）
+ */
+html.boot-has-image:not(.boot-ready) .page-bg-image.is-active {
+  opacity: 1;
+  transform: scale(calc(var(--bg-scale, 1.04) * 1.07));
+  transition: none;
+}
+
+/* 与 .greeting-section 同用 boot-ready 触发，零额外 delay */
+html.boot-ready.boot-has-image:not(.bg-entered) .page-bg-image.is-active {
+  animation: bg-enter 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+html.boot-ready.boot-has-image:not(.bg-entered):not(.boot-bg-decoded) .page-bg-image.is-active {
+  animation-name: bg-enter-fade;
+}
+
+html.boot-ready.bg-entered .page-bg-image.is-active {
+  animation: none;
+  opacity: 1;
+  transform: scale(var(--bg-scale, 1.04));
+}
+
+.greeting-title {
+  font-family: var(--font-display);
+  /* 恢复原默认字号；--size-greeting 为 0.7–1.4 缩放 */
+  font-size: calc(clamp(1.75rem, 4vw, 2.25rem) * var(--size-greeting, 1));
+  font-weight: var(--boot-greeting-weight, 700);
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+  margin: 0;
+  min-height: 1.25em;
+  width: 100%;
+  max-width: 100%;
+  text-wrap: pretty;
+}
+
+.greeting-title:empty {
+  visibility: hidden;
+}
+
+/* 时钟模式：更像大号时间；强制单行，避免 text-wrap:balance 拆成两行 */
+.greeting-title.is-clock {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+  font-size: calc(clamp(2.25rem, 6vw, 3.25rem) * var(--size-greeting, 1));
+  font-feature-settings: "tnum" 1;
+  white-space: nowrap;
+  text-wrap: nowrap;
+  overflow: visible;
+}
+
+/* 一言 / 自定义：稍小一点，方便长句换行；字重仍跟随标题粗细滑块 */
+.greeting-title.is-quote,
+.greeting-title.is-custom {
+  font-size: calc(clamp(1.4rem, 3.4vw, 1.95rem) * var(--size-greeting, 1));
+  font-weight: var(--boot-greeting-weight, 600);
+  line-height: 1.5;
+  letter-spacing: 0.01em;
+  border-radius: 8px;
+  /* 不用 balance：短句会被挤在中间，左右显得空 */
+  text-wrap: pretty;
+  text-align: left;
+}
+
+.greeting-title.is-quote {
+  cursor: pointer;
+  user-select: none;
+  transition: opacity 0.28s var(--ease), transform 0.22s var(--ease);
+}
+
+.greeting-title.is-custom-placeholder {
+  color: var(--text-tertiary);
+  font-weight: 500;
+}
+
+.greeting-title.is-quote:hover {
+  opacity: 0.88;
+}
+
+.greeting-title.is-quote:active {
+  transform: scale(0.992);
+}
+
+/* 模式切换 / 换句：先淡出 */
+.greeting-title.is-switching,
+.greeting-sub.is-switching {
+  opacity: 0.35;
+  pointer-events: none;
+  transition: opacity 0.18s var(--ease);
+}
+
+/* 每日一言加载：文气轮换文案 + 轻呼吸（不用透明裁剪字，避免图片背景看不见） */
+.greeting-title.is-quote-loading {
+  cursor: default;
+  pointer-events: none;
+  min-height: 1.4em;
+  letter-spacing: 0.03em;
+  font-weight: 500;
+  opacity: 0.82;
+  color: var(--img-text, var(--text-primary)) !important;
+  -webkit-text-fill-color: currentColor;
+  background: none !important;
+  background-image: none !important;
+  animation: quote-seeking-breathe 2.6s ease-in-out infinite;
+}
+
+.greeting-title.is-quote-loading.is-quote-seeking-swap {
+  animation:
+    quote-seeking-breathe 2.6s ease-in-out infinite,
+    quote-seeking-fade 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.greeting-title.is-quote-error {
+  cursor: pointer;
+  opacity: 0.78;
+  font-size: calc(1.15rem * var(--size-greeting, 1));
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  line-height: 1.45;
+}
+
+.greeting-title.is-quote-error:hover {
+  opacity: 0.95;
+}
+
+.greeting-title.is-quote-loading:hover,
+.greeting-title.is-quote-loading:active {
+  transform: none;
+}
+
+@keyframes quote-seeking-breathe {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 0.92;
+  }
+}
+
+@keyframes quote-seeking-fade {
+  from {
+    opacity: 0.28;
+    transform: translate3d(0, 4px, 0);
+  }
+  to {
+    opacity: 0.85;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+/* 骨架 → 正文 / 换句 / 模式切换：淡入上浮 */
+.greeting-title.is-quote-reveal,
+.greeting-title.is-greeting-reveal {
+  animation: quote-text-in 0.48s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.greeting-sub.is-quote-reveal,
+.greeting-sub.is-greeting-reveal {
+  animation: quote-text-in 0.48s cubic-bezier(0.16, 1, 0.3, 1) 0.06s both;
+}
+
+.quote-skeleton {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.55rem;
+  width: min(100%, 28rem);
+  padding: 0.15rem 0;
+}
+
+.quote-skeleton.is-leaving {
+  animation: quote-skeleton-out 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.quote-skeleton-line {
+  display: block;
+  height: 0.92em;
+  width: 92%;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--text-primary) 10%, transparent) 0%,
+    color-mix(in srgb, var(--text-primary) 18%, transparent) 45%,
+    color-mix(in srgb, var(--text-primary) 10%, transparent) 100%
+  );
+  background-size: 200% 100%;
+  animation: quote-shimmer 1.15s ease-in-out infinite;
+}
+
+.quote-skeleton-line.short {
+  width: 58%;
+  height: 0.72em;
+  opacity: 0.85;
+  animation-delay: 0.12s;
+}
+
+.greeting-section[data-mode="quote"] .greeting-sub {
+  opacity: 0.88;
+  cursor: pointer;
+  user-select: none;
+  /* 主标题 ↔ 来源小标题 */
+  margin-top: 0.5rem;
+}
+.greeting-section[data-mode="quote"] .greeting-sub:not(:empty)::before {
+  content: "— ";
+}
+
+.greeting-section[data-mode="quote"] .greeting-sub:hover {
+  opacity: 1;
+}
+
+.greeting-sub {
+  margin: 0.45rem 0 0;
+  font-family: var(--font-greeting-sub, var(--font));
+  font-size: calc(0.95rem * var(--size-greeting-sub, 1));
+  font-weight: var(--weight-greeting-sub, 400);
+  color: var(--text-secondary);
+  letter-spacing: 0.02em;
+  line-height: 1.45;
+  transition: opacity 0.28s var(--ease);
+}
+
+.greeting-section[data-mode="clock"] .greeting-sub {
+  margin-top: 0.4rem;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 一言区与下方搜索框的整体呼吸感 */
+.greeting-section[data-mode="quote"] {
+  margin-bottom: 0.15rem;
+}
+
+.search-section {
+  width: 100%;
+  /* 父级永不 transform，避免切断子级毛玻璃 */
+  transform: none;
+  opacity: 1;
+  transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 进场动画打在搜索框自身：动画中也能实时 backdrop-filter
+ * fill-mode 用 backwards：forwards/both 会残留 transform:translate3d(0,0,0) */
+html.boot-ready .search-section .search-box {
+  animation: page-enter 0.82s cubic-bezier(0.16, 1, 0.3, 1) 0.1s backwards;
+}
+
+.shortcuts-section {
+  width: 100%;
+  transform: none;
+  opacity: 1;
+}
+
+/* 快捷标签自身上浮；父级不动 */
+html.boot-ready .shortcuts-section .shortcut-btn,
+html.boot-ready .shortcuts-section .shortcut-folder-trigger {
+  animation: page-enter 0.86s cubic-bezier(0.16, 1, 0.3, 1) 0.18s backwards;
+}
+
+html.boot-ready .bing-credit {
+  animation: page-enter-soft 0.72s cubic-bezier(0.16, 1, 0.3, 1) 0.28s backwards;
+}
+
+/* 设置入口不播进场动画，始终立刻可见 */
+html.boot-ready .settings-wrapper {
+  opacity: 1;
+  animation: none;
+}
+
+/* 进场结束后清 animation，避免残留 */
+html.boot-ready .greeting-section.boot-entered {
+  animation: none !important;
+  opacity: 1;
+  transform: none;
+}
+
+html.boot-ready .search-section.boot-entered .search-box,
+html.boot-ready .shortcuts-section.boot-entered .shortcut-btn,
+html.boot-ready .shortcuts-section.boot-entered .shortcut-folder-trigger,
+html.boot-ready .bing-credit.boot-entered {
+  animation: none !important;
+  opacity: 1;
+  transform: none;
+}
+
+/* 父级进场后保持可见（不再挂 section 级动画） */
+html.boot-ready .search-section.boot-entered,
+html.boot-ready .shortcuts-section.boot-entered {
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html:not(.boot-ready) .content > .greeting-section,
+  html:not(.boot-ready) .content > .search-section,
+  html:not(.boot-ready) .content > .shortcuts-section,
+  html:not(.boot-ready) .bing-credit,
+  html:not(.boot-ready) .settings-wrapper {
+    opacity: 1;
+  }
+
+  html.boot-ready .greeting-section,
+  html.boot-ready .search-section,
+  html.boot-ready .shortcuts-section,
+  html.boot-ready .search-section .search-box,
+  html.boot-ready .shortcuts-section .shortcut-btn,
+  html.boot-ready .shortcuts-section .shortcut-folder-trigger,
+  html.boot-ready .bing-credit,
+  html.boot-ready .settings-wrapper {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  .quote-skeleton-line,
+  .quote-skeleton.is-leaving,
+  .greeting-title.is-quote-loading,
+  .greeting-title.is-quote-seeking-swap,
+  .greeting-title.is-quote-reveal,
+  .greeting-title.is-greeting-reveal,
+  .greeting-sub.is-quote-reveal,
+  .greeting-sub.is-greeting-reveal,
+  .content,
+  .settings-panel,
+  .modal-overlay,
+  .modal-box,
+  .context-menu,
+  .page-bg-image,
+  .page-bg-overlay {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  html.boot-ready.boot-has-image .page-bg-image.is-active {
+    animation: none !important;
+  }
+}
+
+/* ============================================
+   页面背景层（图片取色 + 可调模糊）
+   ============================================ */
+:root {
+  --bg-blur: 20px;
+  --bg-scale: 1.04;
+}
+
+.page-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.page-bg-grain {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  opacity: 0;
+  pointer-events: none;
+  background: #f6f1ea;
+  transition: opacity 0.4s var(--ease);
+}
+
+html[data-mode="dark"] .page-bg-grain {
+  background: #17140f;
+}
+
+html.boot-has-grain .page-bg-grain,
+.page-bg.has-grain .page-bg-grain {
+  opacity: 1;
+}
+
+/* 流光模式：压暗/提亮叠层（与图片模式共用 --bg-neutral-wash） */
+.page-bg.has-grain .page-bg-overlay {
+  position: absolute;
+  inset: 0;
+  background: var(--bg-neutral-wash, transparent);
+  pointer-events: none;
+  z-index: 2;
+}
+
+.page-bg-grain canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.page-bg-stack {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.page-bg-image {
+  position: absolute;
+  inset: -2%;
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  opacity: 0;
+  transform: scale(calc(var(--bg-scale, 1.04) * 1.03));
+  filter: blur(var(--bg-blur, 20px));
+  /* 换图只淡透明度：避免 blur+transform 同层动画卡顿 */
+  transition: opacity 0.75s cubic-bezier(0.22, 1, 0.36, 1);
+  z-index: 0;
+}
+
+/* 仅 is-active 控制可见；is-ready 只表示已解码，便于旧层淡出 */
+.page-bg-image.is-active {
+  opacity: 1;
+  z-index: 1;
+  transform: scale(var(--bg-scale, 1.04));
+}
+
+/* 仅首屏未就绪时关掉过渡；换图后靠 .bg-swap-ready 恢复 */
+html.boot-has-image:not(.boot-ready):not(.bg-swap-ready) .page-bg-image,
+html.boot-has-image.boot-bg-decoded:not(.boot-ready):not(.bg-swap-ready) .page-bg-image.is-active {
+  transition: none;
+}
+
+html.boot-has-image.boot-bg-decoded .page-bg-image.is-active,
+html.bg-swap-ready .page-bg-image.is-active {
+  opacity: 1;
+}
+
+/* 换图：只过渡 opacity（盖过 boot 内联） */
+html.bg-swap-ready .page-bg-image {
+  transition: opacity 0.75s cubic-bezier(0.22, 1, 0.36, 1) !important;
+}
+
+/* 首屏缩放结束后不再保留 will-change，减轻显存占用 */
+html.boot-ready.boot-has-image:not(.bg-entered) .page-bg-image.is-active {
+  will-change: transform;
+}
+
+html.bg-entered .page-bg-image,
+html.perf-balanced .page-bg-image,
+html.low-perf .page-bg-image {
+  will-change: auto;
+}
+
+html.low-perf .page-bg-image,
+html.low-perf.bg-swap-ready .page-bg-image,
+html.perf-low .page-bg-image {
+  filter: none !important;
+  transition: none !important;
+  animation: none !important;
+  transform: none !important;
+}
+
+/* 遮罩：用户可调黑/白中性雾（--bg-neutral-wash）；中间 0 = 无色纯模糊 */
+.page-bg-overlay {
+  position: absolute;
+  inset: 0;
+  background: transparent;
+  transition: background 0.4s ease;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.page-bg.has-image .page-bg-overlay {
+  background: var(--bg-neutral-wash, var(--img-wash, transparent));
+}
+
+/*
+ * 图片背景：只替换颜色 token
+ * 不新增渐变、毛玻璃、圆角胶囊等样式重构
+ */
+/*
+ * 图片背景问候：只要字色（更实、约 92%），无阴影、无后底板
+ * 可读性靠全屏压暗/提亮（--bg-neutral-wash）
+ */
+body.has-image-bg .greeting-title,
+html.boot-has-image .greeting-title {
+  color: var(--img-text, var(--text-primary));
+  text-shadow: none;
+  background: none;
+  border: none;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  filter: none;
+  padding: 0;
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+}
+
+body.has-image-bg .greeting-sub,
+html.boot-has-image .greeting-sub {
+  color: var(--img-text-secondary, var(--text-secondary));
+  text-shadow: none;
+  background: none;
+  border: none;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  filter: none;
+  padding: 0;
+  /* 保留与主标题间距，勿清零 margin-top */
+}
+
+body.has-image-bg .greeting-section,
+html.boot-has-image .greeting-section {
+  background: none;
+  border: none;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  padding: 0;
+}
+
+/*
+ * 流光模式问候：白色文字
+ */
+body.has-grain-ui .greeting-title,
+html.boot-has-grain .greeting-title {
+  color: var(--img-text, #FFFFFF) !important;
+  -webkit-text-fill-color: currentColor;
+  text-shadow: none;
+  background: none;
+  border: none;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  filter: none;
+}
+body.has-grain-ui .greeting-sub,
+html.boot-has-grain .greeting-sub {
+  color: var(--img-text, #FFFFFF) !important;
+  -webkit-text-fill-color: currentColor;
+  text-shadow: none;
+  background: none;
+  border: none;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  filter: none;
+}
+
+/*
+ * 图片背景控件毛玻璃：搜索框 / 快捷标签 / 展开菜单
+ * fill + blur + saturate + 轻边框 + 统一阴影
+ */
+body.has-image-bg .search-box,
+html.boot-has-image .search-box,
+body.has-image-bg .shortcut-btn,
+body.has-image-bg .shortcut-folder-trigger {
+  background: color-mix(
+    in srgb,
+    var(--img-surface, var(--card-bg)) var(--glass-fill, 42%),
+    transparent
+  );
+  border-color: color-mix(
+    in srgb,
+    var(--img-chrome-text, #fff) var(--glass-border, 28%),
+    transparent
+  );
+  box-shadow: var(--glass-shadow, 0 8px 24px rgba(0, 0, 0, 0.16));
+  text-shadow: none;
+  backdrop-filter: blur(var(--search-blur, 16px)) saturate(var(--glass-saturate, 1.35));
+  -webkit-backdrop-filter: blur(var(--search-blur, 16px)) saturate(var(--glass-saturate, 1.35));
+}
+
+body.has-image-bg.img-scene-dark .search-box,
+body.has-image-bg.img-scene-dark .shortcut-btn,
+body.has-image-bg.img-scene-dark .shortcut-folder-trigger,
+body.has-image-bg.img-scene-dark .shortcut-expanded,
+body.has-image-bg.img-scene-dark .settings-btn {
+  --glass-fill: 38%;
+  --glass-fill-hover: 48%;
+  --glass-border: 22%;
+}
+
+body.has-image-bg.img-scene-light .search-box,
+body.has-image-bg.img-scene-light .shortcut-btn,
+body.has-image-bg.img-scene-light .shortcut-folder-trigger,
+body.has-image-bg.img-scene-light .shortcut-expanded,
+body.has-image-bg.img-scene-light .settings-btn {
+  --glass-fill: 48%;
+  --glass-fill-hover: 58%;
+  --glass-border: 20%;
+}
+
+body.has-image-bg .search-box:focus-within,
+body.has-image-bg .shortcut-btn:hover,
+body.has-image-bg .shortcut-folder-trigger:hover,
+body.has-image-bg .shortcut-folder.open .shortcut-folder-trigger {
+  background: color-mix(
+    in srgb,
+    var(--img-surface-hover, var(--img-surface, var(--card-bg))) var(--glass-fill-hover, 52%),
+    transparent
+  );
+  border-color: color-mix(
+    in srgb,
+    var(--img-chrome-text, #fff) var(--glass-border-hover, 34%),
+    transparent
+  );
+}
+
+body.has-image-bg .search-input,
+html.boot-has-image .search-input {
+  color: var(--img-chrome-text, var(--img-text, var(--text-primary)));
+}
+
+body.has-image-bg .search-input::placeholder,
+html.boot-has-image .search-input::placeholder {
+  color: rgba(255,255,255,0.7);
+}
+
+body.has-image-bg .search-btn,
+html.boot-has-image .search-btn,
+body.has-image-bg .search-clear-btn,
+html.boot-has-image .search-clear-btn {
+  color: var(--img-chrome-text-secondary, var(--img-text-secondary, var(--text-secondary)));
+}
+
+body.has-image-bg .search-btn:hover,
+html.boot-has-image .search-btn:hover,
+body.has-image-bg .search-clear-btn:hover,
+html.boot-has-image .search-clear-btn:hover {
+  color: var(--img-chrome-text, var(--img-text, var(--text-primary)));
+}
+
+body.has-image-bg .shortcut-btn,
+body.has-image-bg .shortcut-folder-trigger {
+  color: var(--img-chrome-text, var(--img-text, var(--text-primary)));
+}
+
+body.has-image-bg .shortcut-btn:hover,
+body.has-image-bg .shortcut-folder-trigger:hover,
+body.has-image-bg .shortcut-folder.open .shortcut-folder-trigger {
+  color: var(--img-chrome-text, var(--img-text, var(--text-primary)));
+}
+
+body.has-image-bg .shortcut-btn .shortcut-label,
+body.has-image-bg .shortcut-folder-trigger .shortcut-label,
+body.has-image-bg .shortcut-btn .shortcut-icon,
+body.has-image-bg .shortcut-folder-trigger .shortcut-icon,
+body.has-image-bg .shortcut-btn .shortcut-fallback-icon,
+body.has-image-bg .shortcut-folder-trigger .shortcut-fallback-icon {
+  color: currentColor;
+}
+
+/* 设置按钮默认隐藏；悬停样式在 panel.css，避免图片模式强制常显 */
+
+body.has-image-bg .shortcut-expanded {
+  color: var(--img-chrome-text, var(--img-text, var(--text-primary)));
+}
+
+body.has-image-bg .shortcut-expanded-item {
+  color: var(--img-chrome-text, var(--img-text, var(--text-primary)));
+}
+
+body.has-image-bg .shortcut-expanded-empty {
+  color: var(--img-text-secondary, var(--text-secondary));
+}
+
+.content {
+  position: relative;
+  z-index: 1;
+}
+
+.settings-wrapper {
+  z-index: 250;
+}
+
+/* 左下角必应署名 + 悬浮/点击弹出沉浸卡片 */
+.bing-credit-wrap {
+  position: fixed;
+  left: 12px;
+  bottom: 10px;
+  z-index: 60;
+  max-width: min(72vw, 340px);
+}
+
+.bing-credit-wrap[hidden] {
+  display: none !important;
+}
+
+.bing-credit {
+  display: inline-flex;
+  max-width: min(56vw, 320px);
+  margin: 0;
+  padding: 6px 8px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  font: inherit;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+  text-align: left;
+  cursor: pointer;
+  opacity: 0;
+  transform: translateY(2px);
+  transition:
+    opacity 0.22s var(--ease),
+    color 0.15s var(--ease),
+    transform 0.22s var(--ease),
+    background 0.15s var(--ease);
+}
+
+body.has-image-bg .bing-credit {
+  color: var(--img-credit-text, var(--img-text-secondary, var(--text-secondary)));
+}
+
+.bing-credit-wrap:hover .bing-credit,
+.bing-credit-wrap:focus-within .bing-credit,
+.bing-credit-wrap.is-open .bing-credit,
+.bing-credit:hover,
+.bing-credit:focus-visible {
+  opacity: 1;
+  transform: translateY(0);
+  color: var(--text-primary);
+  outline: none;
+}
+
+body.has-image-bg .bing-credit-wrap:hover .bing-credit,
+body.has-image-bg .bing-credit-wrap:focus-within .bing-credit,
+body.has-image-bg .bing-credit-wrap.is-open .bing-credit,
+body.has-image-bg .bing-credit:hover,
+body.has-image-bg .bing-credit:focus-visible {
+  color: var(--img-text, var(--text-primary));
+}
+
+.bing-credit-text {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bing-credit-pop {
+  position: absolute;
+  left: 0;
+  /* 紧贴署名文字上方；用伪元素桥接 1~2px 缝，不制造大空白 */
+  bottom: calc(100% + 4px);
+  width: min(70vw, 300px);
+  border-radius: 14px;
+  overflow: visible;
+  background: transparent;
+  box-shadow: none;
+  opacity: 0;
+  transform: translateY(6px) scale(0.98);
+  pointer-events: none;
+  transition:
+    opacity 0.2s var(--ease),
+    transform 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+  transform-origin: left bottom;
+  z-index: 2;
+}
+
+/* 透明热区桥：不占视觉高度，只负责接住鼠标 */
+.bing-credit-pop::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 100%;
+  height: 10px;
+}
+
+.bing-credit-pop .bg-bing-card--popup,
+.bing-credit-pop .bg-bing-card {
+  position: relative;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow:
+    0 12px 36px rgba(0, 0, 0, 0.28),
+    0 0 0 1px color-mix(in srgb, var(--border) 80%, transparent);
+}
+
+/* 仅点击固定打开时显示关闭按钮 */
+.bing-credit-close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 5;
+  width: 28px;
+  height: 28px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 999px;
+  padding: 0;
+  background: rgba(0, 0, 0, 0.42);
+  color: #fff;
+  cursor: pointer;
+  backdrop-filter: blur(calc(var(--chrome-blur, 14px) * 0.6));
+  -webkit-backdrop-filter: blur(calc(var(--chrome-blur, 14px) * 0.6));
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.18);
+  transition: background 0.15s var(--ease), transform 0.15s var(--ease);
+}
+
+.bing-credit-close:hover,
+.bing-credit-close:focus-visible {
+  background: rgba(0, 0, 0, 0.58);
+  outline: none;
+}
+
+.bing-credit-close:active {
+  transform: scale(0.96);
+}
+
+.bing-credit-close .mgc_close_line {
+  font-size: 15px;
+  line-height: 1;
+}
+
+.bing-credit-wrap.is-open .bing-credit-close {
+  display: inline-flex;
+}
+
+.bing-credit-close[hidden] {
+  display: none !important;
+}
+
+.bing-credit-wrap.is-open .bing-credit-close:not([hidden]) {
+  display: inline-flex;
+}
+
+.bing-credit-pop[hidden] {
+  display: none !important;
+}
+
+.bing-credit-wrap.is-open .bing-credit-pop,
+.bing-credit-wrap:hover .bing-credit-pop,
+.bing-credit-wrap:focus-within .bing-credit-pop {
+  display: block !important;
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+}
+
+/* 小宽度：问候居中 + 隐藏破折号（viewport < 816px 时 content 被压缩，搜索框变小） */
+@media (max-width: 816px) {
+  .greeting-section {
+    text-align: center !important;
+    width: auto !important;
+    max-width: min(100%, 40rem) !important;
+    align-self: center !important;
+  }
+  .greeting-section[data-mode="quote"] .greeting-sub:not(:empty)::before {
+    content: none;
+  }
+}
+
+/* 触屏：不靠 hover 常显弹层，只靠 is-open */
+@media (hover: none) {
+  .bing-credit {
+    opacity: 0.78;
+    transform: none;
+  }
+
+  .bing-credit-wrap:hover .bing-credit-pop,
+  .bing-credit-wrap:focus-within .bing-credit-pop {
+    display: none !important;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .bing-credit-wrap.is-open .bing-credit-pop {
+    display: block !important;
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
+/* 弹层复用设置里的沉浸卡，尺寸克制 */
+.bing-credit-pop {
+  width: min(70vw, 300px);
+}
+
+/* 单层预览：无双层交叉时也要可见（不依赖 is-active） */
+.bing-credit-pop .bg-bing-preview:not([hidden]) {
+  opacity: 1;
+  transform: scale(1.02);
+  z-index: 1;
+}
+
+.bing-credit-pop .bg-bing-card--popup .bg-bing-hero,
+.bg-bing-card--popup.bg-bing-card--immersive .bg-bing-hero {
+  min-height: 160px;
+  aspect-ratio: 16 / 10;
+  border-radius: 14px;
+}
+
+.bing-credit-pop .bg-bing-overlay {
+  padding: 14px 12px 12px;
+  gap: 3px;
+}
+
+.bing-credit-pop .bg-bing-source {
+  font-size: 0.6875rem;
+}
+
+.bing-credit-pop .bg-bing-source-icon {
+  width: 14px;
+  height: 14px;
+}
+
+.bing-credit-pop .bg-bing-title {
+  font-size: 0.88rem;
+  line-height: 1.3;
+  -webkit-line-clamp: 2;
+}
+
+.bing-credit-pop .bg-bing-copyright {
+  font-size: 0.72rem;
+  line-height: 1.4;
+  -webkit-line-clamp: 2;
+}
+
+.bing-credit-pop .bg-bing-link {
+  margin-top: 8px;
+  padding: 5px 10px;
+  font-size: 0.72rem;
+}
+
+.bing-credit-pop .bg-bing-link .mgc_arrow_right_line {
+  font-size: 14px;
+}

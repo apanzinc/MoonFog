@@ -1,0 +1,928 @@
+/**
+ * MoonFog - Shortcuts & Context Menu
+ */
+
+/* 单色图标反色：深色模式 & 图片背景深色 UI */
+[data-mode="dark"] .icon-mono,
+body.has-image-bg.img-ui-dark .icon-mono {
+  filter: invert(1);
+  opacity: 0.95;
+}
+
+/* ============================================
+   右键菜单
+   ============================================ */
+.context-menu {
+  position: fixed;
+  z-index: 400;
+  min-width: 168px;
+  max-width: min(240px, calc(100vw - 16px));
+  background: color-mix(in srgb, var(--card-bg) 92%, transparent);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow-hover);
+  padding: 4px;
+  opacity: 0;
+  visibility: hidden;
+  transform: scale(0.96);
+  transform-origin: top left;
+  transition: opacity 0.12s var(--ease), visibility 0.12s, transform 0.12s var(--ease);
+  backdrop-filter: blur(var(--chrome-blur, 14px)) saturate(var(--glass-saturate, 1.12));
+  -webkit-backdrop-filter: blur(var(--chrome-blur, 14px)) saturate(var(--glass-saturate, 1.12));
+}
+
+.context-menu.active {
+  opacity: 1;
+  visibility: visible;
+  transform: scale(1);
+}
+
+.context-menu[hidden] {
+  display: none !important;
+}
+
+.context-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 32px;
+  padding: 6px 10px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-primary);
+  font-family: var(--font);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.12s var(--ease), color 0.12s var(--ease);
+  text-align: left;
+}
+
+.context-menu-item span {
+  font-size: 14px;
+  line-height: 1;
+}
+
+.context-menu-item:hover,
+.context-menu-item:focus-visible {
+  background: var(--settings-row-hover, var(--bg-warm-alt));
+  outline: none;
+}
+
+.context-menu-item:focus-visible {
+  outline: 2px solid var(--accent, #4a90e2);
+  outline-offset: -2px;
+}
+
+.context-menu-item-danger {
+  color: #d44;
+}
+
+.context-menu-item-danger:hover,
+.context-menu-item-danger:focus-visible {
+  background: rgba(221, 68, 68, 0.08);
+  color: #d44;
+}
+
+.context-menu-sep {
+  height: 1px;
+  background: var(--settings-divider, var(--border));
+  margin: 4px 6px;
+}
+
+/* ============================================
+   快捷导航（主页）
+   ============================================ */
+.shortcuts-section {
+  width: 100%;
+}
+
+.shortcuts-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  justify-content: flex-start;
+}
+
+/*
+ * 统一标签：链接 / 文件夹触发器 / 展开项 同一套胶囊
+ */
+.shortcut-btn,
+.shortcut-folder-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 8px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--card-bg) 78%, transparent);
+  backdrop-filter: blur(var(--chrome-blur, 14px)) saturate(var(--glass-saturate, 1.12));
+  -webkit-backdrop-filter: blur(var(--chrome-blur, 14px)) saturate(var(--glass-saturate, 1.12));
+  color: var(--text-primary);
+  text-decoration: none;
+  cursor: pointer;
+  font-family: var(--font-shortcuts, var(--font));
+  box-sizing: border-box;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    background 0.18s var(--ease),
+    color 0.18s var(--ease);
+}
+
+.shortcut-btn:focus-visible,
+.shortcut-folder-trigger:focus-visible {
+  outline: 2px solid var(--accent, #4a90e2);
+  outline-offset: 2px;
+}
+
+.shortcut-btn:hover,
+.shortcut-folder-trigger:hover,
+.shortcut-folder.open .shortcut-folder-trigger {
+  border-color: var(--border);
+  background: color-mix(in srgb, var(--bg-warm-alt) 88%, var(--card-bg));
+  color: var(--text-primary);
+}
+
+.shortcut-btn:active,
+.shortcut-folder-trigger:active {
+  transform: none;
+}
+
+[data-mode="dark"] .shortcut-btn,
+[data-mode="dark"] .shortcut-folder-trigger {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.14);
+  color: var(--text-primary);
+}
+
+[data-mode="dark"] .shortcut-btn:hover,
+[data-mode="dark"] .shortcut-folder-trigger:hover,
+[data-mode="dark"] .shortcut-folder.open .shortcut-folder-trigger {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.14);
+}
+
+/* 图片模式：背景/边框/模糊由 base.css 统一毛玻璃配方负责，这里只锁字色 */
+html[data-mode] body.has-image-bg .shortcut-btn,
+html[data-mode] body.has-image-bg .shortcut-folder-trigger,
+body.has-image-bg .shortcut-btn,
+body.has-image-bg .shortcut-folder-trigger {
+  color: var(--img-chrome-text, var(--img-text, var(--text-primary))) !important;
+  text-shadow: none !important;
+}
+
+html[data-mode] body.has-image-bg .shortcut-btn:hover,
+html[data-mode] body.has-image-bg .shortcut-folder-trigger:hover,
+html[data-mode] body.has-image-bg .shortcut-folder.open .shortcut-folder-trigger,
+body.has-image-bg .shortcut-btn:hover,
+body.has-image-bg .shortcut-folder-trigger:hover,
+body.has-image-bg .shortcut-folder.open .shortcut-folder-trigger {
+  color: var(--img-chrome-text, var(--img-text, var(--text-primary))) !important;
+}
+
+/* 图片模式：展开面板和子文件夹容器去掉阴影，与主标签一致 */
+body.has-image-bg .shortcut-expanded,
+body.has-image-bg .shortcut-expanded-subfolder,
+body.has-image-bg .shortcut-folder.open .shortcut-folder-trigger {
+  box-shadow: none !important;
+}
+
+/* 图片模式：子文件夹容器使用统一毛玻璃配方，与主标签/设置页一致 */
+body.has-image-bg .shortcut-expanded-subfolder.open,
+body.has-image-bg .shortcut-expanded-subfolder:not(.open) {
+  background: color-mix(
+    in srgb,
+    var(--img-surface, var(--card-bg)) var(--glass-fill, 42%),
+    transparent
+  ) !important;
+  border-color: color-mix(
+    in srgb,
+    var(--img-chrome-text, #fff) var(--glass-border, 28%),
+    transparent
+  ) !important;
+  backdrop-filter: blur(var(--search-blur, 16px)) saturate(var(--glass-saturate, 1.35)) !important;
+  -webkit-backdrop-filter: blur(var(--search-blur, 16px)) saturate(var(--glass-saturate, 1.35)) !important;
+}
+
+.shortcut-btn .shortcut-icon,
+.shortcut-btn .shortcut-label,
+.shortcut-folder-trigger .shortcut-icon,
+.shortcut-folder-trigger .shortcut-label {
+  flex-shrink: 0;
+  transform: none;
+}
+
+.shortcut-icon {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.5625rem;
+  font-weight: 600;
+  color: currentColor;
+  opacity: 0.82;
+  background: transparent;
+  overflow: hidden;
+}
+
+/* 非圆角图标：去掉圆形裁切，保持原图完整显示 */
+.shortcut-icon.is-no-rounded {
+  border-radius: 2px;
+  overflow: visible;
+}
+
+.shortcut-folder-icon {
+  border-radius: 5px;
+  opacity: 0.9;
+}
+
+.shortcut-folder-icon .mgc_folder_2_line,
+.shortcut-folder-icon .mgc_folder_line {
+  font-size: 13px;
+  line-height: 1;
+}
+
+.shortcut-icon-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+  opacity: 1;
+}
+
+/* 非圆角图标的 img：去掉圆角 */
+.shortcut-icon-img.icon-no-rounded {
+  border-radius: 2px;
+  object-fit: contain;
+}
+
+
+
+.shortcut-fallback-icon {
+  width: 14px;
+  height: 14px;
+  display: block;
+  color: currentColor;
+  opacity: 0.8;
+}
+
+.shortcut-btn:hover .shortcut-icon,
+.shortcut-folder.open .shortcut-folder-trigger .shortcut-icon {
+  opacity: 0.95;
+}
+
+.shortcut-label {
+  font-family: var(--font-shortcuts, var(--font));
+  font-size: 0.8125rem;
+  font-weight: var(--weight-shortcuts, 450);
+  color: currentColor;
+  white-space: nowrap;
+  line-height: 1;
+  max-width: 10rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: color 0.18s var(--ease), opacity 0.18s var(--ease);
+  opacity: 0.94;
+}
+
+.shortcut-btn:hover .shortcut-label,
+.shortcut-folder.open .shortcut-folder-trigger .shortcut-label {
+  opacity: 1;
+}
+
+.shortcut-folder-count {
+  min-width: 16px;
+  height: 16px;
+  padding: 0 5px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.625rem;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--text-secondary);
+  background: color-mix(in srgb, var(--text-primary) 8%, transparent);
+}
+
+.shortcut-folder-count[hidden] {
+  display: none !important;
+}
+
+.shortcut-folder.open .shortcut-folder-count {
+  display: none !important;
+}
+
+/* 子文件夹展开时也隐藏计数 */
+.shortcut-expanded-subfolder.open .shortcut-folder-count {
+  display: none !important;
+}
+
+.shortcut-drag-wrapper {
+  display: contents;
+}
+
+.shortcut-drag-wrapper.dragging {
+  opacity: 0.35;
+}
+
+.shortcut-drag-wrapper.drag-over > .shortcut-btn,
+.shortcut-drag-wrapper.drag-over > .shortcut-folder > .shortcut-folder-trigger {
+  box-shadow: inset 2px 0 0 var(--text-primary);
+}
+
+.shortcut-folder {
+  position: relative;
+  display: inline-flex;
+  vertical-align: top;
+}
+
+.shortcut-folder-trigger {
+  cursor: pointer;
+}
+
+.shortcut-folder.open .shortcut-folder-trigger {
+  box-shadow: none;
+}
+
+/* 展开面板：使用绝对定位弹出，不影响主行布局 */
+.shortcut-expanded {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  transform: translateY(-6px) scale(0.98);
+  transform-origin: top left;
+  min-width: 168px;
+  max-width: min(72vw, 360px);
+  max-height: none;
+  overflow-y: auto;
+  background: color-mix(in srgb, var(--card-bg) 92%, transparent);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: var(--shadow-hover);
+  padding: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 6px;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+    visibility 0s linear 0.2s,
+    transform 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 120;
+  backdrop-filter: blur(var(--chrome-blur, 14px)) saturate(var(--glass-saturate, 1.12));
+  -webkit-backdrop-filter: blur(var(--chrome-blur, 14px)) saturate(var(--glass-saturate, 1.12));
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--text-primary) 20%, transparent) transparent;
+}
+
+/* 自定义滚动条样式 */
+.shortcut-expanded::-webkit-scrollbar {
+  width: 6px;
+}
+
+.shortcut-expanded::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 3px;
+}
+
+.shortcut-expanded::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--text-primary) 18%, transparent);
+  border-radius: 3px;
+}
+
+.shortcut-expanded::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--text-primary) 30%, transparent);
+}
+
+.shortcut-folder.open .shortcut-expanded {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translateY(0) scale(1);
+  transition:
+    opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1) 0s,
+    visibility 0s 0s,
+    transform 0.22s cubic-bezier(0.4, 0, 0.2, 1) 0s;
+}
+
+/* 热区桥：防止鼠标移动时丢失弹窗 */
+.shortcut-expanded::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -10px;
+  height: 10px;
+}
+
+.shortcut-expanded.is-empty {
+  min-width: 140px;
+  padding: 8px 10px;
+}
+
+.shortcut-expanded-item {
+  text-decoration: none;
+}
+
+.shortcut-expanded .shortcut-btn {
+  max-width: 100%;
+}
+
+/* 文件夹弹窗内标签：取消 hover 拉伸效果 */
+.shortcut-expanded .shortcut-btn:hover,
+.shortcut-expanded .shortcut-folder-trigger:hover {
+  padding-left: 8px;
+  padding-right: 8px;
+}
+
+.shortcut-expanded-empty {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+  white-space: nowrap;
+}
+
+.shortcut-expanded-empty p {
+  font-size: 0.75rem;
+  color: var(--text-tertiary);
+  margin: 0;
+  line-height: 1;
+}
+
+.shortcut-expanded-add {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px dashed var(--border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  transition: border-color 0.15s var(--ease), color 0.15s var(--ease), background 0.15s var(--ease);
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.shortcut-expanded-add:hover {
+  border-color: var(--border-strong);
+  color: var(--text-secondary);
+  background: var(--bg-warm-alt);
+}
+
+/* 多级子文件夹：弹窗内的子文件夹，全宽显示 */
+.shortcut-expanded-subfolder {
+  display: flex;
+  flex-direction: column;
+  vertical-align: top;
+  position: relative;
+  width: 100%;
+  flex: 1 0 100%;
+  box-sizing: border-box;
+}
+
+/* 深层子文件夹的背景色完全由 JS 的 updateAncestorDistance 动态控制 */
+/* 默认基础样式 */
+.shortcut-expanded-subfolder.open {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--bg-warm-alt) 50%, transparent);
+  padding: 2px;
+  margin: 2px 0;
+}
+
+/* 未展开的子文件夹：胶囊形，跟标签一致 */
+.shortcut-expanded-subfolder:not(.open) {
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--bg-warm-alt) 30%, transparent);
+  padding: 0;
+  margin: 2px 0;
+}
+
+/* 展开状态下：标题按钮去掉描边，背景与容器一致 */
+.shortcut-expanded-subfolder.open > .shortcut-expanded-subfolder-trigger {
+  margin: 0 0 2px;
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+/* 未展开状态下：标题按钮也去掉描边，由容器提供 */
+.shortcut-expanded-subfolder:not(.open) > .shortcut-expanded-subfolder-trigger {
+  margin: 0;
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+/* 背景色由 JS 的 updateAncestorDistance 动态控制，CSS 只提供基础默认值 */
+
+.shortcut-expanded-subfolder-trigger {
+  cursor: pointer;
+  max-width: 100%;
+}
+
+.shortcut-expanded-subfolder-children {
+  width: 100%;
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 0;
+  transition:
+    max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.2s ease-out,
+    padding 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.shortcut-expanded-subfolder.open > .shortcut-expanded-subfolder-children {
+  max-height: 1000px;
+  opacity: 1;
+  padding: 0;
+}
+
+/* 子文件夹与普通链接之间的分隔线已移除（内联模式下不需要） */
+
+/* settings list - folder */
+.shortcut-list-folder-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  transition: background 0.15s var(--ease);
+}
+
+.shortcut-list-folder-header:hover {
+  background: var(--settings-row-hover, var(--bg-warm-alt));
+}
+
+.shortcut-list-folder-header .shortcut-list-name {
+  font-weight: 600;
+}
+
+.shortcut-list-child {
+  padding-left: 36px !important;
+}
+
+/* 多级子文件夹：设置列表中的递归缩进 */
+.shortcut-list-subfolder-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 10px;
+  padding-left: var(--sc-list-indent, 36px);
+  border-radius: 10px;
+  transition: background 0.15s var(--ease);
+}
+
+.shortcut-list-subfolder-header:hover {
+  background: var(--settings-row-hover, var(--bg-warm-alt));
+}
+
+.shortcut-list-subfolder-header .shortcut-list-name {
+  font-weight: 600;
+  font-size: 0.8125rem;
+}
+
+.shortcut-list-subfolder-header .shortcut-list-favicon {
+  width: 20px;
+  height: 20px;
+  font-size: 12px;
+}
+
+.shortcut-list-subfolder-add {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  padding-left: var(--sc-list-indent, 36px);
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-tertiary);
+  font-family: var(--font);
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: background 0.15s var(--ease), color 0.15s var(--ease);
+  width: 100%;
+  text-align: left;
+}
+
+.shortcut-list-subfolder-add:hover {
+  background: var(--bg-warm-alt);
+  color: var(--text-secondary);
+}
+
+.shortcut-list-add-child {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px 6px 36px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-tertiary);
+  font-family: var(--font);
+  font-size: 0.8125rem;
+  cursor: pointer;
+  transition: background 0.15s var(--ease), color 0.15s var(--ease);
+  width: 100%;
+  text-align: left;
+}
+
+.shortcut-list-add-child:hover {
+  background: var(--bg-warm-alt);
+  color: var(--text-secondary);
+}
+
+.shortcut-hint {
+  font-size: 0.75rem;
+  color: var(--text-tertiary);
+  margin-top: 4px;
+}
+
+/* ============================================
+   快捷导航（设置列表）
+   ============================================ */
+.shortcut-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.shortcut-list-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  transition: background 0.15s var(--ease);
+}
+
+.shortcut-list-item:hover {
+  background: var(--settings-row-hover, var(--bg-warm-alt));
+}
+
+.shortcut-list-favicon {
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+  background: var(--bg-warm);
+  overflow: hidden;
+}
+
+.shortcut-list-folder-favicon {
+  background: transparent;
+  border-color: transparent;
+}
+
+.shortcut-list-icon-inner {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.shortcut-list-fallback {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  line-height: 1;
+}
+
+.shortcut-list-icon-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 5px;
+  display: block;
+}
+
+.shortcut-list-icon-img.icon-no-rounded {
+  border-radius: 2px;
+  object-fit: contain;
+  padding: 1px;
+  box-sizing: border-box;
+}
+
+.shortcut-list-icon-img.icon-mono {
+  /* 深色模式下：反色（与主页面图标保持一致） */
+}
+
+.shortcut-list-name {
+  flex: 1;
+  font-size: 0.875rem;
+  font-weight: 450;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.shortcut-list-url {
+  font-size: 0.75rem;
+  color: var(--text-tertiary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100px;
+}
+
+.shortcut-list-edit,
+.shortcut-list-delete {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s var(--ease), color 0.15s var(--ease), background 0.15s var(--ease);
+  flex-shrink: 0;
+  font-size: 12px;
+}
+
+.shortcut-list-item:hover .shortcut-list-edit,
+.shortcut-list-item:hover .shortcut-list-delete,
+.shortcut-list-folder-header:hover .shortcut-list-edit,
+.shortcut-list-folder-header:hover .shortcut-list-delete,
+.shortcut-list-item:focus-within .shortcut-list-edit,
+.shortcut-list-item:focus-within .shortcut-list-delete,
+.shortcut-list-folder-header:focus-within .shortcut-list-edit,
+.shortcut-list-folder-header:focus-within .shortcut-list-delete,
+.shortcut-list-edit:focus-visible,
+.shortcut-list-delete:focus-visible {
+  opacity: 1;
+}
+
+.shortcut-list-edit:hover,
+.shortcut-list-delete:hover {
+  color: var(--text-primary);
+  background: var(--bg-warm-alt);
+}
+
+.search-box {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  /* 纯色背景：实底卡片。毛玻璃只在图片背景有意义（见 body.has-image-bg） */
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--space-sm) var(--space-sm) var(--space-sm) var(--space-md);
+  box-shadow: var(--shadow);
+  transition: box-shadow 0.2s var(--ease), background 0.2s var(--ease), border-color 0.2s var(--ease);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.search-box:focus-within {
+  box-shadow: var(--shadow-hover), 0 0 0 3px var(--accent-glow);
+}
+
+.search-input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-family: var(--font);
+  font-size: 1rem;
+  color: var(--text-primary);
+  height: 44px;
+  /* hide native search clear so custom mgc icon can match the rest of UI */
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.search-input::-webkit-search-decoration,
+.search-input::-webkit-search-cancel-button,
+.search-input::-webkit-search-results-button,
+.search-input::-webkit-search-results-decoration {
+  -webkit-appearance: none;
+  appearance: none;
+  display: none;
+}
+
+.search-input::placeholder {
+  color: var(--text-tertiary);
+}
+
+.search-clear-btn {
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  flex-shrink: 0;
+  font-size: 16px;
+  line-height: 1;
+  transition: color 0.15s var(--ease), background 0.15s var(--ease), opacity 0.15s var(--ease);
+}
+
+.search-clear-btn[hidden] {
+  display: none !important;
+}
+
+.search-clear-btn:hover {
+  color: var(--text-primary);
+  background: var(--bg-warm-alt, color-mix(in srgb, var(--text-primary) 6%, transparent));
+}
+
+.search-clear-btn > [class^="mgc_"],
+.search-clear-btn > [class*=" mgc_"] {
+  display: block;
+  line-height: 1;
+}
+
+.search-btn {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-primary);
+  cursor: pointer;
+  flex-shrink: 0;
+  font-size: 18px;
+}
+
+.search-btn:hover {
+  opacity: 0.6;
+}
+
+.search-btn:focus-visible,
+.search-clear-btn:focus-visible,
+.shortcut-expanded-add:focus-visible,
+.shortcut-list-edit:focus-visible,
+.shortcut-list-delete:focus-visible,
+.shortcut-list-add-child:focus-visible,
+.shortcut-list-subfolder-add:focus-visible {
+  outline: 2px solid var(--accent, #4a90e2);
+  outline-offset: 2px;
+}
+
+/* ============================================
+   Reduced Motion
+   ============================================ */
+@media (prefers-reduced-motion: reduce) {
+  .shortcut-btn,
+  .shortcut-folder-trigger,
+  .context-menu,
+  .context-menu-item,
+  .shortcut-expanded,
+  .shortcut-expanded-subfolder-children,
+  .shortcut-expanded-add,
+  .shortcut-list-item,
+  .shortcut-list-folder-header,
+  .shortcut-list-subfolder-header,
+  .shortcut-list-edit,
+  .shortcut-list-delete,
+  .search-box {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}

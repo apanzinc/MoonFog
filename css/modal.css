@@ -1,0 +1,326 @@
+/**
+ * MoonFog - Modal & lightweight dialogs
+ * Compact HyperOS-like sheet
+ */
+
+/* ============================================
+   弹窗遮罩 + 面板
+   ============================================ */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px 16px;
+  background: color-mix(in srgb, #000 28%, transparent);
+  backdrop-filter: blur(var(--chrome-blur, 14px)) saturate(var(--glass-saturate, 1.12));
+  -webkit-backdrop-filter: blur(var(--chrome-blur, 14px)) saturate(var(--glass-saturate, 1.12));
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 0.22s cubic-bezier(0.4, 0, 0.2, 1),
+    visibility 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+  overscroll-behavior: contain;
+}
+
+.modal-overlay.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+.modal-box {
+  width: min(360px, 100%);
+  max-height: min(84vh, 640px);
+  display: flex;
+  flex-direction: column;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: var(--shadow-hover);
+  /* 关闭态 = 进入起点；打开 active 后反向过渡，进出镜像 */
+  transform: translateY(10px) scale(0.98);
+  opacity: 0;
+  transition:
+    transform 0.24s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+}
+
+.modal-overlay.active .modal-box {
+  transform: translateY(0) scale(1);
+  opacity: 1;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 12px 8px 14px;
+  flex-shrink: 0;
+}
+
+.modal-header span,
+.modal-title {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+}
+
+.modal-close {
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  transition: background 0.15s var(--ease), color 0.15s var(--ease);
+  font-size: 15px;
+  flex-shrink: 0;
+}
+
+.modal-close:hover {
+  background: var(--settings-row-hover, var(--bg-warm-alt));
+  color: var(--text-primary);
+}
+
+.modal-body {
+  position: relative;
+  padding: 4px 14px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow: auto;
+  min-height: 0;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.modal-body::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
+
+.modal-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.modal-field[hidden] {
+  display: none !important;
+}
+
+.modal-field label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-tertiary);
+  margin: 0;
+  line-height: 1.2;
+}
+
+.modal-field input,
+.modal-field textarea {
+  width: 100%;
+  min-height: 34px;
+  padding: 0 11px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  font-family: var(--font);
+  font-size: 0.8125rem;
+  color: var(--text-primary);
+  outline: none;
+  background: color-mix(in srgb, var(--text-primary) 3.5%, var(--bg-warm));
+  transition:
+    border-color 0.15s var(--ease),
+    box-shadow 0.15s var(--ease),
+    background 0.15s var(--ease);
+  box-sizing: border-box;
+}
+
+.modal-field textarea {
+  min-height: 72px;
+  padding: 8px 11px;
+  resize: vertical;
+  line-height: 1.4;
+}
+
+.modal-field input:hover,
+.modal-field textarea:hover {
+  border-color: var(--border-strong);
+}
+
+.modal-field input:focus,
+.modal-field input:focus-visible,
+.modal-field textarea:focus,
+.modal-field textarea:focus-visible {
+  border-color: color-mix(in srgb, var(--text-primary) 35%, var(--border-strong));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--text-primary) 10%, transparent);
+  background: var(--card-bg);
+  outline: none;
+}
+
+.modal-field input::placeholder,
+.modal-field textarea::placeholder {
+  color: var(--text-tertiary);
+}
+
+.modal-field input.is-invalid,
+.modal-field textarea.is-invalid {
+  border-color: color-mix(in srgb, #d44 55%, var(--border));
+  box-shadow: 0 0 0 3px rgba(221, 68, 68, 0.12);
+}
+
+.modal-tip {
+  font-size: 0.6875rem;
+  color: var(--text-tertiary);
+  line-height: 1.4;
+  margin: 0;
+}
+
+.modal-field .modal-tip {
+  margin-top: -1px;
+}
+
+.modal-error {
+  min-height: 0;
+  margin: 0;
+  font-size: 0.72rem;
+  line-height: 1.35;
+  color: #d44;
+  opacity: 0;
+  transform: translateY(-2px);
+  transition: opacity 0.15s var(--ease), transform 0.15s var(--ease);
+}
+
+.modal-error.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px 12px;
+  flex-shrink: 0;
+}
+
+.modal-cancel,
+.modal-confirm {
+  min-height: 30px;
+  padding: 0 12px;
+  border: none;
+  border-radius: 8px;
+  font-family: var(--font);
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    background 0.15s var(--ease),
+    color 0.15s var(--ease),
+    opacity 0.15s var(--ease),
+    transform 0.15s var(--ease);
+}
+
+.modal-cancel {
+  background: transparent;
+  color: var(--text-secondary);
+}
+
+.modal-cancel:hover {
+  background: var(--settings-row-hover, var(--bg-warm-alt));
+  color: var(--text-primary);
+}
+
+.modal-confirm {
+  background: var(--text-primary);
+  color: var(--card-bg);
+}
+
+.modal-confirm:hover {
+  opacity: 0.9;
+}
+
+.modal-confirm:active,
+.modal-cancel:active {
+  transform: scale(0.98);
+}
+
+.modal-confirm:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* 自定义引擎删除按钮 */
+.engine-delete {
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  opacity: 0;
+  transition:
+    opacity 0.15s var(--ease),
+    color 0.15s var(--ease),
+    background 0.15s var(--ease);
+  flex-shrink: 0;
+  margin-left: 0;
+  font-size: 13px;
+}
+
+.engine-item:hover .engine-delete,
+.engine-item:focus-within .engine-delete,
+.engine-delete:focus-visible {
+  opacity: 1;
+}
+
+.engine-delete:hover {
+  color: #d44;
+  background: rgba(221, 68, 68, 0.08);
+}
+
+@media (max-width: 480px) {
+  .modal-overlay {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .modal-box {
+    width: 100%;
+    max-height: min(88vh, 720px);
+    border-radius: 16px 16px 0 0;
+    transform: translateY(16px);
+  }
+
+  .modal-overlay.active .modal-box {
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .modal-overlay,
+  .modal-box,
+  .modal-error,
+  .engine-delete {
+    transition: none !important;
+  }
+}

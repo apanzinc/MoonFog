@@ -1,0 +1,12 @@
+/**
+ * MoonFog - Styles Entry
+ * 按职责拆分后的样式入口
+ */
+
+@import url('./tokens.css');
+@import url('./base.css');
+@import url('./shortcuts.css');
+@import url('./settings/panel.css');
+@import url('./settings/controls.css');
+@import url('./modal.css');
+@import url('./oobe.css');

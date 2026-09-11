@@ -1,0 +1,73 @@
+{
+  "manifest_version": 3,
+  "name": "MoonFog",
+  "version": "1.0.0",
+  "description": "纯净极简的新标签页 - 时间、问候与搜索",
+  "author": "apanzinc",
+  "chrome_url_overrides": {
+    "newtab": "newtab.html"
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "action": {
+    "default_icon": {
+      "16": "icons/icon-light-16.png",
+      "32": "icons/icon-light-32.png",
+      "48": "icons/icon-light-48.png",
+      "128": "icons/icon-light-128.png"
+    },
+    "theme_icons": [
+      {
+        "dark": "icons/icon-dark-16.png",
+        "light": "icons/icon-light-16.png",
+        "size": 16
+      },
+      {
+        "dark": "icons/icon-dark-32.png",
+        "light": "icons/icon-light-32.png",
+        "size": 32
+      },
+      {
+        "dark": "icons/icon-dark-48.png",
+        "light": "icons/icon-light-48.png",
+        "size": 48
+      },
+      {
+        "dark": "icons/icon-dark-128.png",
+        "light": "icons/icon-light-128.png",
+        "size": 128
+      }
+    ]
+  },
+  "permissions": [
+    "identity",
+    "identity.email",
+    "storage",
+    "fontSettings"
+  ],
+  "host_permissions": [
+    "https://www.bing.com/*",
+    "https://*.bing.com/*",
+    "https://cn.bing.com/*",
+    "https://hitokoto.c0ffee.space/*",
+    "https://v1.hitokoto.cn/*",
+    "https://www.google.com/*",
+    "https://icons.duckduckgo.com/*",
+    "http://*/*",
+    "https://*/*"
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "icons/*"
+      ],
+      "matches": [
+        "<all_urls>"
+      ]
+    }
+  ]
+}

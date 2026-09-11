@@ -1,0 +1,1191 @@
+﻿/**
+ * MoonFog - Settings Panel Shell
+ * Compact HyperOS-like grouped list
+ */
+
+/* ============================================
+   设置按钮
+   ============================================ */
+
+.settings-wrapper {
+  position: fixed;
+  bottom: 0;
+  right: 0;
+  z-index: 100;
+  padding: 14px 16px 16px 14px;
+  /* 扩大右下角热区，按钮隐藏时仍可 hover 唤出 */
+  min-width: 72px;
+  min-height: 72px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+}
+
+.settings-btn-icon {
+  font-size: 18px;
+  line-height: 1;
+  display: block;
+  pointer-events: none;
+}
+
+.settings-btn {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  border-radius: 50%;
+  background: var(--card-bg);
+  color: var(--text-primary);
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+  transition:
+    opacity 0.18s ease,
+    background 0.18s ease,
+    color 0.18s ease,
+    border-color 0.18s ease,
+    box-shadow 0.18s ease;
+  font-size: 18px;
+}
+
+/* 右下角热区悬停 / 键盘聚焦 / 面板打开时才显示 */
+.settings-wrapper:hover .settings-btn,
+.settings-btn:focus-visible,
+body.settings-open .settings-btn {
+  opacity: 1;
+  pointer-events: auto;
+  border-color: var(--border);
+}
+
+body.has-image-bg .settings-btn {
+  background: color-mix(
+    in srgb,
+    var(--img-surface, var(--card-bg)) var(--glass-fill, 42%),
+    transparent
+  );
+  color: var(--img-chrome-text, var(--img-text, var(--text-primary)));
+  border-color: color-mix(
+    in srgb,
+    var(--img-chrome-text, #fff) var(--glass-border, 28%),
+    transparent
+  );
+  backdrop-filter: blur(var(--search-blur, 16px)) saturate(var(--glass-saturate, 1.35));
+  -webkit-backdrop-filter: blur(var(--search-blur, 16px)) saturate(var(--glass-saturate, 1.35));
+  box-shadow: var(--glass-shadow, 0 8px 24px rgba(0, 0, 0, 0.16));
+}
+
+body.has-image-bg .settings-wrapper:hover .settings-btn,
+body.has-image-bg .settings-btn:focus-visible,
+body.has-image-bg.settings-open .settings-btn {
+  background: color-mix(
+    in srgb,
+    var(--img-surface-hover, var(--img-surface, var(--card-bg))) var(--glass-fill-hover, 52%),
+    transparent
+  );
+  border-color: color-mix(
+    in srgb,
+    var(--img-chrome-text, #fff) var(--glass-border-hover, 34%),
+    transparent
+  );
+}
+
+/* 触屏没有 hover：保留弱可见，避免找不到设置 */
+@media (hover: none) {
+  .settings-btn {
+    opacity: 0.55;
+    pointer-events: auto;
+  }
+
+  body.settings-open .settings-btn,
+  .settings-btn:focus-visible {
+    opacity: 1;
+  }
+}
+
+/* ============================================
+   设置面板外壳
+   ============================================ */
+
+.settings-panel {
+  position: fixed;
+  top: 14px;
+  right: 14px;
+  bottom: 14px;
+  width: min(312px, calc(100vw - 24px));
+  /* 面板底：偏实，避免文字压在过透背景上难读 */
+  background: color-mix(in srgb, var(--bg-warm) 96%, transparent);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  z-index: 200;
+  /* 面板本体：从右侧滑入 / 原路滑出；ease 对称，进出手感一致 */
+  transform: translateX(calc(100% + 24px));
+  transition:
+    transform 0.32s cubic-bezier(0.4, 0, 0.2, 1),
+    background-color 0.28s var(--ease),
+    border-color 0.28s var(--ease),
+    box-shadow 0.28s var(--ease),
+    color 0.28s var(--ease);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow:
+    0 1px 0 color-mix(in srgb, var(--card-bg) 70%, transparent) inset,
+    0 14px 36px color-mix(in srgb, var(--text-primary) 12%, transparent);
+  will-change: transform;
+  /* 面板始终用主题色，不跟壁纸 surface tokens */
+  --settings-divider: var(--border);
+  --settings-row-hover: color-mix(in srgb, var(--text-primary) 5%, transparent);
+  --settings-row-active: color-mix(in srgb, var(--text-primary) 8%, transparent);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  backdrop-filter: blur(var(--panel-blur, 10px)) saturate(var(--glass-saturate, 1.2));
+  -webkit-backdrop-filter: blur(var(--panel-blur, 10px)) saturate(var(--glass-saturate, 1.2));
+}
+
+/*
+ * 设置面板跟随 html[data-tone]/[data-mode] 的主题变量。
+ * 不额外改写主色，避免与主页脱节；也不跟壁纸 img-ui-dark。
+ */
+html[data-mode="dark"] .settings-panel {
+  box-shadow:
+    0 1px 0 color-mix(in srgb, var(--card-bg) 35%, transparent) inset,
+    0 16px 40px rgba(0, 0, 0, 0.42);
+}
+
+/*
+ * 图片/流光背景：面板内部用主题色，不跟壁纸
+ */
+body.has-image-bg .settings-panel,
+body.has-grain-bg .settings-panel {
+  color: var(--text-primary);
+}
+
+.settings-panel.active {
+  transform: translateX(0);
+}
+
+/*
+ * Header
+ * 一级：  (设置)                         (关闭)  —— 无返回
+ * 二级：  (返回) (设置)                   (关闭)  —— 返回带动画出
+ * 返回 / 关闭：同一套尺寸，严格 1:1
+ */
+.settings-header {
+  --settings-nav-h: 56px;
+  --settings-nav-btn: 32px;
+  --settings-nav-icon: 18px;
+  --settings-nav-pad-x: 14px;
+  --settings-nav-pad-y: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+/* —— 上：导航栏（固定高度；上下左右边距一致） —— */
+.settings-header-bar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--settings-nav-btn);
+  align-items: center;
+  height: var(--settings-nav-h);
+  min-height: var(--settings-nav-h);
+  max-height: var(--settings-nav-h);
+  padding: var(--settings-nav-pad-y) var(--settings-nav-pad-x);
+  box-sizing: border-box;
+}
+
+.settings-header-leading {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 6px;
+  min-width: 0;
+  height: var(--settings-nav-btn);
+  grid-column: 1;
+  justify-self: start;
+}
+
+.close-btn {
+  grid-column: 2;
+  justify-self: end;
+}
+
+/* (关闭) 固定方钮 */
+.settings-header-bar .close-btn {
+  width: var(--settings-nav-btn);
+  height: var(--settings-nav-btn);
+  min-width: var(--settings-nav-btn);
+  min-height: var(--settings-nav-btn);
+  max-width: var(--settings-nav-btn);
+  max-height: var(--settings-nav-btn);
+  aspect-ratio: 1 / 1;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background 0.18s var(--ease), color 0.18s var(--ease);
+  flex: 0 0 var(--settings-nav-btn);
+  padding: 0;
+  margin: 0;
+  line-height: 1;
+  font-size: var(--settings-nav-icon);
+}
+
+/*
+ * (返回) 进出同一套 transition（与退出镜像）
+ * 默认收起；.is-shown 展开
+ */
+.settings-header-bar .settings-back-icon-btn {
+  box-sizing: border-box;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  height: var(--settings-nav-btn);
+  max-height: var(--settings-nav-btn);
+  min-height: var(--settings-nav-btn);
+  width: 0;
+  min-width: 0;
+  max-width: 0;
+  flex: 0 0 auto;
+  padding: 0;
+  margin: 0;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
+  transform: translateX(-8px) scale(0.9);
+  line-height: 1;
+  font-size: var(--settings-nav-icon);
+  transition:
+    opacity 0.24s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.24s cubic-bezier(0.4, 0, 0.2, 1),
+    width 0.24s cubic-bezier(0.4, 0, 0.2, 1),
+    min-width 0.24s cubic-bezier(0.4, 0, 0.2, 1),
+    max-width 0.24s cubic-bezier(0.4, 0, 0.2, 1),
+    background 0.18s var(--ease),
+    color 0.18s var(--ease);
+}
+
+.settings-header-bar .settings-back-icon-btn.is-shown {
+  width: var(--settings-nav-btn);
+  min-width: var(--settings-nav-btn);
+  max-width: var(--settings-nav-btn);
+  aspect-ratio: 1 / 1;
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(0) scale(1);
+}
+
+.settings-header-bar .settings-back-icon-btn > [class^="mgc_"],
+.settings-header-bar .settings-back-icon-btn > [class*=" mgc_"],
+.settings-header-bar .close-btn > [class^="mgc_"],
+.settings-header-bar .close-btn > [class*=" mgc_"] {
+  display: block;
+  width: 1em;
+  height: 1em;
+  font-size: var(--settings-nav-icon);
+  line-height: 1;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+/* 导航栏「设置」：与 32px 图标光学对齐（中文基线略偏上，下移 1px） */
+.settings-nav-label {
+  display: inline-flex;
+  align-items: center;
+  max-width: 140px;
+  height: var(--settings-nav-btn);
+  min-width: 0;
+  padding: 0 2px;
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  line-height: var(--settings-nav-btn);
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+  user-select: none;
+  /* 0 太高、2px 太低，1px 对齐返回/关闭图标中心 */
+  transform: translateY(1px);
+}
+
+.settings-header-bar .settings-back-icon-btn:hover,
+.settings-header-bar .close-btn:hover {
+  background: var(--settings-row-hover);
+  color: var(--text-primary);
+}
+
+.settings-header-bar .settings-back-icon-btn:active,
+.settings-header-bar .close-btn:active {
+  background: var(--settings-row-active);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .settings-header-bar .settings-back-icon-btn {
+    transition: none !important;
+  }
+}
+
+/* —— 下：当前页大标题（一级/二级同 padding，不随导航显隐下移） —— */
+.settings-header-title {
+  display: block;
+  padding: 6px 16px 14px;
+  margin: 0;
+  min-width: 0;
+  min-height: 2.1em;
+  box-sizing: border-box;
+}
+
+.settings-header-title h3,
+.settings-header h3 {
+  display: block;
+  margin: 0;
+  min-width: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: 0.01em;
+  text-transform: none;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.2;
+  padding: 0;
+}
+
+/* Body：承载一级/二级滑动层 */
+.settings-body {
+  position: relative;
+  padding: 0;
+  display: block;
+  overflow: hidden;
+  flex: 1;
+  min-height: 0;
+}
+
+/*
+ * 设置二级导航：叠层右滑（玻璃面板）
+ * - 一级 root 垫底；二级 page 从右滑入 / 原路滑回
+ * - 二级背景必须透明：透出面板毛玻璃，绝不用纯色底
+ * - 进入时一级淡出，返回时一级淡回，避免叠字
+ * - 返回动画中保持二级内容可见，结束后再 hidden
+ */
+.settings-view {
+  position: absolute;
+  inset: 0;
+  min-width: 0;
+  width: 100%;
+  height: 100%;
+  padding: 6px 12px 16px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  box-sizing: border-box;
+  background: transparent;
+  /* hide native bar; custom overlay bar is used instead */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  transition:
+    transform 0.32s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.32s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform, opacity;
+  -webkit-overflow-scrolling: touch;
+}
+
+.settings-view::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
+
+/* overlay custom scrollbar (does not push content) */
+.mf-scrollbar {
+  position: absolute;
+  top: 8px;
+  right: 4px;
+  bottom: 8px;
+  width: 8px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.18s var(--ease);
+  z-index: 5;
+}
+
+.mf-scrollbar.is-visible,
+.mf-scrollbar.is-active,
+.mf-scrollbar.is-hover,
+.mf-scrollbar:hover {
+  opacity: 1;
+}
+
+.mf-scrollbar-track {
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  background: transparent;
+  pointer-events: auto;
+}
+
+.mf-scrollbar-thumb {
+  position: absolute;
+  left: 1px;
+  right: 1px;
+  top: 0;
+  min-height: 28px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--text-primary) 22%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--text-primary) 8%, transparent);
+  pointer-events: auto;
+  cursor: default;
+  transition: background 0.15s var(--ease);
+}
+
+.mf-scrollbar-thumb:hover,
+.mf-scrollbar.is-dragging .mf-scrollbar-thumb {
+  background: color-mix(in srgb, var(--text-primary) 34%, transparent);
+}
+
+html[data-mode="dark"] .mf-scrollbar-thumb {
+  background: color-mix(in srgb, #fff 22%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, #fff 10%, transparent);
+}
+
+html[data-mode="dark"] .mf-scrollbar-thumb:hover,
+html[data-mode="dark"] .mf-scrollbar.is-dragging .mf-scrollbar-thumb {
+  background: color-mix(in srgb, #fff 34%, transparent);
+}
+
+body.has-image-bg .mf-scrollbar-thumb {
+  background: color-mix(in srgb, var(--img-chrome-text, var(--img-text, var(--text-primary))) 24%, transparent);
+}
+
+body.has-image-bg .mf-scrollbar-thumb:hover,
+body.has-image-bg .mf-scrollbar.is-dragging .mf-scrollbar-thumb {
+  background: color-mix(in srgb, var(--img-chrome-text, var(--img-text, var(--text-primary))) 36%, transparent);
+}
+
+@media (hover: none) {
+  .mf-scrollbar {
+    opacity: 0.55;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mf-scrollbar {
+    transition: none;
+  }
+}
+
+.settings-view[hidden] {
+  display: none !important;
+}
+
+/* 动画中二级层必须可绘制，才能完成右滑 */
+.settings-panel.settings-animating .settings-view[hidden] {
+  display: block !important;
+}
+
+.settings-panel.settings-no-anim .settings-view {
+  transition: none !important;
+}
+
+/* 一级：始终垫底不位移；进入二级时淡出，返回时淡回 */
+.settings-view-root {
+  transform: translate3d(0, 0, 0);
+  opacity: 1;
+  z-index: 1;
+  pointer-events: auto;
+  background: transparent;
+}
+
+.settings-panel[data-view="page"] .settings-view-root {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* 二级：透明背景（透出面板毛玻璃）；从右侧滑入 / 滑出 */
+.settings-view-page {
+  transform: translate3d(100%, 0, 0);
+  opacity: 1;
+  z-index: 2;
+  pointer-events: none;
+  background: transparent !important;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.settings-panel[data-view="page"] .settings-view-page {
+  transform: translate3d(0, 0, 0);
+  pointer-events: auto;
+}
+
+/* 三级导航：二级↔三级内容滑动 */
+.settings-view-page[data-page-depth="2"] .settings-page {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 三级→二级（返回）：旧内容从左滑入，新内容从右滑入 */
+.settings-view-page[data-page-depth="2"][data-slide="right"] .settings-page:not([hidden]) {
+  animation: settingsSlideInRight 0.3s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+/* 二级→三级（前进）：旧内容向左滑出，新内容从右滑入 */
+.settings-view-page[data-page-depth="3"] .settings-page:not([hidden]) {
+  animation: settingsSlideInLeft 0.3s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+@keyframes settingsSlideInRight {
+  from {
+    transform: translate3d(-30%, 0, 0);
+    opacity: 0.6;
+  }
+  to {
+    transform: translate3d(0, 0, 0);
+    opacity: 1;
+  }
+}
+
+@keyframes settingsSlideInLeft {
+  from {
+    transform: translate3d(30%, 0, 0);
+    opacity: 0.6;
+  }
+  to {
+    transform: translate3d(0, 0, 0);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .settings-view-page[data-page-depth="2"] .settings-page,
+  .settings-view-page[data-page-depth="3"] .settings-page {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/*
+ * 返回键悬停预览：
+ * - 二级右滑 20%（仍占约 80%）
+ * - 后面一级列表降低透明度（层次更清晰）
+ * 移开回弹；点击从 20% 继续滑到 100%
+ */
+.settings-panel[data-view="page"].settings-back-peek .settings-view-root {
+  opacity: 0.42;
+  pointer-events: none;
+  transition: opacity 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.settings-panel[data-view="page"].settings-back-peek .settings-view-page {
+  transform: translate3d(20%, 0, 0);
+  opacity: 1;
+  pointer-events: none;
+}
+
+/* 从 peek 冻结 20% 帧（不依赖 data-view，避免切 root 时掉回 0） */
+.settings-panel.settings-back-from-peek .settings-view-page {
+  transform: translate3d(20%, 0, 0) !important;
+  transition: none !important;
+}
+
+.settings-panel.settings-back-from-peek .settings-view-root {
+  opacity: 0.42 !important;
+  transition: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .settings-panel[data-view="page"].settings-back-peek .settings-view-page,
+  .settings-panel.settings-back-from-peek .settings-view-page {
+    transform: translate3d(0, 0, 0) !important;
+  }
+  .settings-panel[data-view="page"].settings-back-peek .settings-view-root,
+  .settings-panel.settings-back-from-peek .settings-view-root {
+    opacity: 0 !important;
+  }
+}
+.settings-view-root,
+.settings-page {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.settings-page[hidden] {
+  display: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .settings-view {
+    transition: none;
+  }
+}
+
+/* 页面提示 / 分组标题 */
+.settings-page-hint,
+.type-roles-intro {
+  margin: 0 2px;
+  padding: 0 2px;
+  font-size: 0.72rem;
+  line-height: 1.4;
+  color: var(--text-tertiary);
+}
+
+.settings-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  min-width: 0;
+}
+
+.settings-group-title,
+.settings-section-title {
+  margin: 0;
+  padding: 0 8px;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  text-transform: none;
+  color: var(--text-tertiary);
+  line-height: 1.3;
+}
+
+.settings-section-title[hidden] {
+  display: none !important;
+}
+
+/* 卡片容器：圆角白底，内部列表无边框 */
+.settings-card,
+.settings-nav {
+  margin: 0;
+  padding: 2px;
+  border: none;
+  border-radius: 12px;
+  background: var(--card-bg);
+  box-shadow: none;
+  overflow: hidden;
+  min-width: 0;
+}
+
+/* 一级分类导航 */
+.settings-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.settings-nav-item {
+  position: relative;
+  display: grid;
+  grid-template-columns: 28px 1fr 14px;
+  align-items: center;
+  column-gap: 10px;
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s var(--ease);
+}
+
+.settings-nav-item + .settings-nav-item::before {
+  content: "";
+  position: absolute;
+  left: 48px;
+  right: 10px;
+  top: 0;
+  height: 1px;
+  background: var(--settings-divider);
+  pointer-events: none;
+}
+
+.settings-nav-item:hover {
+  background: var(--settings-row-hover);
+}
+
+.settings-nav-item:active {
+  background: var(--settings-row-active);
+}
+
+/* MingCute 线标：始终用主题色 */
+.settings-nav-icon {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: var(--bg-warm);
+  color: var(--text-secondary);
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.settings-nav-text {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1px;
+  min-width: 0;
+}
+
+.settings-nav-title {
+  font-size: 0.875rem;
+  font-weight: 550;
+  color: var(--text-primary);
+  line-height: 1.25;
+}
+
+.settings-nav-desc {
+  font-size: 0.6875rem;
+  color: var(--text-tertiary);
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.settings-nav-chevron {
+  color: var(--text-tertiary);
+  font-size: 14px;
+  line-height: 1;
+  opacity: 0.7;
+  justify-self: end;
+}
+
+/* 二级卡片内设置块 */
+.settings-card > .setting-item,
+.settings-card > .type-role {
+  margin: 0;
+  padding: 10px 10px;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-sizing: border-box;
+}
+
+.settings-card > .setting-item + .setting-item,
+.settings-card > .type-role + .type-role {
+  border-top: 1px solid var(--settings-divider);
+}
+
+/* 前一项隐藏时，去掉后一项顶部分割线，避免空缝
+ * 背景条件字段（bg-extra-field）走折叠动画，分割线由 controls.css 单独接管 */
+.settings-card > .setting-item[hidden]:not(.bg-extra-field) + .setting-item,
+.settings-card > .type-role[hidden] + .type-role {
+  border-top: none;
+}
+
+.settings-card > .setting-item--flush {
+  padding: 4px 4px 6px;
+}
+
+/* 兼容旧类名 */
+.settings-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+  padding: 10px;
+  border: none;
+  border-radius: 12px;
+  background: var(--card-bg);
+  min-width: 0;
+}
+
+/* 二级页内：标签与控件间距更紧凑 */
+.settings-page .setting-item label,
+.settings-page .setting-item .setting-label,
+.settings-card .setting-item label,
+.settings-card .setting-item .setting-label {
+  margin-bottom: 8px;
+}
+
+/* 可交互行 */
+.interactive-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  transition: background 0.15s var(--ease);
+}
+
+.interactive-row:hover {
+  background: var(--settings-row-hover);
+}
+
+/* Input */
+.setting-item input[type="text"] {
+  width: 100%;
+  height: 34px;
+  padding: 0 10px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  font-family: var(--font);
+  font-size: 0.8125rem;
+  color: var(--text-primary);
+  outline: none;
+  background: var(--bg-warm);
+  transition: border-color 0.2s var(--ease), box-shadow 0.2s var(--ease), background 0.2s var(--ease);
+}
+
+.setting-item input[type="text"]:focus {
+  border-color: var(--border-strong);
+  box-shadow: 0 0 0 2px var(--accent-glow);
+  background: color-mix(in srgb, var(--card-bg) 70%, var(--bg-warm));
+}
+
+.setting-item input[type="text"]::placeholder {
+  color: var(--text-tertiary);
+}
+
+/* Helper Text */
+.setting-tip {
+  font-size: 0.72rem;
+  color: var(--text-tertiary);
+  margin-top: 6px;
+  line-height: 1.4;
+}
+
+.settings-page .setting-item > .setting-tip:last-child,
+.settings-card .setting-item > .setting-tip:last-child {
+  margin-bottom: 0;
+}
+
+/* 选中勾号：跟主题字色 */
+.check-icon {
+  width: 14px;
+  height: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-primary);
+  opacity: 0;
+  transform: scale(0.5);
+  transition: opacity 0.2s var(--ease), transform 0.2s var(--ease);
+  flex-shrink: 0;
+  margin-left: auto;
+  font-size: 14px;
+}
+
+.interactive-row.active .check-icon,
+.engine-item.active .check-icon,
+.font-item.active .check-icon,
+.bg-mode-item.active .check-icon {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/*
+ * 性能三档：
+ * - full（默认）：全部效果
+ * - balanced（html.perf-balanced）：关进场/换图动画，保留轻毛玻璃
+ * - low（html.low-perf / perf-low）：关毛玻璃、壁纸模糊、全部动画
+ */
+
+/* —— 均衡：只关动画，保留模糊 —— */
+html.perf-balanced .page-bg-image,
+html.perf-balanced.bg-swap-ready .page-bg-image {
+  transition: none !important;
+  animation: none !important;
+}
+
+html.perf-balanced .page-bg-image:not(.is-active) {
+  display: none !important;
+}
+
+html.perf-balanced .bg-bing-preview {
+  transition: none !important;
+  transform: none !important;
+}
+
+html.perf-balanced .bg-bing-preview:not(.is-active) {
+  display: none !important;
+}
+
+html.perf-balanced .bg-bing-preview.is-active {
+  opacity: 1 !important;
+}
+
+html.perf-balanced .greeting-section,
+html.perf-balanced .search-section .search-box,
+html.perf-balanced .shortcuts-section .shortcut-btn,
+html.perf-balanced .shortcuts-section .shortcut-folder-trigger,
+html.perf-balanced .bing-credit,
+html.perf-balanced.boot-ready.boot-has-image .page-bg-image.is-active,
+html.perf-balanced .greeting-title.is-quote-loading,
+html.perf-balanced .greeting-title.is-quote-seeking-swap,
+html.perf-balanced .greeting-title.is-quote-reveal,
+html.perf-balanced .greeting-title.is-greeting-reveal {
+  animation: none !important;
+}
+
+html.perf-balanced:not(.boot-ready) .content > .greeting-section,
+html.perf-balanced:not(.boot-ready) .content > .search-section,
+html.perf-balanced:not(.boot-ready) .content > .shortcuts-section,
+html.perf-balanced:not(.boot-ready) .bing-credit,
+html.perf-balanced:not(.boot-ready) .settings-wrapper {
+  opacity: 1 !important;
+  animation: none !important;
+}
+
+html.perf-balanced .settings-panel[data-view="page"].settings-back-peek .settings-view-page,
+html.perf-balanced .settings-panel.settings-back-from-peek .settings-view-page {
+  transform: none !important;
+}
+
+html.perf-balanced .settings-panel[data-view="page"].settings-back-peek .settings-view-root {
+  opacity: 0 !important;
+}
+
+/* —— 极致：关毛玻璃 + 动画 + 壁纸 blur —— */
+html.low-perf .settings-panel,
+html.low-perf .search-box,
+html.low-perf .search-section .search-box,
+html.low-perf body.has-image-bg .search-box,
+html.low-perf.boot-has-image .search-box,
+html.low-perf .shortcut-btn,
+html.low-perf .shortcut-folder-trigger,
+html.low-perf .shortcut-expanded,
+html.low-perf .context-menu,
+html.low-perf .modal-overlay,
+html.low-perf .modal-box,
+html.low-perf .bing-credit,
+html.low-perf .bing-credit-close,
+html.low-perf .bg-bing-link,
+html.low-perf .bg-bing-shuffle,
+html.low-perf .settings-btn,
+html.perf-low .settings-panel,
+html.perf-low .search-box,
+html.perf-low body.has-image-bg .search-box,
+html.perf-low .shortcut-btn,
+html.perf-low .shortcut-folder-trigger,
+html.perf-low .settings-btn {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* 完全限制：纯色底（不用带 alpha 的 img-surface） */
+html.low-perf body.has-image-bg .search-box,
+html.low-perf body.has-image-bg .shortcut-btn,
+html.low-perf body.has-image-bg .shortcut-folder-trigger,
+html.low-perf body.has-image-bg .shortcut-expanded,
+html.low-perf body.has-image-bg .settings-btn,
+html.low-perf body.has-image-bg .settings-panel,
+html.perf-low body.has-image-bg .search-box,
+html.perf-low body.has-image-bg .shortcut-btn,
+html.perf-low body.has-image-bg .settings-btn,
+html.perf-low body.has-image-bg .settings-panel {
+  background: var(--card-bg) !important;
+}
+
+html[data-mode="light"].low-perf body.has-image-bg .search-box,
+html[data-mode="light"].low-perf body.has-image-bg .shortcut-btn,
+html[data-mode="light"].low-perf body.has-image-bg .shortcut-folder-trigger,
+html[data-mode="light"].low-perf body.has-image-bg .settings-btn,
+html[data-mode="light"].low-perf body.has-image-bg .settings-panel,
+html[data-mode="light"].perf-low body.has-image-bg .search-box,
+html[data-mode="light"].perf-low body.has-image-bg .shortcut-btn,
+html[data-mode="light"].perf-low body.has-image-bg .settings-btn,
+html[data-mode="light"].perf-low body.has-image-bg .settings-panel {
+  background: #f5f0e8 !important;
+}
+
+html[data-mode="dark"].low-perf body.has-image-bg .search-box,
+html[data-mode="dark"].low-perf body.has-image-bg .shortcut-btn,
+html[data-mode="dark"].low-perf body.has-image-bg .shortcut-folder-trigger,
+html[data-mode="dark"].low-perf body.has-image-bg .settings-btn,
+html[data-mode="dark"].low-perf body.has-image-bg .settings-panel,
+html[data-mode="dark"].perf-low body.has-image-bg .search-box,
+html[data-mode="dark"].perf-low body.has-image-bg .shortcut-btn,
+html[data-mode="dark"].perf-low body.has-image-bg .settings-btn,
+html[data-mode="dark"].perf-low body.has-image-bg .settings-panel {
+  background: #2a2824 !important;
+}
+
+html.low-perf .search-box,
+html.low-perf .shortcut-btn,
+html.low-perf .shortcut-folder-trigger,
+html.low-perf .settings-btn,
+html.perf-low .search-box,
+html.perf-low .shortcut-btn,
+html.perf-low .settings-btn {
+  background: var(--card-bg) !important;
+}
+
+html.low-perf .settings-panel,
+html.perf-low .settings-panel {
+  background: var(--bg-warm) !important;
+}
+
+html[data-mode="light"].low-perf .settings-panel,
+html[data-mode="light"].perf-low .settings-panel {
+  background: #f5f0e8 !important;
+}
+
+html[data-mode="dark"].low-perf .settings-panel,
+html[data-mode="dark"].perf-low .settings-panel {
+  background: #2a2824 !important;
+}
+
+html.low-perf .page-bg-image,
+html.low-perf.bg-swap-ready .page-bg-image,
+html.perf-low .page-bg-image {
+  filter: none !important;
+  transition: none !important;
+  animation: none !important;
+  transform: none !important;
+  opacity: 1 !important;
+}
+
+html.low-perf .page-bg-image:not(.is-active) {
+  display: none !important;
+}
+
+html.low-perf .bg-bing-preview {
+  transition: none !important;
+  transform: none !important;
+}
+
+html.low-perf .bg-bing-preview:not(.is-active) {
+  display: none !important;
+}
+
+html.low-perf .bg-bing-preview.is-active {
+  opacity: 1 !important;
+}
+
+html.low-perf .settings-reveal,
+html.low-perf .settings-view,
+html.low-perf .settings-view-root,
+html.low-perf .settings-view-page,
+html.low-perf .settings-panel,
+html.low-perf .settings-back-icon-btn,
+html.low-perf .greeting-title,
+html.low-perf .greeting-sub,
+html.low-perf .greeting-section,
+html.low-perf .search-box,
+html.low-perf .search-section,
+html.low-perf .shortcut-btn,
+html.low-perf .shortcut-folder-trigger,
+html.low-perf .shortcuts-section,
+html.low-perf .bing-credit,
+html.low-perf .page-bg-overlay,
+html.low-perf .content,
+html.low-perf .modal-overlay,
+html.low-perf .modal-box,
+html.low-perf .context-menu,
+html.low-perf .quote-skeleton-line,
+html.low-perf .bg-bing-hero,
+html.low-perf .bg-bing-overlay {
+  transition: none !important;
+  animation: none !important;
+}
+
+/* 低性能：取消进场 / 返回预览动画，内容直接可见 */
+html.low-perf:not(.boot-ready) .content > .greeting-section,
+html.low-perf:not(.boot-ready) .content > .search-section,
+html.low-perf:not(.boot-ready) .content > .shortcuts-section,
+html.low-perf:not(.boot-ready) .bing-credit,
+html.low-perf:not(.boot-ready) .settings-wrapper {
+  opacity: 1 !important;
+  animation: none !important;
+}
+
+html.low-perf.boot-ready .greeting-section,
+html.low-perf.boot-ready .search-section .search-box,
+html.low-perf.boot-ready .shortcuts-section .shortcut-btn,
+html.low-perf.boot-ready .shortcuts-section .shortcut-folder-trigger,
+html.low-perf.boot-ready .bing-credit,
+html.low-perf.boot-ready.boot-has-image .page-bg-image.is-active {
+  animation: none !important;
+  opacity: 1 !important;
+  transform: none !important;
+}
+
+html.low-perf .settings-panel[data-view="page"].settings-back-peek .settings-view-page,
+html.low-perf .settings-panel.settings-back-from-peek .settings-view-page {
+  transform: none !important;
+}
+
+html.low-perf .settings-panel[data-view="page"].settings-back-peek .settings-view-root {
+  opacity: 0 !important;
+}
+
+html.low-perf .greeting-title.is-quote-loading,
+html.low-perf .greeting-title.is-quote-seeking-swap {
+  animation: none !important;
+  opacity: 0.85 !important;
+}
+
+
+/* 左右分布的设置行（如开关） */
+.setting-row-between {
+  display: flex !important;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.setting-row-text {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.setting-row-between .setting-label {
+  margin-bottom: 2px;
+}
+
+.setting-row-between .setting-tip {
+  margin-top: 0;
+}
+
+.setting-row-between .mode-segment {
+  flex: 0 0 auto;
+  width: min(148px, 42%);
+}
+
+/* 时间选项等紧凑分段：不要被 42% 挤窄，避免「24时」换行 */
+.setting-row-between .mode-segment--compact {
+  width: 112px;
+  min-width: 112px;
+  max-width: 112px;
+}
+
+
+.setting-item.is-disabled {
+  opacity: 0.55;
+}
+
+.setting-item.is-disabled input[type="range"] {
+  cursor: not-allowed;
+}

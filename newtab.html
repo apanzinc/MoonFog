@@ -1,0 +1,1400 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" id="themeColorMeta" content="#F5F0E8">
+  <title>新标签页</title>
+  <link rel="icon" href="icons/icon16.png" type="image/png">
+  <!-- 首屏同步配置：必须在 styles.css 之前，第一次 paint 就是用户主题 -->
+  <script src="js/theme-manager.js"></script>
+  <script src="js/boot-utils.js"></script>
+  <script src="js/boot-state.js"></script>
+  <script src="js/boot-config.js"></script>
+  <script src="js/greeting-boot.js"></script>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="css/oobe.css">
+  <link rel="stylesheet" href="icons/font/Mingcute.css">
+</head>
+<body>
+  <!-- 图片背景层：双层交叉淡入（换日/换图不闪黑） -->
+  <div class="page-bg" id="pageBg" aria-hidden="true">
+    <div class="page-bg-grain" id="pageBgGrain"></div>
+    <div class="page-bg-stack" id="pageBgStack">
+      <div class="page-bg-image is-active" id="pageBgImage" data-bg-layer="a"></div>
+      <div class="page-bg-image" id="pageBgImageB" data-bg-layer="b"></div>
+    </div>
+    <div class="page-bg-overlay" id="pageBgOverlay"></div>
+  </div>
+
+  <main class="content" id="mainContent">
+    <!-- 问候区：占位为空，紧跟脚本立刻写入真实文案，避免「下午好，朋友」闪一下 -->
+    <section class="greeting-section" id="greetingSection" data-mode="greeting">
+      <h1 class="greeting-title" id="greeting" title=""></h1>
+      <p class="greeting-sub" id="greetingSub" hidden></p>
+      <script src="js/boot-paint.js"></script>
+    </section>
+    
+    <!-- 搜索框 -->
+    <section class="search-section">
+      <form class="search-box" id="searchForm" role="search">
+        <label class="visually-hidden" for="searchInput">搜索或输入网址</label>
+        <input 
+          type="search" 
+          class="search-input" 
+          id="searchInput"
+          name="q"
+          placeholder="搜索或输入网址…"
+          autocomplete="off"
+          spellcheck="false"
+          enterkeyhint="search"
+          autofocus
+        >
+        <button type="button" class="search-clear-btn" id="searchClearBtn" aria-label="清除" hidden>
+          <span class="mgc_close_line" aria-hidden="true"></span>
+        </button>
+        <button type="submit" class="search-btn" aria-label="搜索">
+          <span class="mgc_search_line" aria-hidden="true"></span>
+        </button>
+      </form>
+    </section>
+
+    <!-- 快捷导航 -->
+    <section class="shortcuts-section" id="shortcutsSection">
+      <div class="shortcuts-row" id="shortcutsRow"></div>
+    </section>
+  </main>
+
+  <!-- 左下角必应署名：悬停/点击弹出沉浸卡片 -->
+  <div class="bing-credit-wrap" id="bingCreditWrap" hidden>
+    <button type="button" class="bing-credit" id="bingCredit" aria-haspopup="dialog" aria-expanded="false" aria-controls="bingCreditPop" title="查看必应今日图片">
+      <span class="bing-credit-text" id="bingCreditText"></span>
+    </button>
+    <div class="bing-credit-pop" id="bingCreditPop" role="dialog" aria-label="必应今日" hidden>
+      <button type="button" class="bing-credit-close" id="bingCreditClose" aria-label="关闭" hidden>
+        <span class="mgc_close_line" aria-hidden="true"></span>
+      </button>
+      <article class="bg-bing-card bg-bing-card--immersive bg-bing-card--popup">
+        <div class="bg-bing-hero" id="bingCreditHero">
+          <img class="bg-bing-preview" id="bingCreditPreview" alt="" hidden>
+          <div class="bg-bing-hero-fallback" aria-hidden="true">
+            <span class="mgc_pic_2_line"></span>
+            <span>必应今日壁纸</span>
+          </div>
+          <div class="bg-bing-scrim" aria-hidden="true">
+            <span class="bg-bing-blur bg-bing-blur--1"></span>
+            <span class="bg-bing-blur bg-bing-blur--2"></span>
+            <span class="bg-bing-blur bg-bing-blur--3"></span>
+            <span class="bg-bing-blur bg-bing-blur--4"></span>
+            <span class="bg-bing-blur-shade"></span>
+          </div>
+          <div class="bg-bing-overlay">
+            <div class="bg-bing-source">
+              <img class="bg-bing-source-icon" src="icons/engines/bing.ico" width="14" height="14" alt="" aria-hidden="true">
+              <span>Microsoft Bing</span>
+            </div>
+            <h6 class="bg-bing-title" id="bingCreditTitle">必应每日一图</h6>
+            <p class="bg-bing-copyright" id="bingCreditCopyright"></p>
+            <a class="bg-bing-link" id="bingCreditLink" href="https://www.bing.com/" target="_blank" rel="noopener noreferrer">
+              <span>了解此图片</span>
+              <span class="mgc_arrow_right_line" aria-hidden="true"></span>
+            </a>
+          </div>
+        </div>
+      </article>
+    </div>
+  </div>
+
+  <!-- 右下角设置按钮 -->
+  <div class="settings-wrapper">
+    <button class="settings-btn" id="settingsBtn" type="button" title="设置" aria-label="打开设置" aria-controls="settingsPanel" aria-expanded="false">
+      <span class="mgc_settings_3_line settings-btn-icon" aria-hidden="true"></span>
+    </button>
+  </div>
+
+  <!-- 设置面板：澎湃 OS 风格分组列表 -->
+  <aside class="settings-panel" id="settingsPanel" role="dialog" aria-modal="true" aria-labelledby="settingsPanelTitle" aria-hidden="true" inert data-view="root">
+    <div class="settings-header" data-level="root">
+      <!--
+        一级：  (设置)                         (关闭)   —— 无返回键
+        二级：  (返回) (设置)                   (关闭)   —— 返回键带动画出
+      -->
+      <div class="settings-header-bar">
+        <div class="settings-header-leading" id="settingsHeaderLeading">
+          <button class="settings-back-icon-btn" id="settingsBackBtn" type="button" aria-label="返回设置" aria-hidden="true" tabindex="-1">
+            <span class="mgc_arrow_left_line" aria-hidden="true"></span>
+          </button>
+          <span class="settings-nav-label" id="settingsBackLabel">设置</span>
+        </div>
+        <button class="close-btn" id="closeBtn" type="button" aria-label="关闭设置">
+          <span class="mgc_close_line" aria-hidden="true"></span>
+        </button>
+      </div>
+      <div class="settings-header-title">
+        <h3 id="settingsPanelTitle">设置</h3>
+      </div>
+    </div>
+    <div class="settings-body">
+      <!-- 一级：分类列表 -->
+      <div class="settings-view settings-view-root" id="settingsViewRoot" data-settings-view="root">
+        <!-- 设置页顶部横幅 -->
+        <div class="settings-banner" id="settingsBanner" aria-hidden="true">
+          <div class="settings-banner-image" id="settingsBannerImage"></div>
+          <div class="settings-banner-overlay" id="settingsBannerOverlay"></div>
+          <svg class="settings-banner-logo" viewBox="0 0 915.343994140625 191" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <path fill="#fff" d="M106.51921,0.16237259C102.6485,-0.53281784,98.719345,1.0395393,96.420563,4.2036362C94.12175,7.3677311,93.862823,11.559906,95.755035,14.978334C106.68314,34.688805,103.16405,59.184593,87.119583,75.087967C71.075134,90.991348,46.362061,94.479523,26.476746,83.647514C23.028,81.771957,18.798645,82.028595,15.606491,84.307182C12.414337,86.585762,10.828033,90.480354,11.529373,94.317032C12.806976,101.27815,15.006012,108.04168,18.069489,114.43235C19.763443,117.9577,23.353577,120.20151,27.292999,120.19691L156.38116,120.19691C160.32063,120.20151,163.91075,117.9577,165.60472,114.43235C188.60736,66.351936,159.33734,9.7296448,106.52943,0.15225601L106.51921,0.16237259ZM0,140.43361C0,134.84819,4.5680389,130.32033,10.202988,130.32033L173.45082,130.32033C179.0858,130.32033,183.65382,134.84819,183.65382,140.43361C183.65382,146.01903,179.0858,150.54686,173.45082,150.54686L10.202988,150.54686C4.5680389,150.54686,0,146.01903,0,140.43361ZM30.608963,180.88672C30.608963,175.30132,35.177002,170.77348,40.811951,170.77348L142.84187,170.77348C148.47679,170.77348,153.04486,175.30132,153.04486,180.88672C153.04486,186.47214,148.47679,191,142.84187,191L40.811951,191C35.177002,191,30.608963,186.47214,30.608963,180.88672ZM259.13599,152.87999L233.216,152.87999L233.216,36.23999L256.97601,36.23999L293.552,90.959991L294.41602,90.959991L330.992,36.23999L354.75201,36.23999L354.75201,152.87999L328.832,152.87999L328.832,85.919991L327.96802,85.919991L304.064,120.19199L283.90399,120.19199L260,86.495987L259.13599,86.495987L259.13599,152.87999ZM410.91199,154.89598Q397.95197,154.89598,388.37598,149.35199Q378.79999,143.80798,373.68799,133.51198Q368.57599,123.21599,368.57599,109.24799Q368.57599,95.423988,373.68799,85.127991Q378.79999,74.831985,388.37598,69.287987Q397.95197,63.743988,410.91199,63.743988Q423.87198,63.743988,433.448,69.287987Q443.02399,74.831985,448.13599,85.127991Q453.24799,95.423988,453.24799,109.24799Q453.24799,123.21599,448.13599,133.51198Q443.02399,143.80798,433.448,149.35199Q423.87198,154.89598,410.91199,154.89598ZM410.91199,130.41599Q418.25598,130.41599,422.50397,124.72798Q426.75198,119.03999,426.75198,109.24799Q426.75198,99.455986,422.50397,93.839989Q418.25598,88.223984,410.91199,88.223984Q403.56799,88.223984,399.31998,93.839989Q395.07199,99.455986,395.07199,109.24799Q395.07199,119.03999,399.31998,124.72798Q403.56799,130.41599,410.91199,130.41599ZM504.79999,154.89598Q491.84,154.89598,482.26398,149.35199Q472.68799,143.80798,467.57599,133.51198Q462.46399,123.21599,462.46399,109.24799Q462.46399,95.423988,467.57599,85.127991Q472.68799,74.831985,482.26398,69.287987Q491.84,63.743988,504.79999,63.743988Q517.76001,63.743988,527.336,69.287987Q536.91199,74.831985,542.02399,85.127991Q547.13599,95.423988,547.13599,109.24799Q547.13599,123.21599,542.02399,133.51198Q536.91199,143.80798,527.336,149.35199Q517.76001,154.89598,504.79999,154.89598ZM504.79999,130.41599Q512.14398,130.41599,516.39197,124.72798Q520.64001,119.03999,520.64001,109.24799Q520.64001,99.455986,516.39197,93.839989Q512.14398,88.223984,504.79999,88.223984Q497.45599,88.223984,493.20798,93.839989Q488.95999,99.455986,488.95999,109.24799Q488.95999,119.03999,493.20798,124.72798Q497.45599,130.41599,504.79999,130.41599ZM559.80798,152.87999L559.80798,65.759987L585.72803,65.759987L585.72803,76.991989L586.448,76.991989Q590.19202,70.655991,596.23999,67.199989Q602.28796,63.743988,610.35199,63.743988Q623.31201,63.743988,630.36798,72.095985Q637.42395,80.44799,637.42395,95.855988L637.42395,152.87999L611.50403,152.87999L611.50403,101.90399Q611.50403,95.567986,608.40796,91.967987Q605.31201,88.367989,599.83997,88.367989Q593.35999,88.367989,589.54395,92.399986Q585.72803,96.431992,585.72803,103.48799L585.72803,152.87999L559.80798,152.87999ZM680.62402,110.39999L680.62402,152.87999L653.83997,152.87999L653.83997,36.23999L730.01599,36.23999L730.01599,61.29599L680.62402,61.29599L680.62402,85.343987L726.56,85.343987L726.56,110.39999L680.62402,110.39999ZM780.27197,154.89598Q767.31201,154.89598,757.73602,149.35199Q748.15997,143.80798,743.04797,133.51198Q737.93597,123.21599,737.93597,109.24799Q737.93597,95.423988,743.04797,85.127991Q748.15997,74.831985,757.73602,69.287987Q767.31201,63.743988,780.27197,63.743988Q793.23199,63.743988,802.80798,69.287987Q812.38403,74.831985,817.49597,85.127991Q822.60803,95.423988,822.60803,109.24799Q822.60803,123.21599,817.49597,133.51198Q812.38403,143.80798,802.80798,149.35199Q793.23199,154.89598,780.27197,154.89598ZM780.27197,130.41599Q787.61603,130.41599,791.86401,124.72798Q796.112,119.03999,796.112,109.24799Q796.112,99.455986,791.86401,93.839989Q787.61603,88.223984,780.27197,88.223984Q772.92798,88.223984,768.67999,93.839989Q764.43201,99.455986,764.43201,109.24799Q764.43201,119.03999,768.67999,124.72798Q772.92798,130.41599,780.27197,130.41599ZM874.448,190.89598Q859.47198,190.89598,848.81598,184.34398Q838.15997,177.79198,833.84003,166.41599L855.87201,157.34398Q858.46399,162.95998,863,166.12798Q867.53601,169.29599,873.58398,169.29599Q880.92798,169.29599,885.17603,164.68799Q889.42401,160.07999,889.42401,152.44798L889.42401,141.35999L888.56,141.35999Q885.39203,147.11998,879.84802,150.28798Q874.30402,153.45598,867.96802,153.45598Q857.02399,153.45598,848.81598,147.91199Q840.60803,142.36798,836.216,132.07199Q831.82397,121.77599,831.82397,107.80798Q831.82397,94.415985,836.07202,84.479988Q840.32001,74.543991,848.16803,69.14399Q856.01599,63.743988,866.52802,63.743988Q873.44,63.743988,879.20001,66.911987Q884.96002,70.079987,888.56,75.839989L889.42401,75.839989L889.42401,65.759987L915.34399,65.759987L915.34399,148.27199Q915.34399,161.08798,910.52002,170.73598Q905.69598,180.38399,896.47998,185.63998Q887.26398,190.89598,874.448,190.89598ZM874.448,129.26399Q881.64801,129.26399,885.82397,123.71999Q890,118.17599,890,108.67198Q890,99.167984,885.67999,93.551987Q881.35999,87.935989,873.87201,87.935989Q866.81598,87.935989,862.56799,93.551987Q858.32001,99.167984,858.32001,108.67198Q858.32001,118.17599,862.64001,123.71999Q866.96002,129.26399,874.448,129.26399Z"/>
+            </svg>
+        </div>
+        <nav class="settings-nav" aria-label="设置导航">
+          <button class="settings-nav-item" type="button" data-settings-page="search">
+            <span class="settings-nav-icon" aria-hidden="true"><span class="mgc_search_line"></span></span>
+            <span class="settings-nav-text">
+              <span class="settings-nav-title">搜索</span>
+            </span>
+            <span class="settings-nav-chevron mgc_arrow_right_line" aria-hidden="true"></span>
+          </button>
+          <button class="settings-nav-item" type="button" data-settings-page="shortcuts">
+            <span class="settings-nav-icon" aria-hidden="true"><span class="mgc_bookmark_line"></span></span>
+            <span class="settings-nav-text">
+              <span class="settings-nav-title">收藏夹</span>
+            </span>
+            <span class="settings-nav-chevron mgc_arrow_right_line" aria-hidden="true"></span>
+          </button>
+          <button class="settings-nav-item" type="button" data-settings-page="personalization">
+            <span class="settings-nav-icon" aria-hidden="true"><span class="mgc_palette_line"></span></span>
+            <span class="settings-nav-text">
+              <span class="settings-nav-title">个性化</span>
+            </span>
+            <span class="settings-nav-chevron mgc_arrow_right_line" aria-hidden="true"></span>
+          </button>
+          <button class="settings-nav-item" type="button" data-settings-page="data">
+            <span class="settings-nav-icon" aria-hidden="true"><span class="mgc_folder_2_line"></span></span>
+            <span class="settings-nav-text">
+              <span class="settings-nav-title">数据备份与导出</span>
+            </span>
+            <span class="settings-nav-chevron mgc_arrow_right_line" aria-hidden="true"></span>
+          </button>
+          <button class="settings-nav-item" type="button" data-settings-page="about">
+            <span class="settings-nav-icon" aria-hidden="true"><span class="mgc_information_line"></span></span>
+            <span class="settings-nav-text">
+              <span class="settings-nav-title">关于</span>
+            </span>
+            <span class="settings-nav-chevron mgc_arrow_right_line" aria-hidden="true"></span>
+          </button>
+        </nav>
+      </div>
+
+      <!-- 二级：详情页 -->
+      <div class="settings-view settings-view-page" id="settingsViewPage" data-settings-view="page">
+        <!-- 个性化：二级导航页 -->
+        <section class="settings-page" data-page="personalization" hidden aria-labelledby="sec-personalization">
+          <h4 class="settings-section-title" id="sec-personalization" hidden>个性化</h4>
+          <nav class="settings-nav" aria-label="个性化子菜单">
+            <button class="settings-nav-item" type="button" data-settings-page="preset">
+              <span class="settings-nav-icon" aria-hidden="true"><span class="mgc_tshirt_line"></span></span>
+              <span class="settings-nav-text">
+                <span class="settings-nav-title">套装</span>
+                <span class="settings-nav-desc">一键切换整体风格</span>
+              </span>
+              <span class="settings-nav-chevron mgc_arrow_right_line" aria-hidden="true"></span>
+            </button>
+            <button class="settings-nav-item" type="button" data-settings-page="appearance">
+              <span class="settings-nav-icon" aria-hidden="true"><span class="mgc_palette_line"></span></span>
+              <span class="settings-nav-text">
+                <span class="settings-nav-title">背景与主题</span>
+                <span class="settings-nav-desc">背景、色调与明暗</span>
+              </span>
+              <span class="settings-nav-chevron mgc_arrow_right_line" aria-hidden="true"></span>
+            </button>
+            <button class="settings-nav-item" type="button" data-settings-page="greeting">
+              <span class="settings-nav-icon" aria-hidden="true"><span class="mgc_emoji_line"></span></span>
+              <span class="settings-nav-text">
+                <span class="settings-nav-title">问候区</span>
+                <span class="settings-nav-desc">显示内容与文案</span>
+              </span>
+              <span class="settings-nav-chevron mgc_arrow_right_line" aria-hidden="true"></span>
+            </button>
+            <button class="settings-nav-item" type="button" data-settings-page="type">
+              <span class="settings-nav-icon" aria-hidden="true"><span class="mgc_font_line"></span></span>
+              <span class="settings-nav-text">
+                <span class="settings-nav-title">字体</span>
+                <span class="settings-nav-desc">字体与粗细</span>
+              </span>
+              <span class="settings-nav-chevron mgc_arrow_right_line" aria-hidden="true"></span>
+            </button>
+            <button class="settings-nav-item" type="button" data-settings-page="display">
+              <span class="settings-nav-icon" aria-hidden="true"><span class="mgc_settings_3_line"></span></span>
+              <span class="settings-nav-text">
+                <span class="settings-nav-title">显示与效果</span>
+                <span class="settings-nav-desc">模糊与性能</span>
+              </span>
+              <span class="settings-nav-chevron mgc_arrow_right_line" aria-hidden="true"></span>
+            </button>
+          </nav>
+        </section>
+
+        <!-- 套装（主题预设） -->
+        <section class="settings-page" data-page="preset" hidden aria-labelledby="sec-preset">
+          <h4 class="settings-section-title" id="sec-preset" hidden>套装</h4>
+          <section class="settings-group">
+            <h5 class="settings-group-title">主题预设</h5>
+            <div class="settings-card">
+              <p class="setting-tip">一键切换整体风格，包含主题色、背景与字体搭配。敬请期待。</p>
+            </div>
+          </section>
+        </section>
+
+        <!-- 问候区 -->
+        <section class="settings-page" data-page="greeting" hidden aria-labelledby="sec-greeting">
+          <h4 class="settings-section-title" id="sec-greeting" hidden>问候区</h4>
+
+          <section class="settings-group">
+            <h5 class="settings-group-title">预览</h5>
+            <div class="settings-card greeting-preview-card">
+              <div class="greeting-preview" id="greetingPreview" aria-live="polite">
+                <div class="greeting-preview-title" id="greetingPreviewTitle">午安，朋友</div>
+                <div class="greeting-preview-sub" id="greetingPreviewSub" hidden></div>
+              </div>
+            </div>
+          </section>
+
+          <section class="settings-group">
+            <h5 class="settings-group-title">显示内容</h5>
+            <div class="settings-card">
+              <div class="setting-item setting-item--flush greeting-mode-setting">
+                <div class="setting-label" id="greetingModeLabel">问候区显示</div>
+                <div class="greeting-mode-list" id="greetingModeGrid" role="radiogroup" aria-labelledby="greetingModeLabel">
+                  <button class="greeting-mode-item font-item" data-value="greeting" type="button" role="radio" aria-checked="false">
+                    <span class="greeting-mode-icon" aria-hidden="true"><span class="mgc_emoji_line"></span></span>
+                    <span class="greeting-mode-text">
+                      <span class="greeting-mode-title">问候语</span>
+                    </span>
+                    <span class="check-icon" aria-hidden="true"><span class="mgc_check_line"></span></span>
+                  </button>
+                  <button class="greeting-mode-item font-item" data-value="custom" type="button" role="radio" aria-checked="false">
+                    <span class="greeting-mode-icon" aria-hidden="true"><span class="mgc_edit_2_line"></span></span>
+                    <span class="greeting-mode-text">
+                      <span class="greeting-mode-title">自定义文本</span>
+                    </span>
+                    <span class="check-icon" aria-hidden="true"><span class="mgc_check_line"></span></span>
+                  </button>
+                  <button class="greeting-mode-item font-item" data-value="clock" type="button" role="radio" aria-checked="false">
+                    <span class="greeting-mode-icon" aria-hidden="true"><span class="mgc_time_line"></span></span>
+                    <span class="greeting-mode-text">
+                      <span class="greeting-mode-title">当前时间</span>
+                    </span>
+                    <span class="check-icon" aria-hidden="true"><span class="mgc_check_line"></span></span>
+                  </button>
+                  <button class="greeting-mode-item font-item" data-value="date" type="button" role="radio" aria-checked="false">
+                    <span class="greeting-mode-icon" aria-hidden="true"><span class="mgc_calendar_line"></span></span>
+                    <span class="greeting-mode-text">
+                      <span class="greeting-mode-title">日期</span>
+                    </span>
+                    <span class="check-icon" aria-hidden="true"><span class="mgc_check_line"></span></span>
+                  </button>
+                  <button class="greeting-mode-item font-item" data-value="quote" type="button" role="radio" aria-checked="false">
+                    <span class="greeting-mode-icon" aria-hidden="true"><span class="mgc_quote_left_line"></span></span>
+                    <span class="greeting-mode-text">
+                      <span class="greeting-mode-title">每日一言</span>
+                    </span>
+                    <span class="check-icon" aria-hidden="true"><span class="mgc_check_line"></span></span>
+                  </button>
+                </div>
+                </div>
+            </div>
+          </section>
+
+          <section class="settings-group settings-reveal" id="greetingCopyGroup">
+            <h5 class="settings-group-title">文案</h5>
+            <div class="settings-card">
+              <div class="setting-item greeting-field settings-reveal" id="usernameSetting">
+                <label for="usernameInput">显示名称</label>
+                <input type="text" id="usernameInput" name="displayName" placeholder="输入你的名字…" maxlength="20" autocomplete="nickname" spellcheck="false">
+              </div>
+              <div class="setting-item greeting-field settings-reveal" id="customTextSetting" hidden>
+                <div class="greeting-field-head">
+                  <label for="customTextInput">自定义欢迎语</label>
+                  <span class="greeting-field-meta" id="customTextCount">0 / 48</span>
+                </div>
+                <textarea id="customTextInput" name="customGreeting" class="greeting-textarea" placeholder="写下一句想对自己说的话…" maxlength="48" rows="3" autocomplete="off" spellcheck="false"></textarea>
+                </div>
+            </div>
+          </section>
+
+          <section class="settings-group settings-reveal" id="clockOptionsGroup" hidden>
+            <h5 class="settings-group-title">时间选项</h5>
+            <div class="settings-card">
+              <div class="setting-item setting-row-between" id="clockHour12Setting">
+                <div class="setting-row-text">
+                  <div class="setting-label" id="clockHour12Label">小时制</div>
+                  <p class="setting-tip">12 或 24 小时</p>
+                </div>
+                <div class="mode-segment mode-segment--compact" id="clockHour12Segment" role="radiogroup" aria-labelledby="clockHour12Label">
+                  <button class="mode-segment-btn" type="button" data-clock-hour12="0" role="radio" aria-checked="true">24时</button>
+                  <button class="mode-segment-btn" type="button" data-clock-hour12="1" role="radio" aria-checked="false">12时</button>
+                </div>
+              </div>
+              <div class="setting-item setting-row-between" id="clockShowDateSetting">
+                <div class="setting-row-text">
+                  <div class="setting-label" id="clockShowDateLabel">下方日期</div>
+                  <p class="setting-tip">时间下是否显示日期</p>
+                </div>
+                <div class="mode-segment mode-segment--compact" id="clockShowDateSegment" role="radiogroup" aria-labelledby="clockShowDateLabel">
+                  <button class="mode-segment-btn" type="button" data-clock-show-date="1" role="radio" aria-checked="true">显示</button>
+                  <button class="mode-segment-btn" type="button" data-clock-show-date="0" role="radio" aria-checked="false">隐藏</button>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="settings-group settings-reveal" id="quoteOptionsGroup" hidden>
+            <h5 class="settings-group-title">每日一言</h5>
+            <div class="settings-card">
+              <div class="setting-item" id="quoteMaxLenSetting">
+                <div class="bg-extra-head">
+                  <label for="quoteMaxLenSlider">字数上限</label>
+                  <span class="weight-value" id="quoteMaxLenValue">32 字</span>
+                </div>
+                <div class="slider-container">
+                  <input type="range" id="quoteMaxLenSlider" name="quoteMaxLen" min="16" max="48" step="1" value="32" aria-label="每日一言字数上限">
+                  <div class="slider-labels">
+                    <span>更短</span>
+                    <span>更长</span>
+                  </div>
+                </div>
+                <p class="setting-tip" id="quoteMaxLenTip">超出上限自动换句，最多尝试 10 次</p>
+              </div>
+            </div>
+          </section>
+        </section>
+
+        <!-- 背景与主题 -->
+                        <section class="settings-page" data-page="appearance" hidden aria-labelledby="sec-appearance">
+          <h4 class="settings-section-title" id="sec-appearance" hidden>背景与主题</h4>
+
+          <section class="settings-group">
+            <h5 class="settings-group-title">界面明暗</h5>
+            <div class="settings-card">
+              <div class="setting-item setting-item--flush mode-setting">
+                <div class="mode-segment mode-segment--4" id="modeSegment" role="radiogroup" aria-label="界面明暗">
+                  <button class="mode-segment-btn" type="button" data-mode="light" role="radio" aria-checked="false" title="固定浅色">
+                    <span class="mode-segment-icon mgc_sun_line" aria-hidden="true"></span>
+                    <span class="mode-segment-label">浅色</span>
+                  </button>
+                  <button class="mode-segment-btn" type="button" data-mode="dark" role="radio" aria-checked="false" title="固定深色">
+                    <span class="mode-segment-icon mgc_moon_line" aria-hidden="true"></span>
+                    <span class="mode-segment-label">深色</span>
+                  </button>
+                  <button class="mode-segment-btn" type="button" data-mode="system" role="radio" aria-checked="false" title="跟随系统浅深">
+                    <span class="mode-segment-icon mgc_computer_line" aria-hidden="true"></span>
+                    <span class="mode-segment-label">系统</span>
+                  </button>
+                  <button class="mode-segment-btn" type="button" data-mode="wallpaper" role="radio" aria-checked="false" title="跟随壁纸深浅">
+                    <span class="mode-segment-icon mgc_pic_2_line" aria-hidden="true"></span>
+                    <span class="mode-segment-label">壁纸</span>
+                  </button>
+                </div>
+                <p class="setting-tip" id="modeSettingTip">控件与面板的浅深模式</p>
+              </div>
+            </div>
+          </section>
+
+          <section class="settings-group">
+            <h5 class="settings-group-title">背景</h5>
+            <div class="settings-card">
+              <div class="setting-item setting-item--flush bg-mode-setting">
+                <div class="bg-mode-list" id="bgModeGrid" role="radiogroup" aria-label="背景来源">
+                  <button class="bg-mode-item" data-value="solid" type="button" role="radio" aria-checked="false">
+                    <span class="bg-mode-icon" aria-hidden="true"><span class="mgc_palette_line"></span></span>
+                    <span class="bg-mode-name">纯色</span>
+                  </button>
+                  <button class="bg-mode-item" data-value="grain" type="button" role="radio" aria-checked="false">
+                    <span class="bg-mode-icon" aria-hidden="true"><span class="mgc_sparkles_line"></span></span>
+                    <span class="bg-mode-name">流光渐变</span>
+                  </button>
+                  <button class="bg-mode-item" data-value="local" type="button" role="radio" aria-checked="false">
+                    <span class="bg-mode-icon" aria-hidden="true"><span class="mgc_pic_2_line"></span></span>
+                    <span class="bg-mode-name">本地图片</span>
+                  </button>
+                  <button class="bg-mode-item" data-value="bing" type="button" role="radio" aria-checked="false">
+                    <span class="bg-mode-icon" aria-hidden="true"><span class="mgc_sun_line"></span></span>
+                    <span class="bg-mode-name">必应每日</span>
+                  </button>
+                </div>
+              </div>
+
+              <div class="setting-item bg-extra-field settings-reveal" id="bgLocalActions" hidden>
+                <div class="bg-local-actions-row">
+                  <input type="file" id="bgLocalInput" accept="image/*" hidden>
+                  <button class="bg-action-btn" id="bgLocalPick" type="button">
+                    <span class="mgc_pic_2_line" aria-hidden="true"></span>
+                    <span>选择图片</span>
+                  </button>
+                  <button class="bg-action-btn bg-action-btn-ghost" id="bgLocalClear" type="button" hidden>
+                    <span class="mgc_delete_2_line" aria-hidden="true"></span>
+                    <span>清除</span>
+                  </button>
+                </div>
+                <p class="setting-tip" id="bgLocalTip">图片仅保存在本机</p>
+              </div>
+            </div>
+          </section>
+
+          <section class="settings-group settings-reveal" id="bgGrainGroup" hidden>
+            <h5 class="settings-group-title">流光渐变</h5>
+            <div class="settings-card">
+              <div class="setting-item grain-shape-setting">
+                <div class="bg-extra-head">
+                  <span class="bg-extra-title">形态样式</span>
+                  <span class="bg-extra-meta" id="grainShapeValue">四角</span>
+                </div>
+                <div class="grain-shape-grid" id="grainShapeGrid" role="radiogroup" aria-label="流光形态">
+                  <button class="grain-shape-item active" type="button" role="radio" aria-checked="true" data-grain-shape="corners">
+                    <span class="grain-shape-icon" aria-hidden="true"><span class="mgc_fullscreen_2_line"></span></span>
+                    <span class="grain-shape-name">四角</span>
+                  </button>
+                  <button class="grain-shape-item" type="button" role="radio" aria-checked="false" data-grain-shape="wave">
+                    <span class="grain-shape-icon" aria-hidden="true"><span class="mgc_wave_line"></span></span>
+                    <span class="grain-shape-name">波浪</span>
+                  </button>
+                  <button class="grain-shape-item" type="button" role="radio" aria-checked="false" data-grain-shape="dots">
+                    <span class="grain-shape-icon" aria-hidden="true"><span class="mgc_grid_line"></span></span>
+                    <span class="grain-shape-name">点阵</span>
+                  </button>
+                  <button class="grain-shape-item" type="button" role="radio" aria-checked="false" data-grain-shape="truchet">
+                    <span class="grain-shape-icon" aria-hidden="true"><span class="mgc_mosaic_line"></span></span>
+                    <span class="grain-shape-name">嵌片</span>
+                  </button>
+                  <button class="grain-shape-item" type="button" role="radio" aria-checked="false" data-grain-shape="ripple">
+                    <span class="grain-shape-icon" aria-hidden="true"><span class="mgc_radar_line"></span></span>
+                    <span class="grain-shape-name">涟漪</span>
+                  </button>
+                  <button class="grain-shape-item" type="button" role="radio" aria-checked="false" data-grain-shape="blob">
+                    <span class="grain-shape-icon" aria-hidden="true"><span class="mgc_drop_line"></span></span>
+                    <span class="grain-shape-name">团块</span>
+                  </button>
+                  <button class="grain-shape-item" type="button" role="radio" aria-checked="false" data-grain-shape="sphere">
+                    <span class="grain-shape-icon" aria-hidden="true"><span class="mgc_round_line"></span></span>
+                    <span class="grain-shape-name">球体</span>
+                  </button>
+                </div>
+              </div>
+              <div class="setting-item grain-color-setting">
+                <div class="bg-extra-head">
+                  <span class="bg-extra-title">当前配色</span>
+                  <span class="bg-extra-meta" id="grainPaletteMode">浅色模式</span>
+                </div>
+                <div class="grain-color-list" id="grainColorList" role="group" aria-label="流光渐变颜色"></div>
+                <div class="grain-color-count-row">
+                  <span class="grain-color-count-label">颜色数量</span>
+                  <div class="grain-color-count-seg" id="grainColorCountSegment" role="radiogroup" aria-label="渐变颜色数量">
+                    <button class="grain-color-count-btn" type="button" data-color-count="2" role="radio" aria-checked="false">2</button>
+                    <button class="grain-color-count-btn" type="button" data-color-count="3" role="radio" aria-checked="false">3</button>
+                    <button class="grain-color-count-btn" type="button" data-color-count="4" role="radio" aria-checked="true">4</button>
+                    <button class="grain-color-count-btn" type="button" data-color-count="5" role="radio" aria-checked="false">5</button>
+                    <button class="grain-color-count-btn" type="button" data-color-count="6" role="radio" aria-checked="false">6</button>
+                    <button class="grain-color-count-btn" type="button" data-color-count="7" role="radio" aria-checked="false">7</button>
+                  </div>
+                </div>
+              </div>
+              <div class="setting-item grain-range-setting">
+                <div class="bg-extra-head">
+                  <label for="grainSpeedSlider">动画速度</label>
+                  <span class="bg-extra-meta" id="grainSpeedValue">66%</span>
+                </div>
+                <div class="slider-container">
+                  <input type="range" id="grainSpeedSlider" min="0" max="150" step="1" value="66" aria-label="流光动画速度">
+                  <div class="slider-labels"><span>静止</span><span>快速</span></div>
+                </div>
+              </div>
+              <div class="setting-item grain-range-setting">
+                <div class="bg-extra-head">
+                  <label for="grainNoiseSlider">颗粒强度</label>
+                  <span class="bg-extra-meta" id="grainNoiseValue">86%</span>
+                </div>
+                <div class="slider-container">
+                  <input type="range" id="grainNoiseSlider" min="0" max="100" step="1" value="86" aria-label="流光颗粒强度">
+                  <div class="slider-labels"><span>柔和</span><span>明显</span></div>
+                </div>
+              </div>
+              <div class="setting-item grain-range-setting">
+                <div class="bg-extra-head">
+                  <label for="grainSoftnessSlider">过渡柔和</label>
+                  <span class="bg-extra-meta" id="grainSoftnessValue">100%</span>
+                </div>
+                <div class="slider-container">
+                  <input type="range" id="grainSoftnessSlider" min="0" max="100" step="1" value="100" aria-label="流光过渡柔和">
+                  <div class="slider-labels"><span>锐利</span><span>柔和</span></div>
+                </div>
+              </div>
+              <div class="setting-item grain-range-setting">
+                <div class="bg-extra-head">
+                  <label for="grainIntensitySlider">形变强度</label>
+                  <span class="bg-extra-meta" id="grainIntensityValue">100%</span>
+                </div>
+                <div class="slider-container">
+                  <input type="range" id="grainIntensitySlider" min="0" max="100" step="1" value="100" aria-label="流光形变强度">
+                  <div class="slider-labels"><span>轻微</span><span>强烈</span></div>
+                </div>
+              </div>
+              <div class="setting-item grain-position-setting">
+                <div class="bg-extra-head">
+                  <span class="bg-extra-title">图案位置</span>
+                  <span class="bg-extra-meta" id="grainOffsetMeta">居中</span>
+                </div>
+                <div class="grain-offset-stack">
+                  <div class="grain-range-setting grain-offset-axis">
+                    <div class="bg-extra-head">
+                      <label for="grainOffsetXSlider">水平</label>
+                      <span class="bg-extra-meta" id="grainOffsetXValue">0</span>
+                    </div>
+                    <div class="slider-container">
+                      <input type="range" id="grainOffsetXSlider" min="-100" max="100" step="1" value="0" aria-label="流光水平偏移">
+                      <div class="slider-labels"><span>左</span><span>右</span></div>
+                    </div>
+                  </div>
+                  <div class="grain-range-setting grain-offset-axis">
+                    <div class="bg-extra-head">
+                      <label for="grainOffsetYSlider">垂直</label>
+                      <span class="bg-extra-meta" id="grainOffsetYValue">0</span>
+                    </div>
+                    <div class="slider-container">
+                      <input type="range" id="grainOffsetYSlider" min="-100" max="100" step="1" value="0" aria-label="流光垂直偏移">
+                      <div class="slider-labels"><span>下</span><span>上</span></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="setting-item grain-reset-setting">
+                <button class="bg-action-btn" id="grainResetBtn" type="button">
+                  <span class="mgc_refresh_2_line" aria-hidden="true"></span>
+                  <span>恢复默认</span>
+                </button>
+              </div>
+            </div>
+          </section>
+
+          <section class="settings-group settings-reveal" id="bgBingGroup" hidden>
+            <h5 class="settings-group-title">今日壁纸</h5>
+            <div class="settings-card settings-card--flush">
+              <article class="bg-bing-card bg-bing-card--immersive" id="bgBingMeta">
+                <div class="bg-bing-hero">
+                  <div class="bg-bing-preview-stack" aria-hidden="true">
+                    <img class="bg-bing-preview is-active" id="bgBingPreview" alt="" hidden>
+                    <img class="bg-bing-preview" id="bgBingPreviewB" alt="" hidden>
+                  </div>
+                  <div class="bg-bing-hero-fallback" id="bgBingPreviewFallback" aria-hidden="true">
+                    <span class="mgc_pic_2_line"></span>
+                    <span>正在获取今日壁纸…</span>
+                  </div>
+                  <div class="bg-bing-scrim" aria-hidden="true">
+                    <span class="bg-bing-blur bg-bing-blur--1"></span>
+                    <span class="bg-bing-blur bg-bing-blur--2"></span>
+                    <span class="bg-bing-blur bg-bing-blur--3"></span>
+                    <span class="bg-bing-blur bg-bing-blur--4"></span>
+                    <span class="bg-bing-blur-shade"></span>
+                  </div>
+                  <div class="bg-bing-overlay">
+                    <div class="bg-bing-source">
+                      <img class="bg-bing-source-icon" src="icons/engines/bing.ico" width="14" height="14" alt="" aria-hidden="true">
+                      <span>Microsoft Bing</span>
+                    </div>
+                    <h6 class="bg-bing-title" id="bgBingTitle">加载中…</h6>
+                    <p class="bg-bing-copyright" id="bgBingCopyright"></p>
+                    <div class="bg-bing-actions-row">
+                      <a class="bg-bing-link" id="bgBingLink" href="https://www.bing.com/" target="_blank" rel="noopener noreferrer">
+                        <span>了解此图片</span>
+                        <span class="mgc_arrow_right_line" aria-hidden="true"></span>
+                      </a>
+                      <button class="bg-bing-link bg-bing-shuffle" id="bgBingShuffle" type="button" title="换一张必应壁纸">
+                        <span class="mgc_refresh_2_line" aria-hidden="true"></span>
+                        <span id="bgBingShuffleLabel">换一张</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </article>
+            </div>
+          </section>
+
+          <section class="settings-group settings-reveal" id="toneGroup">
+            <h5 class="settings-group-title">界面色调</h5>
+            <div class="settings-card">
+              <div class="setting-item tone-setting" id="toneSetting">
+                <div class="theme-swatches" id="themeGrid" role="radiogroup" aria-label="界面色调">
+                  <button class="theme-swatch" type="button" data-value="sand" role="radio" aria-checked="false" title="暖沙" aria-label="暖沙">
+                    <span class="theme-swatch-fill" style="--swatch:#F5F0E8" aria-hidden="true"></span>
+                    <span class="theme-swatch-check mgc_check_line" aria-hidden="true"></span>
+                  </button>
+                  <button class="theme-swatch" type="button" data-value="cream" role="radio" aria-checked="false" title="奶油" aria-label="奶油">
+                    <span class="theme-swatch-fill" style="--swatch:#FDF6EC" aria-hidden="true"></span>
+                    <span class="theme-swatch-check mgc_check_line" aria-hidden="true"></span>
+                  </button>
+                  <button class="theme-swatch" type="button" data-value="rose" role="radio" aria-checked="false" title="玫瑰" aria-label="玫瑰">
+                    <span class="theme-swatch-fill" style="--swatch:#F8EDE8" aria-hidden="true"></span>
+                    <span class="theme-swatch-check mgc_check_line" aria-hidden="true"></span>
+                  </button>
+                  <button class="theme-swatch" type="button" data-value="sage" role="radio" aria-checked="false" title="青苔" aria-label="青苔">
+                    <span class="theme-swatch-fill" style="--swatch:#ECEEE5" aria-hidden="true"></span>
+                    <span class="theme-swatch-check mgc_check_line" aria-hidden="true"></span>
+                  </button>
+                  <button class="theme-swatch" type="button" data-value="sky" role="radio" aria-checked="false" title="晴空" aria-label="晴空">
+                    <span class="theme-swatch-fill" style="--swatch:#E8F0F5" aria-hidden="true"></span>
+                    <span class="theme-swatch-check mgc_check_line" aria-hidden="true"></span>
+                  </button>
+                  <button class="theme-swatch" type="button" data-value="lavender" role="radio" aria-checked="false" title="薄紫" aria-label="薄紫">
+                    <span class="theme-swatch-fill" style="--swatch:#EDE8F0" aria-hidden="true"></span>
+                    <span class="theme-swatch-check mgc_check_line" aria-hidden="true"></span>
+                  </button>
+                  <button class="theme-swatch" type="button" data-value="slate" role="radio" aria-checked="false" title="素墨" aria-label="素墨">
+                    <span class="theme-swatch-fill" style="--swatch:#E8E9EC" aria-hidden="true"></span>
+                    <span class="theme-swatch-check mgc_check_line" aria-hidden="true"></span>
+                  </button>
+                  <button class="theme-swatch theme-swatch-custom is-disabled" type="button" data-value="custom" role="radio" aria-checked="false" title="自定义暂未开放" aria-label="自定义暂未开放" id="toneCustomBtn" disabled aria-disabled="true">
+                    <span class="theme-swatch-fill theme-swatch-fill-custom" id="toneCustomPreview" aria-hidden="true"></span>
+                    <span class="theme-swatch-icon mgc_color_picker_line" aria-hidden="true"></span>
+                  </button>
+                </div>
+                <p class="setting-tip" id="toneSettingTip">仅纯色背景生效</p>
+              </div>
+            </div>
+          </section>
+        </section>
+
+        <!-- 文字 -->
+        <section class="settings-page" data-page="type" hidden aria-labelledby="sec-type">
+          <h4 class="settings-section-title" id="sec-type" hidden>文字</h4>
+          <section class="settings-group">
+            <h5 class="settings-group-title">问候主文案</h5>
+            <div class="settings-card type-role" data-role="greeting">
+              <div class="type-font-field">
+                <label class="type-font-label" for="typeFont-greeting">字体</label>
+                <select class="type-font-select" id="typeFont-greeting" data-role="greeting" aria-label="问候主文案字体"></select>
+              </div>
+              <div class="type-size" data-role="greeting">
+                <label class="type-size-label">大小 <span class="type-size-value" data-role="greeting">100%</span></label>
+                <div class="slider-container">
+                  <input type="range" class="type-size-slider" data-role="greeting" min="70" max="140" step="5" value="100" aria-label="问候主文案大小">
+                  <div class="slider-labels"><span>小</span><span>大</span></div>
+                </div>
+              </div>
+              <div class="type-weight settings-reveal" data-role="greeting">
+                <label class="type-weight-label">粗细 <span class="type-weight-value" data-role="greeting">粗体</span></label>
+                <div class="slider-container">
+                  <input type="range" class="type-weight-slider" data-role="greeting" min="400" max="700" step="100" value="700" aria-label="问候主文案粗细">
+                  <div class="slider-labels"><span>细</span><span>粗</span></div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="settings-group">
+            <h5 class="settings-group-title">来源副标题</h5>
+            <div class="settings-card type-role" data-role="greetingSub">
+              <div class="type-font-field">
+                <label class="type-font-label" for="typeFont-greetingSub">字体</label>
+                <select class="type-font-select" id="typeFont-greetingSub" data-role="greetingSub" aria-label="来源副标题字体"></select>
+              </div>
+              <div class="type-size" data-role="greetingSub">
+                <label class="type-size-label">大小 <span class="type-size-value" data-role="greetingSub">100%</span></label>
+                <div class="slider-container">
+                  <input type="range" class="type-size-slider" data-role="greetingSub" min="70" max="140" step="5" value="100" aria-label="来源副标题大小">
+                  <div class="slider-labels"><span>小</span><span>大</span></div>
+                </div>
+              </div>
+              <div class="type-weight settings-reveal" data-role="greetingSub">
+                <label class="type-weight-label">粗细 <span class="type-weight-value" data-role="greetingSub">常规</span></label>
+                <div class="slider-container">
+                  <input type="range" class="type-weight-slider" data-role="greetingSub" min="400" max="700" step="100" value="400" aria-label="来源副标题粗细">
+                  <div class="slider-labels"><span>细</span><span>粗</span></div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="settings-group">
+            <h5 class="settings-group-title">搜索框</h5>
+            <div class="settings-card type-role" data-role="search">
+              <div class="type-font-field">
+                <label class="type-font-label" for="typeFont-search">字体</label>
+                <select class="type-font-select" id="typeFont-search" data-role="search" aria-label="搜索框字体"></select>
+              </div>
+              <div class="type-weight settings-reveal" data-role="search">
+                <label class="type-weight-label">粗细 <span class="type-weight-value" data-role="search">常规</span></label>
+                <div class="slider-container">
+                  <input type="range" class="type-weight-slider" data-role="search" min="400" max="700" step="100" value="400" aria-label="搜索框粗细">
+                  <div class="slider-labels"><span>细</span><span>粗</span></div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="settings-group">
+            <h5 class="settings-group-title">快捷标签</h5>
+            <div class="settings-card type-role" data-role="shortcuts">
+              <div class="type-font-field">
+                <label class="type-font-label" for="typeFont-shortcuts">字体</label>
+                <select class="type-font-select" id="typeFont-shortcuts" data-role="shortcuts" aria-label="快捷标签字体"></select>
+              </div>
+              <div class="type-weight settings-reveal" data-role="shortcuts">
+                <label class="type-weight-label">粗细 <span class="type-weight-value" data-role="shortcuts">中等</span></label>
+                <div class="slider-container">
+                  <input type="range" class="type-weight-slider" data-role="shortcuts" min="400" max="700" step="100" value="500" aria-label="快捷标签粗细">
+                  <div class="slider-labels"><span>细</span><span>粗</span></div>
+                </div>
+              </div>
+            </div>
+          </section>
+        </section>
+
+        <!-- 搜索 -->
+        <section class="settings-page" data-page="search" hidden aria-labelledby="sec-search">
+          <h4 class="settings-section-title" id="sec-search" hidden>搜索</h4>
+
+          <section class="settings-group">
+            <h5 class="settings-group-title">搜索引擎</h5>
+            <div class="settings-card">
+              <div class="setting-item setting-item--flush">
+                <div class="setting-label visually-hidden" id="engineLabel">搜索引擎</div>
+                <div class="engine-list" id="engineGrid" role="radiogroup" aria-labelledby="engineLabel">
+                  <button class="engine-item" type="button" data-value="google" role="radio" aria-checked="false">
+                    <img src="icons/engines/google.ico" width="16" height="16" alt="" aria-hidden="true">
+                    <span class="engine-name">Google</span>
+                    <span class="check-icon" aria-hidden="true"><span class="mgc_check_line"></span></span>
+                  </button>
+                  <button class="engine-item" type="button" data-value="bing" role="radio" aria-checked="false">
+                    <img src="icons/engines/bing.ico" width="16" height="16" alt="" aria-hidden="true">
+                    <span class="engine-name">Bing</span>
+                    <span class="check-icon" aria-hidden="true"><span class="mgc_check_line"></span></span>
+                  </button>
+                  <button class="engine-item" type="button" data-value="baidu" role="radio" aria-checked="false">
+                    <img src="icons/engines/baidu.ico" width="16" height="16" alt="" aria-hidden="true">
+                    <span class="engine-name">百度</span>
+                    <span class="check-icon" aria-hidden="true"><span class="mgc_check_line"></span></span>
+                  </button>
+                  <button class="engine-item" type="button" data-value="meta" role="radio" aria-checked="false">
+                    <img src="icons/engines/metaso.ico" width="16" height="16" alt="" aria-hidden="true">
+                    <span class="engine-name">秘塔AI搜索</span>
+                    <span class="check-icon" aria-hidden="true"><span class="mgc_check_line"></span></span>
+                  </button>
+                  <button class="engine-item" type="button" data-value="chatgpt" role="radio" aria-checked="false">
+                    <img class="icon-mono" src="icons/engines/chatgpt.svg" width="16" height="16" alt="" aria-hidden="true">
+                    <span class="engine-name">ChatGPT</span>
+                    <span class="check-icon" aria-hidden="true"><span class="mgc_check_line"></span></span>
+                  </button>
+                  <button class="engine-item" type="button" data-value="claude" role="radio" aria-checked="false">
+                    <img src="icons/engines/claude.png" width="16" height="16" alt="" aria-hidden="true">
+                    <span class="engine-name">Claude</span>
+                    <span class="check-icon" aria-hidden="true"><span class="mgc_check_line"></span></span>
+                  </button>
+                  <!-- 自定义引擎会动态插入这里 -->
+                </div>
+                <button class="add-engine-btn" id="addEngineBtn" type="button">
+                  <span class="mgc_add_line" aria-hidden="true"></span>
+                  <span>添加自定义</span>
+                </button>
+              </div>
+            </div>
+          </section>
+        </section>
+
+        <!-- 快捷导航 -->
+        <section class="settings-page" data-page="shortcuts" hidden aria-labelledby="sec-shortcuts">
+          <h4 class="settings-section-title" id="sec-shortcuts" hidden>收藏夹与导航</h4>
+
+          <section class="settings-group">
+            <h5 class="settings-group-title">主页入口</h5>
+            <div class="settings-card">
+              <div class="setting-item setting-item--flush">
+                <div class="shortcut-list" id="shortcutList"></div>
+                <p class="shortcut-hint">右键主页快捷按钮可管理，支持多级子文件夹</p>
+              </div>
+            </div>
+          </section>
+
+          <section class="settings-group">
+            <h5 class="settings-group-title">收藏夹管理</h5>
+            <div class="settings-card">
+              <div class="setting-item" id="bookmarkImportActionSetting">
+                <div class="setting-label">导入浏览器收藏夹</div>
+                <p class="setting-tip">从 Chrome / Edge / Firefox / Safari 导出的 HTML 书签文件导入（追加到现有列表，支持多级文件夹嵌套）</p>
+                <div class="about-reset-row">
+                  <input type="file" id="importBookmarksInputShortcuts" accept="text/html,.html,.htm" hidden>
+                  <button class="bg-action-btn bg-action-btn-ghost" id="importBookmarksBtnShortcuts" type="button">
+                    <span class="mgc_bookmarks_line" aria-hidden="true"></span>
+                    <span>选择书签文件</span>
+                  </button>
+                </div>
+                <p class="setting-tip" id="importBookmarksTipShortcuts" hidden></p>
+              </div>
+              <div class="setting-item" id="bookmarkSyncPermissionSetting">
+                <div class="setting-label-row" style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+                  <div class="setting-label" style="margin-bottom:0">直接同步浏览器书签</div>
+                  <label class="switch">
+                    <input type="checkbox" id="bookmarkSyncPermissionToggle">
+                    <span class="switch-slider"></span>
+                  </label>
+                </div>
+                <p class="setting-tip">
+                  <span class="mgc_warning_line" style="font-size:12px;vertical-align:middle;margin-right:4px;color:var(--text-secondary)" aria-hidden="true"></span>
+                  此功能需读取浏览器内部书签数据，属于高度敏感权限。开启后扩展可直接访问您的浏览器书签。默认关闭，仅在您明确授权后生效。
+                </p>
+                <p class="setting-tip" id="bookmarkSyncStatus" hidden></p>
+              </div>
+              <div class="setting-item">
+                <div class="setting-label">数据安全说明</div>
+                <p class="setting-tip">
+                  <span class="mgc_shield_line" style="font-size:12px;vertical-align:middle;margin-right:4px" aria-hidden="true"></span>
+                  所有书签数据仅存储在浏览器本地（localStorage），不涉及网络传输，不上云、不同步、不收集。导入操作完全在您的设备上完成。
+                </p>
+              </div>
+            </div>
+          </section>
+        </section>
+
+        <!-- 关于 -->
+        <section class="settings-page" data-page="display" hidden aria-labelledby="sec-display">
+          <h4 class="settings-section-title" id="sec-display" hidden>显示与效果</h4>
+
+          <section class="settings-group">
+            <h5 class="settings-group-title">模糊</h5>
+            <div class="settings-card">
+              <div class="setting-item" id="bgBlurSetting">
+                <div class="bg-extra-head">
+                  <label for="bgBlurSlider">背景模糊</label>
+                  <span class="weight-value" id="bgBlurValue">20px</span>
+                </div>
+                <div class="slider-container">
+                  <input type="range" id="bgBlurSlider" name="bgBlur" min="0" max="40" step="1" value="20" aria-label="背景模糊">
+                  <div class="slider-labels">
+                    <span>清晰</span>
+                    <span>柔和</span>
+                  </div>
+                </div>
+                <p class="setting-tip" id="bgBlurTip">仅图片背景生效</p>
+              </div>
+              <div class="setting-item" id="bgWashSetting">
+                <div class="bg-extra-head">
+                  <label for="bgWashSlider">背景压暗</label>
+                  <span class="weight-value" id="bgWashValue">偏黑 20</span>
+                </div>
+                <div class="slider-container">
+                  <input type="range" id="bgWashSlider" name="bgWash" min="-50" max="50" step="1" value="-20" aria-label="背景压暗">
+                  <div class="slider-labels">
+                    <span>偏黑</span>
+                    <span>无色</span>
+                    <span>偏白</span>
+                  </div>
+                </div>
+                <p class="setting-tip" id="bgWashTip">图片/流光背景生效</p>
+              </div>
+              <div class="setting-item" id="searchBlurSetting">
+                <div class="bg-extra-head">
+                  <label for="searchBlurSlider">搜索框</label>
+                  <span class="weight-value" id="searchBlurValue">40px</span>
+                </div>
+                <div class="slider-container">
+                  <input type="range" id="searchBlurSlider" name="searchBlur" min="0" max="40" step="1" value="40" aria-label="搜索框模糊">
+                  <div class="slider-labels">
+                    <span>清晰</span>
+                    <span>柔和</span>
+                  </div>
+                </div>
+                <p class="setting-tip" id="searchBlurTip">仅图片背景生效</p>
+              </div>
+              <div class="setting-item" id="panelBlurSetting">
+                <div class="bg-extra-head">
+                  <label for="panelBlurSlider">设置面板</label>
+                  <span class="weight-value" id="panelBlurValue">10px</span>
+                </div>
+                <div class="slider-container">
+                  <input type="range" id="panelBlurSlider" name="panelBlur" min="0" max="40" step="1" value="10" aria-label="设置面板模糊">
+                  <div class="slider-labels">
+                    <span>清晰</span>
+                    <span>柔和</span>
+                  </div>
+                </div>
+                <p class="setting-tip" id="panelBlurTip">设置面板毛玻璃</p>
+              </div>
+            </div>
+          </section>
+
+          <section class="settings-group">
+            <h5 class="settings-group-title">性能</h5>
+            <div class="settings-card">
+              <div class="setting-item setting-item--flush" id="lowPerfSetting">
+                <div class="setting-label" id="lowPerfLabel">效果与性能</div>
+                <div class="mode-segment mode-segment--3" id="lowPerfSegment" role="radiogroup" aria-labelledby="lowPerfLabel">
+                  <button class="mode-segment-btn" type="button" data-perf="full" role="radio" aria-checked="true" title="全部效果">完全</button>
+                  <button class="mode-segment-btn" type="button" data-perf="balanced" role="radio" aria-checked="false" title="减弱模糊，关闭动画">部分</button>
+                  <button class="mode-segment-btn" type="button" data-perf="low" role="radio" aria-checked="false" title="关闭模糊与动画">限制</button>
+                </div>
+                <p class="setting-tip" id="perfModeTip">全部效果开启</p>
+              </div>
+            </div>
+          </section>
+        </section>
+        <section class="settings-page" data-page="about" hidden aria-labelledby="sec-about">
+          <h4 class="settings-section-title" id="sec-about" hidden>关于</h4>
+
+          <!-- 横幅区域：每日一图 -->
+          <div class="about-banner" id="aboutBanner" aria-hidden="true">
+            <div class="about-banner-image" id="aboutBannerImage"></div>
+            <div class="about-banner-overlay" id="aboutBannerOverlay"></div>
+            <svg class="about-banner-logo" viewBox="0 0 915.343994140625 191" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <path fill="#fff" d="M106.51921,0.16237259C102.6485,-0.53281784,98.719345,1.0395393,96.420563,4.2036362C94.12175,7.3677311,93.862823,11.559906,95.755035,14.978334C106.68314,34.688805,103.16405,59.184593,87.119583,75.087967C71.075134,90.991348,46.362061,94.479523,26.476746,83.647514C23.028,81.771957,18.798645,82.028595,15.606491,84.307182C12.414337,86.585762,10.828033,90.480354,11.529373,94.317032C12.806976,101.27815,15.006012,108.04168,18.069489,114.43235C19.763443,117.9577,23.353577,120.20151,27.292999,120.19691L156.38116,120.19691C160.32063,120.20151,163.91075,117.9577,165.60472,114.43235C188.60736,66.351936,159.33734,9.7296448,106.52943,0.15225601L106.51921,0.16237259ZM0,140.43361C0,134.84819,4.5680389,130.32033,10.202988,130.32033L173.45082,130.32033C179.0858,130.32033,183.65382,134.84819,183.65382,140.43361C183.65382,146.01903,179.0858,150.54686,173.45082,150.54686L10.202988,150.54686C4.5680389,150.54686,0,146.01903,0,140.43361ZM30.608963,180.88672C30.608963,175.30132,35.177002,170.77348,40.811951,170.77348L142.84187,170.77348C148.47679,170.77348,153.04486,175.30132,153.04486,180.88672C153.04486,186.47214,148.47679,191,142.84187,191L40.811951,191C35.177002,191,30.608963,186.47214,30.608963,180.88672ZM259.13599,152.87999L233.216,152.87999L233.216,36.23999L256.97601,36.23999L293.552,90.959991L294.41602,90.959991L330.992,36.23999L354.75201,36.23999L354.75201,152.87999L328.832,152.87999L328.832,85.919991L327.96802,85.919991L304.064,120.19199L283.90399,120.19199L260,86.495987L259.13599,86.495987L259.13599,152.87999ZM410.91199,154.89598Q397.95197,154.89598,388.37598,149.35199Q378.79999,143.80798,373.68799,133.51198Q368.57599,123.21599,368.57599,109.24799Q368.57599,95.423988,373.68799,85.127991Q378.79999,74.831985,388.37598,69.287987Q397.95197,63.743988,410.91199,63.743988Q423.87198,63.743988,433.448,69.287987Q443.02399,74.831985,448.13599,85.127991Q453.24799,95.423988,453.24799,109.24799Q453.24799,123.21599,448.13599,133.51198Q443.02399,143.80798,433.448,149.35199Q423.87198,154.89598,410.91199,154.89598ZM410.91199,130.41599Q418.25598,130.41599,422.50397,124.72798Q426.75198,119.03999,426.75198,109.24799Q426.75198,99.455986,422.50397,93.839989Q418.25598,88.223984,410.91199,88.223984Q403.56799,88.223984,399.31998,93.839989Q395.07199,99.455986,395.07199,109.24799Q395.07199,119.03999,399.31998,124.72798Q403.56799,130.41599,410.91199,130.41599ZM504.79999,154.89598Q491.84,154.89598,482.26398,149.35199Q472.68799,143.80798,467.57599,133.51198Q462.46399,123.21599,462.46399,109.24799Q462.46399,95.423988,467.57599,85.127991Q472.68799,74.831985,482.26398,69.287987Q491.84,63.743988,504.79999,63.743988Q517.76001,63.743988,527.336,69.287987Q536.91199,74.831985,542.02399,85.127991Q547.13599,95.423988,547.13599,109.24799Q547.13599,123.21599,542.02399,133.51198Q536.91199,143.80798,527.336,149.35199Q517.76001,154.89598,504.79999,154.89598ZM504.79999,130.41599Q512.14398,130.41599,516.39197,124.72798Q520.64001,119.03999,520.64001,109.24799Q520.64001,99.455986,516.39197,93.839989Q512.14398,88.223984,504.79999,88.223984Q497.45599,88.223984,493.20798,93.839989Q488.95999,99.455986,488.95999,109.24799Q488.95999,119.03999,493.20798,124.72798Q497.45599,130.41599,504.79999,130.41599ZM559.80798,152.87999L559.80798,65.759987L585.72803,65.759987L585.72803,76.991989L586.448,76.991989Q590.19202,70.655991,596.23999,67.199989Q602.28796,63.743988,610.35199,63.743988Q623.31201,63.743988,630.36798,72.095985Q637.42395,80.44799,637.42395,95.855988L637.42395,152.87999L611.50403,152.87999L611.50403,101.90399Q611.50403,95.567986,608.40796,91.967987Q605.31201,88.367989,599.83997,88.367989Q593.35999,88.367989,589.54395,92.399986Q585.72803,96.431992,585.72803,103.48799L585.72803,152.87999L559.80798,152.87999ZM680.62402,110.39999L680.62402,152.87999L653.83997,152.87999L653.83997,36.23999L730.01599,36.23999L730.01599,61.29599L680.62402,61.29599L680.62402,85.343987L726.56,85.343987L726.56,110.39999L680.62402,110.39999ZM780.27197,154.89598Q767.31201,154.89598,757.73602,149.35199Q748.15997,143.80798,743.04797,133.51198Q737.93597,123.21599,737.93597,109.24799Q737.93597,95.423988,743.04797,85.127991Q748.15997,74.831985,757.73602,69.287987Q767.31201,63.743988,780.27197,63.743988Q793.23199,63.743988,802.80798,69.287987Q812.38403,74.831985,817.49597,85.127991Q822.60803,95.423988,822.60803,109.24799Q822.60803,123.21599,817.49597,133.51198Q812.38403,143.80798,802.80798,149.35199Q793.23199,154.89598,780.27197,154.89598ZM780.27197,130.41599Q787.61603,130.41599,791.86401,124.72798Q796.112,119.03999,796.112,109.24799Q796.112,99.455986,791.86401,93.839989Q787.61603,88.223984,780.27197,88.223984Q772.92798,88.223984,768.67999,93.839989Q764.43201,99.455986,764.43201,109.24799Q764.43201,119.03999,768.67999,124.72798Q772.92798,130.41599,780.27197,130.41599ZM874.448,190.89598Q859.47198,190.89598,848.81598,184.34398Q838.15997,177.79198,833.84003,166.41599L855.87201,157.34398Q858.46399,162.95998,863,166.12798Q867.53601,169.29599,873.58398,169.29599Q880.92798,169.29599,885.17603,164.68799Q889.42401,160.07999,889.42401,152.44798L889.42401,141.35999L888.56,141.35999Q885.39203,147.11998,879.84802,150.28798Q874.30402,153.45598,867.96802,153.45598Q857.02399,153.45598,848.81598,147.91199Q840.60803,142.36798,836.216,132.07199Q831.82397,121.77599,831.82397,107.80798Q831.82397,94.415985,836.07202,84.479988Q840.32001,74.543991,848.16803,69.14399Q856.01599,63.743988,866.52802,63.743988Q873.44,63.743988,879.20001,66.911987Q884.96002,70.079987,888.56,75.839989L889.42401,75.839989L889.42401,65.759987L915.34399,65.759987L915.34399,148.27199Q915.34399,161.08798,910.52002,170.73598Q905.69598,180.38399,896.47998,185.63998Q887.26398,190.89598,874.448,190.89598ZM874.448,129.26399Q881.64801,129.26399,885.82397,123.71999Q890,118.17599,890,108.67198Q890,99.167984,885.67999,93.551987Q881.35999,87.935989,873.87201,87.935989Q866.81598,87.935989,862.56799,93.551987Q858.32001,99.167984,858.32001,108.67198Q858.32001,118.17599,862.64001,123.71999Q866.96002,129.26399,874.448,129.26399Z"/>
+            </svg>
+          </div>
+
+          <section class="settings-group">
+            <h5 class="settings-group-title">产品信息</h5>
+            <div class="settings-card about-section">
+              <div class="about-card">
+                <p class="about-intro">纯净极简的新标签页。问候、搜索、快捷导航，没有多余的东西。</p>
+                <div class="about-meta">
+                  <div class="about-meta-item">
+                    <span class="about-meta-label">版本</span>
+                    <span class="about-meta-value">1.0.0</span>
+                  </div>
+                  <div class="about-meta-item">
+                    <span class="about-meta-label">作者</span>
+                    <span class="about-meta-value">apanzinc</span>
+                  </div>
+                </div>
+                <div class="about-features">
+                  <div class="about-feature">
+                    <span class="about-feature-dot"></span>
+                    <span>多搜索引擎，支持自定义</span>
+                  </div>
+                  <div class="about-feature">
+                    <span class="about-feature-dot"></span>
+                    <span>7 种色调，明暗双模式</span>
+                  </div>
+                  <div class="about-feature">
+                    <span class="about-feature-dot"></span>
+                    <span>快捷导航，右键即可管理</span>
+                  </div>
+                  <div class="about-feature">
+                    <span class="about-feature-dot"></span>
+                    <span>本地优先，数据不上传</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="settings-group">
+            <h5 class="settings-group-title">链接</h5>
+            <div class="settings-card">
+              <div class="setting-item" id="aboutGithubLink">
+                <a href="https://github.com/apanzinc/AstrGO" target="_blank" rel="noopener noreferrer" class="about-link">
+                  <span class="about-link-icon mgc_github_line" aria-hidden="true"></span>
+                  <span class="about-link-text">
+                    <span class="about-link-title">GitHub 仓库</span>
+                    <span class="about-link-desc">查看源码、提交 Issue</span>
+                  </span>
+                  <span class="mgc_arrow_right_line about-link-chevron" aria-hidden="true"></span>
+                </a>
+              </div>
+              <div class="setting-item" id="aboutFeedbackLink">
+                <a href="https://github.com/apanzinc/AstrGO/issues" target="_blank" rel="noopener noreferrer" class="about-link">
+                  <span class="about-link-icon mgc_chat_line" aria-hidden="true"></span>
+                  <span class="about-link-text">
+                    <span class="about-link-title">反馈与建议</span>
+                    <span class="about-link-desc">提交问题或功能请求</span>
+                  </span>
+                  <span class="mgc_arrow_right_line about-link-chevron" aria-hidden="true"></span>
+                </a>
+              </div>
+            </div>
+          </section>
+
+        </section>
+
+        <!-- 数据 -->
+        <section class="settings-page" data-page="data" hidden aria-labelledby="sec-data">
+          <h4 class="settings-section-title" id="sec-data" hidden>数据</h4>
+
+          <section class="settings-group">
+            <h5 class="settings-group-title">备份与恢复</h5>
+            <div class="settings-card">
+              <div class="setting-item" id="exportDataSetting">
+                <div class="setting-label">导出数据</div>
+                <p class="setting-tip">将主题、背景、问候、快捷导航等偏好保存为文件</p>
+                <div class="about-reset-row">
+                  <button class="bg-action-btn" id="exportDataBtn" type="button">
+                    <span class="mgc_file_export_line" aria-hidden="true"></span>
+                    <span>导出</span>
+                  </button>
+                </div>
+              </div>
+              <div class="setting-item" id="importDataSetting">
+                <div class="setting-label">导入数据</div>
+                <p class="setting-tip">从备份文件恢复偏好（会覆盖当前设置）</p>
+                <div class="about-reset-row">
+                  <input type="file" id="importDataInput" accept="application/json,.json" hidden>
+                  <button class="bg-action-btn" id="importDataBtn" type="button">
+                    <span class="mgc_file_import_line" aria-hidden="true"></span>
+                    <span>导入</span>
+                  </button>
+                </div>
+                <p class="setting-tip" id="importDataTip" hidden></p>
+              </div>
+              <div class="setting-item" id="importBookmarksSetting">
+                <div class="setting-label">导入浏览器收藏夹</div>
+                <p class="setting-tip">从浏览器导出的 HTML 书签文件导入快捷导航（会追加到现有列表，支持多级文件夹嵌套）</p>
+                <div class="about-reset-row">
+                  <input type="file" id="importBookmarksInput" accept="text/html,.html,.htm" hidden>
+                  <button class="bg-action-btn bg-action-btn-ghost" id="importBookmarksBtn" type="button">
+                    <span class="mgc_bookmarks_line" aria-hidden="true"></span>
+                    <span>选择书签文件</span>
+                  </button>
+                </div>
+                <p class="setting-tip" id="importBookmarksTip" hidden></p>
+              </div>
+            </div>
+          </section>
+
+          <section class="settings-group">
+            <h5 class="settings-group-title">重置</h5>
+            <div class="settings-card">
+              <div class="setting-item" id="resetDefaultsSetting">
+                <div class="setting-label">重置设置</div>
+                <p class="setting-tip">清空偏好后刷新，将重新进入欢迎引导；保留壁纸与一言缓存</p>
+                <div class="about-reset-row">
+                  <button class="bg-action-btn about-reset-btn" id="resetDefaultsBtn" type="button">
+                    <span class="mgc_refresh_2_line" aria-hidden="true"></span>
+                    <span>重置设置</span>
+                  </button>
+                </div>
+                <p class="setting-tip" id="resetDefaultsTip"></p>
+              </div>
+            </div>
+          </section>
+        </section>
+      </div>
+    </div>
+  </aside>
+
+  <!-- 首次欢迎 OOBE（类 Win11） -->
+  <div class="oobe" id="oobe" hidden aria-hidden="true">
+    <div class="oobe-bg" aria-hidden="true"></div>
+    <div class="oobe-shell">
+      <div class="oobe-card" role="dialog" aria-modal="true" aria-labelledby="oobeTitle">
+        <div class="oobe-grain" id="oobeGrain" aria-hidden="true"></div>
+        <svg class="oobe-brand-watermark" viewBox="0 0 488 520" aria-hidden="true">
+          <defs>
+            <linearGradient id="oobeBrandGradient" x1="0" y1="0" x2="1" y2="1">
+              <stop class="oobe-brand-stop oobe-brand-stop-1" offset="0"/>
+              <stop class="oobe-brand-stop oobe-brand-stop-2" offset="0.34"/>
+              <stop class="oobe-brand-stop oobe-brand-stop-3" offset="0.68"/>
+              <stop class="oobe-brand-stop oobe-brand-stop-4" offset="1"/>
+            </linearGradient>
+            <pattern id="oobeBrandDots" width="12" height="12" patternUnits="userSpaceOnUse">
+              <circle cx="3.5" cy="3.5" r="3.5" fill="white"/>
+            </pattern>
+            <mask id="oobeBrandDotMask">
+              <rect width="488" height="520" fill="url(#oobeBrandDots)"/>
+            </mask>
+          </defs>
+          <path mask="url(#oobeBrandDotMask)" fill="url(#oobeBrandGradient)" d="M283.03995,0.44206059C272.75479,-1.4506053,262.31436,2.830163,256.20612,11.444452C250.09775,20.058743,249.40974,31.471998,254.4377,40.778713C283.47556,94.440727,274.12473,161.13083,231.49178,204.42798C188.85892,247.72514,123.19202,257.22174,70.353287,227.73146C61.189392,222.62523,49.951263,223.32393,41.469151,229.5274C32.987041,235.73087,28.771952,246.33395,30.635553,256.77936C34.030346,275.73111,39.873547,294.1449,48.013763,311.54358C52.514877,321.14139,62.054482,327.25015,72.522202,327.23764L415.5318,327.23764C425.99966,327.25015,435.53922,321.14139,440.04041,311.54358C501.16241,180.64401,423.38687,26.489088,283.06711,0.41451591L283.03995,0.44206059ZM0,382.33234C0,367.12595,12.138056,354.7988,27.111105,354.7988L460.88885,354.7988C475.86191,354.7988,488,367.12595,488,382.33234C488,397.53873,475.86191,409.86578,460.88885,409.86578L27.111105,409.86578C12.138056,409.86578,0,397.53873,0,382.33234ZM81.333328,492.46646C81.333328,477.26013,93.471375,464.93304,108.44442,464.93304L379.55554,464.93304C394.5285,464.93304,406.66666,477.26013,406.66666,492.46646C406.66666,507.67282,394.5285,520,379.55554,520L108.44442,520C93.471375,520,81.333328,507.67282,81.333328,492.46646Z"/>
+        </svg>
+        <div class="oobe-stage" id="oobeStage">
+          <div class="oobe-layout">
+            <div class="oobe-body">
+              <p class="oobe-kicker" id="oobeKicker">MoonFog</p>
+              <h1 class="oobe-title" id="oobeTitle">欢迎使用 MoonFog</h1>
+              <p class="oobe-desc" id="oobeDesc">接下来用几步完成初始设置：选择背景、界面明暗与问候内容。点「开始」继续，随时可在设置中修改。</p>
+              <ul class="oobe-points" id="oobePoints" hidden></ul>
+              <div class="oobe-appearance" id="oobeAppearance" role="radiogroup" aria-label="界面明暗" hidden></div>
+              <div class="oobe-appearance oobe-wallpaper" id="oobeWallpaper" role="radiogroup" aria-label="主页背景" hidden></div>
+              <div class="oobe-tone-block" id="oobeToneBlock" hidden>
+                <p class="oobe-tone-label">色调</p>
+                <div class="oobe-tone-swatches theme-swatches" id="oobeToneSwatches" role="radiogroup" aria-label="纯色色调"></div>
+                <p class="oobe-tone-hint" id="oobeToneHint">深浅模式请在下一页设置</p>
+              </div>
+              <div class="oobe-greeting-block" id="oobeGreetingBlock" hidden>
+                <div class="oobe-greeting" id="oobeGreeting" role="radiogroup" aria-label="问候内容"></div>
+                <div class="oobe-name-field" id="oobeNameField" hidden>
+                  <label class="oobe-field-label" for="oobeNameInput">显示名称</label>
+                  <input type="text" class="oobe-field-input" id="oobeNameInput" maxlength="20" placeholder="例如：小陈" autocomplete="nickname" spellcheck="false">
+                </div>
+                <div class="oobe-name-field" id="oobeCustomField" hidden>
+                  <label class="oobe-field-label" for="oobeCustomInput">自定义欢迎语</label>
+                  <input type="text" class="oobe-field-input" id="oobeCustomInput" maxlength="48" placeholder="写下一句想对自己说的话…" autocomplete="off" spellcheck="false">
+                </div>
+              </div>
+              <p class="oobe-wallpaper-tip" id="oobeWallpaperTip" hidden></p>
+            </div>
+            <div class="oobe-media" id="oobeMedia" aria-hidden="true">
+              <div class="oobe-media-frame">
+                <div class="oobe-media-grain" id="oobeMediaGrain" aria-hidden="true"></div>
+                <img class="oobe-media-img" id="oobeMediaImg" alt="" hidden>
+                <div class="oobe-media-wash" aria-hidden="true"></div>
+                <div class="oobe-media-empty" id="oobeMediaEmpty">
+                  <span class="oobe-media-empty-icon mgc_pic_2_line" aria-hidden="true"></span>
+                  <span class="oobe-media-empty-text">介绍图</span>
+                </div>
+                <!-- 欢迎页：系统背景 + 居中 logo -->
+                <div class="oobe-logo-panel" id="oobeLogoPanel" hidden aria-hidden="true">
+                  <svg class="oobe-logo-svg" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 488 520" aria-hidden="true">
+                    <path d="M283.03995,0.44206059C272.75479,-1.4506053,262.31436,2.830163,256.20612,11.444452C250.09775,20.058743,249.40974,31.471998,254.4377,40.778713C283.47556,94.440727,274.12473,161.13083,231.49178,204.42798C188.85892,247.72514,123.19202,257.22174,70.353287,227.73146C61.189392,222.62523,49.951263,223.32393,41.469151,229.5274C32.987041,235.73087,28.771952,246.33395,30.635553,256.77936C34.030346,275.73111,39.873547,294.1449,48.013763,311.54358C52.514877,321.14139,62.054482,327.25015,72.522202,327.23764L415.5318,327.23764C425.99966,327.25015,435.53922,321.14139,440.04041,311.54358C501.16241,180.64401,423.38687,26.489088,283.06711,0.41451591L283.03995,0.44206059ZM0,382.33234C0,367.12595,12.138056,354.7988,27.111105,354.7988L460.88885,354.7988C475.86191,354.7988,488,367.12595,488,382.33234C488,397.53873,475.86191,409.86578,460.88885,409.86578L27.111105,409.86578C12.138056,409.86578,0,397.53873,0,382.33234ZM81.333328,492.46646C81.333328,477.26013,93.471375,464.93304,108.44442,464.93304L379.55554,464.93304C394.5285,464.93304,406.66666,477.26013,406.66666,492.46646C406.66666,507.67282,394.5285,520,379.55554,520L108.44442,520C93.471375,520,81.333328,507.67282,81.333328,492.46646Z" fill="currentColor" fill-opacity="0.88"/>
+                  </svg>
+                </div>
+                <!-- 设置引导：居中齿轮（正式按钮样式）+ 鼠标指针 -->
+                <div class="oobe-settings-tip" id="oobeSettingsTip" hidden aria-hidden="true">
+                  <div class="oobe-settings-center">
+                    <div class="oobe-settings-btn-mock" aria-hidden="true">
+                      <span class="mgc_settings_3_line settings-btn-icon"></span>
+                    </div>
+                    <div class="oobe-settings-cursor" aria-hidden="true">
+                      <!-- 标准鼠标箭头（无选区小尾巴） -->
+                      <svg class="oobe-cursor-svg" viewBox="0 0 24 24" width="40" height="40" aria-hidden="true">
+                        <path fill="currentColor" stroke="rgba(255,255,255,0.85)" stroke-width="1.2" stroke-linejoin="round" d="M5 3v15.2l4.1-3.7 2.8 6.7 2.5-1.05-2.8-6.65H18.5L5 3z"/>
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <!-- 迷你主页叠在图框之上（框外层），图框保持 overflow 裁圆角 -->
+              <div class="oobe-mini-home" id="oobeMiniHome" hidden>
+                <div class="oobe-mini-scale">
+                  <div class="content oobe-mini-content">
+                    <section class="greeting-section">
+                      <h1 class="greeting-title" id="oobeMiniGreeting">午安，朋友</h1>
+                    </section>
+                    <section class="search-section">
+                      <div class="search-box" role="presentation">
+                        <span class="search-input oobe-mini-search-ph">搜索或输入网址…</span>
+                        <span class="search-btn" aria-hidden="true">
+                          <span class="mgc_search_line"></span>
+                        </span>
+                      </div>
+                    </section>
+                    <section class="shortcuts-section">
+                      <div class="shortcuts-row">
+                        <span class="shortcut-btn" role="presentation">
+                          <span class="shortcut-icon"><svg class="shortcut-fallback-icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path fill="currentColor" fill-rule="nonzero" d="M12 2c5.523 0 10 4.477 10 10s-4.477 10-10 10S2 17.523 2 12 6.477 2 12 2m2 11.4-1.564 1.251a.5.5 0 0 0-.041.744l1.239 1.239a2 2 0 0 1 .508.864l.175.613a1.8 1.8 0 0 0 1.017 1.163 8.021 8.021 0 0 0 2.533-1.835l-.234-1.877a2 2 0 0 0-1.09-1.54l-1.47-.736A1 1 0 0 0 14 13.4M12 4a7.987 7.987 0 0 0-6.335 3.114l-.165.221V9.02a3 3 0 0 0 1.945 2.809l.178.06 1.29.395c1.373.42 2.71-.697 2.577-2.096l-.019-.145-.175-1.049a1 1 0 0 1 .656-1.108l.108-.03.612-.14a2.667 2.667 0 0 0 1.989-3.263A7.987 7.987 0 0 0 12 4"/></svg></span>
+                          <span class="shortcut-label">GitHub</span>
+                        </span>
+                        <span class="shortcut-btn" role="presentation">
+                          <span class="shortcut-icon"><svg class="shortcut-fallback-icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path fill="currentColor" fill-rule="nonzero" d="M12 2c5.523 0 10 4.477 10 10s-4.477 10-10 10S2 17.523 2 12 6.477 2 12 2m2 11.4-1.564 1.251a.5.5 0 0 0-.041.744l1.239 1.239a2 2 0 0 1 .508.864l.175.613a1.8 1.8 0 0 0 1.017 1.163 8.021 8.021 0 0 0 2.533-1.835l-.234-1.877a2 2 0 0 0-1.09-1.54l-1.47-.736A1 1 0 0 0 14 13.4M12 4a7.987 7.987 0 0 0-6.335 3.114l-.165.221V9.02a3 3 0 0 0 1.945 2.809l.178.06 1.29.395c1.373.42 2.71-.697 2.577-2.096l-.019-.145-.175-1.049a1 1 0 0 1 .656-1.108l.108-.03.612-.14a2.667 2.667 0 0 0 1.989-3.263A7.987 7.987 0 0 0 12 4"/></svg></span>
+                          <span class="shortcut-label">笔记</span>
+                        </span>
+                        <span class="shortcut-btn" role="presentation">
+                          <span class="shortcut-icon"><svg class="shortcut-fallback-icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path fill="currentColor" fill-rule="nonzero" d="M12 2c5.523 0 10 4.477 10 10s-4.477 10-10 10S2 17.523 2 12 6.477 2 12 2m2 11.4-1.564 1.251a.5.5 0 0 0-.041.744l1.239 1.239a2 2 0 0 1 .508.864l.175.613a1.8 1.8 0 0 0 1.017 1.163 8.021 8.021 0 0 0 2.533-1.835l-.234-1.877a2 2 0 0 0-1.09-1.54l-1.47-.736A1 1 0 0 0 14 13.4M12 4a7.987 7.987 0 0 0-6.335 3.114l-.165.221V9.02a3 3 0 0 0 1.945 2.809l.178.06 1.29.395c1.373.42 2.71-.697 2.577-2.096l-.019-.145-.175-1.049a1 1 0 0 1 .656-1.108l.108-.03.612-.14a2.667 2.667 0 0 0 1.989-3.263A7.987 7.987 0 0 0 12 4"/></svg></span>
+                          <span class="shortcut-label">邮件</span>
+                        </span>
+                      </div>
+                    </section>
+                  </div>
+                </div>
+              </div>
+              <p class="oobe-mini-note" id="oobeMiniNote" hidden>仅供参考</p>
+            </div>
+          </div>
+        </div>
+        <div class="oobe-footer">
+          <button class="oobe-btn oobe-btn-text" id="oobeSkipBtn" type="button">跳过引导</button>
+          <div class="oobe-footer-spacer"></div>
+          <div class="oobe-footer-actions">
+            <button class="oobe-btn oobe-btn-ghost" id="oobeBackBtn" type="button" hidden>上一步</button>
+            <button class="oobe-btn oobe-btn-primary" id="oobeNextBtn" type="button">开始</button>
+          </div>
+        </div>
+      </div>
+      <div class="oobe-progress" id="oobeProgress" aria-hidden="true"></div>
+    </div>
+  </div>
+  <!-- 自定义引擎弹窗 -->
+  <div class="modal-overlay" id="engineModal" role="dialog" aria-modal="true" aria-labelledby="engineModalTitle" aria-hidden="true" inert>
+    <div class="modal-box">
+      <div class="modal-header">
+        <span id="engineModalTitle">添加搜索引擎</span>
+        <button class="modal-close" id="modalClose" type="button" aria-label="关闭">
+          <span class="mgc_close_line" aria-hidden="true"></span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-field">
+          <label for="customEngineName">名称</label>
+          <input type="text" id="customEngineName" name="engineName" placeholder="例如 DuckDuckGo" maxlength="20" autocomplete="off" spellcheck="false">
+        </div>
+        <div class="modal-field">
+          <label for="customEngineUrl">搜索链接</label>
+          <input type="url" id="customEngineUrl" name="engineUrl" inputmode="url" placeholder="https://duckduckgo.com/?q=%s" autocomplete="off" spellcheck="false">
+          <p class="modal-tip">用 %s 代替搜索词的位置，例如 https://duckduckgo.com/?q=%s</p>
+        </div>
+        <p class="modal-error" id="engineModalError" role="alert" aria-live="polite"></p>
+      </div>
+      <div class="modal-footer">
+        <button class="modal-cancel" id="modalCancel" type="button">取消</button>
+        <button class="modal-confirm" id="modalConfirm" type="button">添加</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 快捷导航右键菜单（普通项） -->
+  <div class="context-menu" id="shortcutContextMenu" role="menu" aria-label="快捷方式菜单" hidden>
+    <button class="context-menu-item" id="ctxEdit" type="button" role="menuitem">
+      <span class="mgc_edit_line" aria-hidden="true"></span>
+      <span>编辑</span>
+    </button>
+    <button class="context-menu-item context-menu-item-danger" id="ctxDelete" type="button" role="menuitem">
+      <span class="mgc_delete_2_line" aria-hidden="true"></span>
+      <span>删除</span>
+    </button>
+    <div class="context-menu-sep" role="separator"></div>
+    <button class="context-menu-item" id="ctxAddRight" type="button" role="menuitem">
+      <span class="mgc_add_line" aria-hidden="true"></span>
+      <span>在右侧添加快捷方式</span>
+    </button>
+    <button class="context-menu-item" id="ctxAddFolderRight" type="button" role="menuitem">
+      <span class="mgc_folder_2_line" aria-hidden="true"></span>
+      <span>在右侧新建文件夹</span>
+    </button>
+  </div>
+
+  <!-- 快捷导航右键菜单（文件夹） -->
+  <div class="context-menu" id="folderContextMenu" role="menu" aria-label="文件夹菜单" hidden>
+    <button class="context-menu-item" id="fCtxEdit" type="button" role="menuitem">
+      <span class="mgc_edit_line" aria-hidden="true"></span>
+      <span>重命名</span>
+    </button>
+    <button class="context-menu-item" id="fCtxAdd" type="button" role="menuitem">
+      <span class="mgc_add_line" aria-hidden="true"></span>
+      <span>添加快捷方式</span>
+    </button>
+    <button class="context-menu-item" id="fCtxAddSubfolder" type="button" role="menuitem">
+      <span class="mgc_folder_2_line" aria-hidden="true"></span>
+      <span>新建子文件夹</span>
+    </button>
+    <button class="context-menu-item context-menu-item-danger" id="fCtxDelete" type="button" role="menuitem">
+      <span class="mgc_delete_2_line" aria-hidden="true"></span>
+      <span>删除文件夹</span>
+    </button>
+    <div class="context-menu-sep" role="separator"></div>
+    <button class="context-menu-item" id="fCtxAddRight" type="button" role="menuitem">
+      <span class="mgc_add_line" aria-hidden="true"></span>
+      <span>在右侧添加快捷方式</span>
+    </button>
+    <button class="context-menu-item" id="fCtxAddFolderRight" type="button" role="menuitem">
+      <span class="mgc_folder_2_line" aria-hidden="true"></span>
+      <span>在右侧新建文件夹</span>
+    </button>
+  </div>
+
+  <!-- 快捷栏空白处右键菜单 -->
+  <div class="context-menu" id="shortcutsBarContextMenu" role="menu" aria-label="快捷栏菜单" hidden>
+    <button class="context-menu-item" id="barAddItem" type="button" role="menuitem">
+      <span class="mgc_add_line" aria-hidden="true"></span>
+      <span>添加快捷方式</span>
+    </button>
+    <button class="context-menu-item" id="barAddFolder" type="button" role="menuitem">
+      <span class="mgc_folder_2_line" aria-hidden="true"></span>
+      <span>新建文件夹</span>
+    </button>
+  </div>
+
+  <!-- 文件夹内：链接项右键菜单 -->
+  <div class="context-menu" id="childShortcutContextMenu" role="menu" aria-label="快捷方式菜单" hidden>
+    <button class="context-menu-item" id="cCtxEdit" type="button" role="menuitem">
+      <span class="mgc_edit_line" aria-hidden="true"></span>
+      <span>编辑</span>
+    </button>
+    <button class="context-menu-item context-menu-item-danger" id="cCtxDelete" type="button" role="menuitem">
+      <span class="mgc_delete_2_line" aria-hidden="true"></span>
+      <span>删除</span>
+    </button>
+    <div class="context-menu-sep" role="separator"></div>
+    <button class="context-menu-item" id="cCtxAddRight" type="button" role="menuitem">
+      <span class="mgc_add_line" aria-hidden="true"></span>
+      <span>在右侧添加快捷方式</span>
+    </button>
+    <button class="context-menu-item" id="cCtxAddFolderRight" type="button" role="menuitem">
+      <span class="mgc_folder_2_line" aria-hidden="true"></span>
+      <span>在右侧新建文件夹</span>
+    </button>
+  </div>
+
+  <!-- 文件夹内：子文件夹右键菜单 -->
+  <div class="context-menu" id="childFolderContextMenu" role="menu" aria-label="子文件夹菜单" hidden>
+    <button class="context-menu-item" id="cfCtxEdit" type="button" role="menuitem">
+      <span class="mgc_edit_line" aria-hidden="true"></span>
+      <span>重命名</span>
+    </button>
+    <button class="context-menu-item" id="cfCtxAdd" type="button" role="menuitem">
+      <span class="mgc_add_line" aria-hidden="true"></span>
+      <span>添加快捷方式</span>
+    </button>
+    <button class="context-menu-item" id="cfCtxAddSubfolder" type="button" role="menuitem">
+      <span class="mgc_folder_2_line" aria-hidden="true"></span>
+      <span>新建子文件夹</span>
+    </button>
+    <button class="context-menu-item context-menu-item-danger" id="cfCtxDelete" type="button" role="menuitem">
+      <span class="mgc_delete_2_line" aria-hidden="true"></span>
+      <span>删除文件夹</span>
+    </button>
+  </div>
+
+  <!-- 自定义取色器（流光渐变配色） -->
+  <div class="mf-color-popover" id="mfColorPopover" role="dialog" aria-label="选择颜色" hidden>
+    <div class="mf-color-sv" id="mfColorSv" tabindex="0" aria-label="饱和度与明度">
+      <div class="mf-color-sv-cursor" id="mfColorSvCursor" aria-hidden="true"></div>
+    </div>
+    <div class="mf-color-hue-wrap">
+      <input type="range" class="mf-color-hue" id="mfColorHue" min="0" max="360" step="1" value="0" aria-label="色相">
+    </div>
+    <div class="mf-color-row">
+      <span class="mf-color-preview" id="mfColorPreview" aria-hidden="true"></span>
+      <input type="text" class="mf-color-hex" id="mfColorHex" maxlength="7" spellcheck="false" autocomplete="off" aria-label="十六进制颜色" placeholder="#000000">
+    </div>
+    <div class="mf-color-presets" id="mfColorPresets" role="listbox" aria-label="预设颜色"></div>
+  </div>
+
+  <!-- 快捷导航弹窗 -->
+  <div class="modal-overlay" id="shortcutModal" role="dialog" aria-modal="true" aria-labelledby="shortcutModalTitle" aria-hidden="true" inert>
+    <div class="modal-box">
+      <div class="modal-header">
+        <span id="shortcutModalTitle">添加快捷方式</span>
+        <button class="modal-close" id="shortcutModalClose" type="button" aria-label="关闭">
+          <span class="mgc_close_line" aria-hidden="true"></span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-field" id="shortcutNameField">
+          <label for="shortcutName">名称</label>
+          <input type="text" id="shortcutName" name="shortcutName" placeholder="例如 GitHub" maxlength="20" autocomplete="off" spellcheck="false">
+        </div>
+        <div class="modal-field" id="shortcutUrlField">
+          <label for="shortcutUrl">链接</label>
+          <input type="url" id="shortcutUrl" name="shortcutUrl" inputmode="url" placeholder="https://github.com" autocomplete="off" spellcheck="false">
+        </div>
+        <div class="modal-field" id="shortcutIconField">
+          <label for="shortcutIcon">图标链接（可选）</label>
+          <input type="url" id="shortcutIcon" name="shortcutIcon" inputmode="url" placeholder="留空则自动获取…" autocomplete="off" spellcheck="false">
+          <p class="modal-tip">自定义 favicon 图标的完整 URL，留空将自动探测</p>
+        </div>
+        <p class="modal-error" id="shortcutModalError" role="alert" aria-live="polite"></p>
+      </div>
+      <div class="modal-footer">
+        <button class="modal-cancel" id="shortcutModalCancel" type="button">取消</button>
+        <button class="modal-confirm" id="shortcutModalConfirm" type="button">添加</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 按依赖顺序加载：配置 → 工具 → 主题 → 问候 → 背景 → 搜索 → 快捷方式 → 设置 → 启动 -->
+  <script src="js/config.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/theme.js"></script>
+  <script src="js/greeting.js"></script>
+  <script src="js/background.js"></script>
+  <script src="js/search.js"></script>
+  <script src="js/shortcuts.js"></script>
+  <script src="js/settings.js"></script>
+  <script type="module" src="js/oobe-grain.js"></script>
+  <script src="js/oobe.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

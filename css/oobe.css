@@ -1,0 +1,2384 @@
+/**
+ * MoonFog - 首次欢迎 OOBE（类 Win11 骨架）
+ * 背景 / 插图后续可按页替换
+ */
+
+.oobe {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.oobe.is-visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* 仅属性 hidden 时隐藏；JS 会 removeAttribute */
+.oobe[hidden] {
+  display: none !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+/* 打开中：即便 CSS 缓存旧版，也尽量可见 */
+body.oobe-active #oobe:not([hidden]) {
+  display: flex !important;
+}
+
+/* 毛玻璃：跟随当前浅/深（data-mode），不写死深色 */
+.oobe-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: color-mix(in srgb, var(--bg-warm, #f5f0e8) 55%, transparent);
+  backdrop-filter: blur(32px) saturate(1.12);
+  -webkit-backdrop-filter: blur(32px) saturate(1.12);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.oobe.is-visible .oobe-bg {
+  opacity: 1;
+}
+
+html[data-mode="light"] .oobe-bg {
+  background: color-mix(in srgb, var(--bg-warm, #f5f0e8) 58%, rgba(255, 255, 255, 0.35));
+}
+
+html[data-mode="dark"] .oobe-bg {
+  background: color-mix(in srgb, var(--bg-warm, #1c1a18) 78%, #080706);
+  backdrop-filter: blur(32px) saturate(0.86) brightness(0.68);
+  -webkit-backdrop-filter: blur(32px) saturate(0.86) brightness(0.68);
+}
+
+.oobe-grain {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  border-radius: inherit;
+  opacity: 0;
+  pointer-events: none;
+  background: transparent;
+  transition: opacity 0.48s ease;
+}
+
+.oobe.is-visible.is-welcome-step .oobe-grain {
+  opacity: 1;
+}
+
+.oobe-brand-watermark {
+  position: absolute;
+  z-index: 0;
+  top: 50%;
+  right: clamp(16px, 2.4vw, 30px);
+  width: clamp(280px, 39%, 380px);
+  height: auto;
+  opacity: 0;
+  pointer-events: none;
+  mix-blend-mode: multiply;
+  filter: saturate(1.08) contrast(1.03);
+  transform: translateY(-50%) scale(0.98);
+  transform-origin: center;
+  transition:
+    opacity 0.72s ease,
+    transform 1.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.oobe-brand-stop-1,
+.oobe-brand-stop-4 {
+  stop-color: #f4e6be;
+}
+
+.oobe-brand-stop-2 {
+  stop-color: #e8cf92;
+}
+
+.oobe-brand-stop-3 {
+  stop-color: #d8b569;
+}
+
+.oobe.is-visible.is-welcome-step .oobe-brand-watermark {
+  opacity: 0.48;
+  transform: translateY(-50%) scale(1);
+}
+
+.oobe-shell {
+  position: relative;
+  z-index: 2;
+  width: min(1040px, calc(100vw - 40px));
+  max-width: 100%;
+  max-height: calc(100vh - 24px);
+  padding: clamp(12px, 2.5vw, 24px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(12px, 2vw, 18px);
+  box-sizing: border-box;
+  opacity: 0;
+  transform: translateY(10px) scale(0.992);
+  transition:
+    opacity 0.42s ease,
+    transform 0.58s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.oobe.is-visible .oobe-shell {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.oobe-card {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  width: min(960px, 100%);
+  min-height: 0;
+  max-height: none;
+  height: min(600px, calc(100dvh - 104px));
+  padding: clamp(18px, 2.8vw, 28px);
+  border-radius: clamp(14px, 2vw, 20px);
+  box-sizing: border-box;
+  background: color-mix(in srgb, var(--card-bg, #fff) 88%, transparent);
+  border: 1px solid color-mix(in srgb, var(--text-primary, #111) 10%, transparent);
+  box-shadow:
+    0 1px 0 color-mix(in srgb, #fff 55%, transparent) inset,
+    0 28px 80px rgba(0, 0, 0, 0.12);
+  backdrop-filter: blur(22px) saturate(1.2);
+  -webkit-backdrop-filter: blur(22px) saturate(1.2);
+  color: var(--text-primary, #1a1a1a);
+  overflow: hidden;
+}
+
+.oobe-card.is-resizing {
+  transition: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .oobe-card {
+    transition: none;
+  }
+}
+
+html[data-mode="light"] .oobe-card {
+  background: color-mix(in srgb, var(--card-bg, #fff) 90%, transparent);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.7) inset,
+    0 28px 80px rgba(0, 0, 0, 0.1);
+}
+
+html[data-mode="dark"] .oobe-card {
+  background: color-mix(in srgb, var(--card-bg, #2a2824) 86%, transparent);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.06) inset,
+    0 24px 64px rgba(0, 0, 0, 0.45);
+}
+
+/* 进度条在卡片外、下方（更轻、不抢内容） */
+.oobe-progress {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+html[data-mode="dark"] .oobe-progress {
+  background: transparent;
+  box-shadow: none;
+}
+
+.oobe-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--text-primary, #111) 18%, transparent);
+  transition: width 0.25s ease, background 0.25s ease;
+}
+
+.oobe-dot.is-done {
+  background: color-mix(in srgb, var(--text-primary, #111) 40%, transparent);
+}
+
+.oobe-dot.is-active {
+  width: 24px;
+  background: var(--text-primary, #1a1a1a);
+}
+
+.oobe-stage {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+  z-index: 1;
+  /* 占满卡片中「页脚上方」的全部高度，供右侧图框拉伸 */
+  height: 100%;
+}
+
+.oobe-layout {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  height: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 0.88fr);
+  gap: clamp(16px, 2.5vw, 28px);
+  /* 左右同高，右侧图框可拉满到页脚上方 */
+  align-items: stretch;
+}
+
+.oobe-body {
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: stretch;
+  /* 与右侧图框顶对齐，不额外顶 padding */
+  padding-top: 0;
+  overflow-x: hidden;
+  /* 桌面：尽量一页展示，不出现滚动条 */
+  overflow-y: hidden;
+}
+
+/* 右侧介绍图：顶到底，贴到页脚按钮上方 */
+.oobe-media {
+  min-width: 0;
+  min-height: 0;
+  width: 100%;
+  max-width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  align-self: stretch;
+  /* 与左侧 kicker/标题同一顶线 */
+  margin-top: 0;
+  padding-top: 0;
+  /* 迷你主页可溢出到框外；框本身仍裁圆角 */
+  overflow: visible;
+}
+
+.oobe-media-frame {
+  position: relative;
+  width: 100%;
+  max-width: 100%;
+  flex: 1 1 auto;
+  height: 100%;
+  min-height: 0;
+  max-height: none;
+  /* 标准 16:9 布局（PPT/视频比例），桌面端固定比例，移动端随容器 */
+  aspect-ratio: 16 / 9;
+  border-radius: 18px;
+  /* 始终裁切壁纸/纯色，保证圆角 */
+  overflow: hidden;
+  isolation: isolate;
+  border: 1px solid color-mix(in srgb, var(--text-primary, #111) 10%, transparent);
+  background:
+    linear-gradient(
+      145deg,
+      color-mix(in srgb, var(--text-primary, #111) 6%, transparent),
+      color-mix(in srgb, var(--bg-warm, #f5f0e8) 70%, transparent)
+    );
+  box-shadow: none;
+  transition:
+    opacity 0.16s ease,
+    transform 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.oobe-media-frame.is-preview-leaving {
+  opacity: 0;
+  transform: scale(0.985);
+}
+
+.oobe-media-frame.is-preview-entering {
+  animation: oobe-preview-enter 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes oobe-preview-enter {
+  from {
+    opacity: 0;
+    transform: scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+
+
+.oobe-media-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: cover;
+  object-position: center center;
+  display: block;
+  /* 圆角由父级 frame overflow:hidden 裁切 */
+  border-radius: 0;
+}
+
+.oobe-media-grain {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  display: none;
+  pointer-events: none;
+  background: #f6f1ea;
+}
+
+html[data-mode="dark"] .oobe-media-grain {
+  background: #17140f;
+}
+
+.oobe-media-frame.is-grain-preview .oobe-media-grain {
+  display: block;
+}
+
+.oobe-media-grain canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* 壁纸实时预览与主页共用同一组模糊、缩放变量。 */
+.oobe-media-frame.is-image-preview .oobe-media-img {
+  filter: blur(var(--bg-blur, 20px));
+  transform: scale(calc(var(--bg-scale, 1.04) * 1.03));
+  transform-origin: center center;
+  will-change: transform, opacity, filter;
+}
+
+/* 图片加载完成后才显示与主页一致的中性压暗/提亮遮罩。 */
+.oobe-media-wash {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: transparent;
+  transition: background 0.4s ease;
+}
+
+.oobe-media-frame.is-image-preview.has-image .oobe-media-wash {
+  background: var(--bg-neutral-wash, var(--img-wash, transparent));
+}
+
+.oobe-media-img[hidden] {
+  display: none !important;
+  animation: none !important;
+}
+
+/* 切换壁纸：淡入 + 缩放（对齐主页 bg-enter-fade） */
+.oobe-media-frame.is-image-preview .oobe-media-img.is-enter {
+  animation: oobe-bg-enter 0.85s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.oobe-media-frame.is-image-preview .oobe-media-img.is-settle {
+  transform: scale(var(--bg-scale, 1.04));
+  opacity: 1;
+  animation: none;
+}
+
+@keyframes oobe-bg-enter {
+  from {
+    opacity: 0;
+    transform: scale(calc(var(--bg-scale, 1.04) * 1.07));
+  }
+  to {
+    opacity: 1;
+    transform: scale(var(--bg-scale, 1.04));
+  }
+}
+
+/* 纯色切换：轻淡入 */
+.oobe-media-frame.is-solid-preview.is-solid-enter {
+  animation: oobe-solid-enter 0.38s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes oobe-solid-enter {
+  from {
+    opacity: 0.55;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .oobe-media-frame.is-image-preview .oobe-media-img.is-enter,
+  .oobe-media-frame.is-solid-preview.is-solid-enter {
+    animation: none;
+  }
+
+  .oobe-media-frame.is-image-preview .oobe-media-img {
+    transform: scale(var(--bg-scale, 1.04));
+  }
+}
+
+.oobe-media-empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--text-tertiary, #9a9a9a);
+  user-select: none;
+  pointer-events: none;
+}
+
+.oobe-media-frame.has-image .oobe-media-empty {
+  display: none;
+}
+
+/* 纯色背景实时预览：色块即可 */
+.oobe-media-frame.is-solid-preview {
+  background: var(--bg-warm, #f5f0e8);
+  box-shadow: none;
+}
+
+.oobe-media-frame.is-solid-preview .oobe-media-empty {
+  display: none !important;
+}
+
+.oobe-media-frame.is-solid-preview .oobe-media-img {
+  display: none !important;
+}
+
+.oobe-media-frame.is-grain-preview .oobe-media-img,
+.oobe-media-frame.is-grain-preview .oobe-media-empty {
+  display: none !important;
+}
+
+.oobe-media-frame.is-image-preview {
+  background: color-mix(in srgb, var(--text-primary, #111) 8%, transparent);
+}
+
+/* 欢迎页：系统背景 + 居中 logo */
+.oobe-logo-panel {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* 跟随系统/主题背景 */
+  background:
+    linear-gradient(
+      145deg,
+      var(--bg-warm, #f5f0e8) 0%,
+      color-mix(in srgb, var(--bg-warm-alt, var(--bg-warm, #f5f0e8)) 88%, var(--bg-warm, #f5f0e8)) 100%
+    );
+  pointer-events: none;
+}
+
+.oobe-logo-panel[hidden] {
+  display: none !important;
+}
+
+.oobe-media-frame.has-logo {
+  border-color: color-mix(in srgb, var(--text-primary, #111) 8%, transparent);
+  background: var(--bg-warm, #f5f0e8);
+}
+
+.oobe-media-frame.has-logo .oobe-media-empty,
+.oobe-media-frame.has-logo .oobe-media-img {
+  display: none !important;
+}
+
+.oobe-logo-svg {
+  width: min(42%, 168px);
+  height: auto;
+  aspect-ratio: 488 / 520;
+  color: var(--text-primary, #1a1a1a);
+  opacity: 0.88;
+  filter: drop-shadow(0 8px 24px color-mix(in srgb, var(--text-primary, #111) 12%, transparent));
+}
+
+/* 设置引导：居中正式按钮 + 指针（对齐主页设置钮） */
+.oobe-settings-tip {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-warm, #f5f0e8);
+}
+
+.oobe-settings-tip[hidden] {
+  display: none !important;
+}
+
+.oobe-media-frame.has-settings-tip {
+  border-color: color-mix(in srgb, var(--text-primary, #111) 8%, transparent);
+  background: var(--bg-warm, #f5f0e8);
+}
+
+.oobe-media-frame.has-settings-tip .oobe-media-empty,
+.oobe-media-frame.has-settings-tip .oobe-media-img {
+  display: none !important;
+}
+
+.oobe-settings-center {
+  position: relative;
+  width: 120px;
+  height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 放大版主页设置钮 */
+.oobe-settings-btn-mock {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border, color-mix(in srgb, var(--text-primary, #111) 12%, transparent));
+  background: var(--card-bg, #fff);
+  color: var(--text-primary, #1a1a1a);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+  z-index: 1;
+  animation: oobe-settings-btn-press 2.8s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+}
+
+.oobe-settings-btn-mock .settings-btn-icon,
+.oobe-settings-btn-mock .mgc_settings_3_line {
+  font-size: 32px;
+  line-height: 1;
+  display: block;
+}
+
+/* 指针：标准箭头 */
+.oobe-settings-cursor {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 40px;
+  height: 40px;
+  margin-left: -4px;
+  margin-top: -2px;
+  color: #1a1a1a;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.28));
+  transform-origin: 12% 8%;
+  animation: oobe-cursor-point 2.8s cubic-bezier(0.33, 1, 0.68, 1) infinite;
+  z-index: 3;
+  pointer-events: none;
+  will-change: transform, opacity;
+  opacity: 1;
+}
+
+.oobe-cursor-svg {
+  display: block;
+  width: 40px;
+  height: 40px;
+  overflow: visible;
+}
+
+@keyframes oobe-cursor-point {
+  0% {
+    transform: translate(56px, 58px) scale(1);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  42% {
+    transform: translate(18px, 20px) scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: translate(16px, 18px) scale(0.92);
+    opacity: 1;
+  }
+  58% {
+    transform: translate(18px, 20px) scale(1);
+    opacity: 1;
+  }
+  82% {
+    transform: translate(18px, 20px) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(18px, 20px) scale(1);
+    opacity: 0;
+  }
+}
+
+@keyframes oobe-settings-btn-press {
+  0%,
+  46% {
+    transform: scale(1);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+  }
+  50% {
+    transform: scale(0.92);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+  }
+  58%,
+  100% {
+    transform: scale(1);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .oobe-settings-btn-mock,
+  .oobe-settings-cursor {
+    animation: none;
+  }
+
+  .oobe-settings-cursor {
+    transform: translate(18px, 20px);
+    opacity: 1;
+  }
+}
+
+/*
+ * 迷你主页：叠在 .oobe-media 上（不在 frame 内）
+ * frame 保持 overflow:hidden 裁圆角；迷你可半截出框
+ */
+.oobe-media.has-mini-home .oobe-media-frame {
+  overflow: hidden;
+}
+
+.oobe-mini-home {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  /* 靠右：左半截可出框外 */
+  justify-content: flex-end;
+  overflow: visible;
+  box-sizing: border-box;
+  pointer-events: none;
+  user-select: none;
+  padding-right: 0;
+}
+
+.oobe-mini-home[hidden] {
+  display: none !important;
+}
+
+.oobe-mini-scale {
+  width: 720px;
+  transform: scale(0.72) translateX(18%);
+  transform-origin: right center;
+  flex-shrink: 0;
+  margin-right: -18%;
+}
+
+.oobe-mini-content.content {
+  min-height: 0;
+  height: auto;
+  width: 100%;
+  max-width: 720px;
+  margin: 0;
+  padding: 28px 36px;
+  gap: var(--space-lg, 1.25rem);
+  left: 0 !important;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  /* 关掉进场动画，避免预览里闪 */
+  animation: none !important;
+  opacity: 1 !important;
+}
+
+.oobe-mini-content .greeting-section,
+.oobe-mini-content .search-section,
+.oobe-mini-content .shortcuts-section,
+.oobe-mini-content .search-box,
+.oobe-mini-content .shortcut-btn {
+  animation: none !important;
+  opacity: 1 !important;
+  transform: none !important;
+  pointer-events: none;
+  cursor: default;
+}
+
+.oobe-mini-content .greeting-title {
+  visibility: visible;
+  min-height: 0;
+}
+
+/* 搜索框占位：复用 .search-input 外观，但不是真 input */
+.oobe-mini-content .oobe-mini-search-ph.search-input {
+  display: flex;
+  align-items: center;
+  height: 44px;
+  color: var(--text-tertiary);
+  pointer-events: none;
+}
+
+.oobe-mini-content .search-btn,
+.oobe-mini-content .shortcut-btn {
+  pointer-events: none;
+  cursor: default;
+}
+
+/* 快捷标签：结构/样式与主页一致，只禁交互 */
+.oobe-mini-content .shortcut-btn:hover,
+.oobe-mini-content .shortcut-btn:active {
+  padding-left: 12px;
+  padding-right: 12px;
+  transform: none;
+  border-color: var(--border);
+  background: color-mix(in srgb, var(--card-bg) 78%, transparent);
+}
+
+/* 图上预览：对齐 body.has-image-bg 的 chrome 配方 */
+/* 明暗选项：只改迷你主页预览 chrome */
+.oobe-mini-home.is-preview-dark.is-on-solid .oobe-mini-content .greeting-title {
+  color: #f2f0ec;
+}
+.oobe-mini-home.is-preview-dark.is-on-solid .oobe-mini-content .search-box {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.16);
+  color: rgba(255, 255, 255, 0.72);
+}
+.oobe-mini-home.is-preview-dark.is-on-solid .oobe-mini-content .oobe-mini-search-ph {
+  color: rgba(255, 255, 255, 0.55);
+}
+.oobe-mini-home.is-preview-dark.is-on-solid .oobe-mini-content .search-btn {
+  color: #f2f0ec;
+}
+.oobe-mini-home.is-preview-dark.is-on-solid .oobe-mini-content .shortcut-btn {
+  color: #f2f0ec !important;
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.16);
+}
+
+.oobe-mini-home.is-on-image .oobe-mini-content .greeting-title {
+  color: var(--img-text, #fff);
+}
+
+.oobe-mini-home.is-on-image .oobe-mini-content .search-box {
+  background: color-mix(
+    in srgb,
+    var(--img-surface, rgba(28, 30, 36, 0.52)) var(--glass-fill, 42%),
+    transparent
+  );
+  border-color: color-mix(
+    in srgb,
+    var(--img-chrome-text, #fff) var(--glass-border, 28%),
+    transparent
+  );
+  color: var(--img-chrome-text, #fff);
+  backdrop-filter: blur(var(--search-blur, 16px)) saturate(var(--glass-saturate, 1.35));
+  -webkit-backdrop-filter: blur(var(--search-blur, 16px)) saturate(var(--glass-saturate, 1.35));
+  box-shadow: var(--glass-shadow, 0 8px 24px rgba(0, 0, 0, 0.16));
+}
+
+.oobe-mini-home.is-on-image .oobe-mini-content .oobe-mini-search-ph {
+  color: color-mix(in srgb, var(--img-chrome-text, #fff) 70%, transparent);
+}
+
+.oobe-mini-home.is-on-image .oobe-mini-content .search-btn {
+  color: var(--img-chrome-text, #fff);
+}
+
+.oobe-mini-home.is-on-image .oobe-mini-content .shortcut-btn {
+  color: var(--img-chrome-text, var(--img-text, var(--text-primary))) !important;
+  background: color-mix(
+    in srgb,
+    var(--img-surface, var(--card-bg)) var(--glass-fill, 42%),
+    transparent
+  );
+  border-color: color-mix(
+    in srgb,
+    var(--img-chrome-text, #fff) var(--glass-border, 28%),
+    transparent
+  );
+  backdrop-filter: blur(var(--chrome-blur, 14px)) saturate(var(--glass-saturate, 1.12));
+  -webkit-backdrop-filter: blur(var(--chrome-blur, 14px)) saturate(var(--glass-saturate, 1.12));
+  box-shadow: var(--glass-shadow, 0 8px 24px rgba(0, 0, 0, 0.16));
+  text-shadow: none !important;
+}
+
+.oobe-mini-home.is-on-image .oobe-mini-content .shortcut-btn:hover {
+  padding-left: 12px;
+  padding-right: 12px;
+  background: color-mix(
+    in srgb,
+    var(--img-surface, var(--card-bg)) var(--glass-fill, 42%),
+    transparent
+  );
+  border-color: color-mix(
+    in srgb,
+    var(--img-chrome-text, #fff) var(--glass-border, 28%),
+    transparent
+  );
+}
+
+.oobe-mini-home.is-on-image .oobe-mini-content .shortcut-label,
+.oobe-mini-home.is-on-image .oobe-mini-content .shortcut-icon,
+.oobe-mini-home.is-on-image .oobe-mini-content .shortcut-fallback-icon {
+  color: inherit !important;
+}
+
+/* 仅供参考：贴在预览图右下角（相对 .oobe-media） */
+.oobe-mini-note {
+  position: absolute;
+  right: 10px;
+  bottom: 8px;
+  z-index: 4;
+  margin: 0;
+  font-size: 0.625rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--text-tertiary, #9a9a9a);
+  line-height: 1;
+  text-align: right;
+  pointer-events: none;
+  user-select: none;
+}
+
+.oobe-mini-note.is-on-image,
+.oobe-media-frame.has-mini-home.is-image-preview .oobe-mini-note {
+  color: rgba(255, 255, 255, 0.58);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+}
+
+.oobe-mini-note[hidden] {
+  display: none !important;
+}
+
+/* 纯色色调：复用设置页 theme-swatches / theme-swatch */
+.oobe-tone-block {
+  margin-top: 14px;
+  max-width: min(420px, 100%);
+}
+
+.oobe-tone-block[hidden] {
+  display: none !important;
+}
+
+.oobe-tone-label {
+  margin: 0 0 8px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text-primary, #1a1a1a);
+}
+
+.oobe-tone-swatches.theme-swatches {
+  max-height: none;
+  margin: 0;
+  /* 欢迎页略紧凑：7 色一排或两排 */
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.oobe-tone-swatches .theme-swatch {
+  border-radius: 12px;
+}
+
+.oobe-tone-swatches .theme-swatch-fill {
+  border-radius: 12px;
+  --swatch: var(--swatch-light);
+}
+
+html[data-mode="dark"] .oobe-tone-swatches .theme-swatch-fill {
+  --swatch: var(--swatch-dark);
+}
+
+.oobe-tone-hint {
+  margin: 10px 0 0;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: var(--text-secondary, #6b6b6b);
+}
+
+/* 问候内容：单列选择，选项、说明和选中状态保持在同一阅读线。 */
+.oobe-greeting-block {
+  margin-top: 14px;
+  max-width: min(420px, 100%);
+}
+
+.oobe-greeting-block[hidden] {
+  display: none !important;
+}
+
+#oobeGreeting.oobe-greeting {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 0;
+  margin-top: 2px;
+  padding: 0;
+  max-width: none;
+  width: 100%;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--text-primary, #111) 11%, transparent);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--card-bg, #fff) 46%, transparent);
+  box-sizing: border-box;
+}
+
+#oobeGreeting .oobe-greet-chip {
+  position: relative;
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) 18px;
+  align-items: center;
+  gap: 9px;
+  min-height: 48px;
+  padding: 7px 12px 7px 10px;
+  border: none;
+  border-bottom: 1px solid color-mix(in srgb, var(--text-primary, #111) 8%, transparent);
+  border-radius: 0;
+  background: transparent;
+  color: var(--text-primary, #1a1a1a);
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+  box-shadow: none;
+  transition:
+    background 0.15s ease,
+    transform 0.12s ease;
+}
+
+#oobeGreeting .oobe-greet-chip:last-child {
+  border-bottom: none;
+}
+
+#oobeGreeting .oobe-greet-chip:hover {
+  background: color-mix(in srgb, var(--text-primary, #111) 5%, transparent);
+}
+
+#oobeGreeting .oobe-greet-chip.is-active {
+  background: color-mix(in srgb, var(--text-primary, #111) 7%, transparent);
+  box-shadow: none;
+}
+
+#oobeGreeting .oobe-greet-chip.is-active .oobe-greet-chip-icon {
+  background: color-mix(in srgb, var(--text-primary, #111) 12%, transparent);
+}
+
+#oobeGreeting .oobe-greet-chip:active {
+  transform: scale(0.98);
+}
+
+#oobeGreeting .oobe-greet-chip-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--text-primary, #111) 7%, transparent);
+  font-size: 15px;
+  line-height: 1;
+  opacity: 0.9;
+  flex-shrink: 0;
+}
+
+#oobeGreeting .oobe-greet-chip-copy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+#oobeGreeting .oobe-greet-chip-label {
+  font-size: 0.8125rem;
+  font-weight: 620;
+  line-height: 1.2;
+}
+
+#oobeGreeting .oobe-greet-chip-tip {
+  overflow: hidden;
+  color: var(--text-secondary, #6b6b6b);
+  font-size: 0.7rem;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#oobeGreeting .oobe-greet-chip-check {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--text-primary, #1a1a1a);
+  color: var(--card-bg, #fff);
+  font-size: 11px;
+  opacity: 0;
+  transform: scale(0.75);
+  transition: opacity 0.15s ease, transform 0.18s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+#oobeGreeting .oobe-greet-chip.is-active .oobe-greet-chip-check {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* 二级输入：收起/展开动画（不靠 display:none 硬切） */
+.oobe-name-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  opacity: 0;
+  max-height: 0;
+  transform: translateY(-6px);
+  pointer-events: none;
+  visibility: hidden;
+  transition:
+    opacity 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+    max-height 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+    margin 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+    visibility 0s linear 0.28s;
+}
+
+.oobe-name-field.is-open {
+  opacity: 1;
+  max-height: 88px;
+  margin-top: 10px;
+  transform: translateY(0);
+  pointer-events: auto;
+  visibility: visible;
+  transition:
+    opacity 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+    max-height 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+    margin 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+    visibility 0s linear 0s;
+}
+
+/* 展开过程中仍保持在文档流，避免 [hidden] 把动画掐死 */
+.oobe-name-field[hidden] {
+  display: flex !important;
+  opacity: 0;
+  max-height: 0;
+  margin-top: 0;
+  margin-bottom: 0;
+  transform: translateY(-6px);
+  pointer-events: none;
+  visibility: hidden;
+}
+
+.oobe-name-field.is-open[hidden] {
+  /* 打开态以 class 为准 */
+  opacity: 1;
+  max-height: 88px;
+  margin-top: 10px;
+  transform: translateY(0);
+  pointer-events: auto;
+  visibility: visible;
+}
+
+.oobe-field-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-secondary, #6b6b6b);
+  letter-spacing: -0.01em;
+}
+
+.oobe-field-input {
+  height: 40px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0 12px;
+  border-radius: 9px;
+  border: 1px solid color-mix(in srgb, var(--text-primary, #111) 12%, transparent);
+  background: color-mix(in srgb, var(--card-bg, #fff) 88%, transparent);
+  color: var(--text-primary, #1a1a1a);
+  font: inherit;
+  font-size: 0.875rem;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.oobe-field-input:hover {
+  border-color: color-mix(in srgb, var(--text-primary, #111) 20%, transparent);
+}
+
+.oobe-field-input:focus {
+  border-color: color-mix(in srgb, var(--text-primary, #111) 36%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--text-primary, #111) 8%, transparent);
+}
+
+.oobe-field-input::placeholder {
+  color: var(--text-tertiary, #9a9a9a);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .oobe-name-field {
+    transition: none;
+  }
+}
+
+@media (max-width: 560px) {
+  .oobe-tone-swatches.theme-swatches {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .oobe-greeting-block {
+    max-width: none;
+  }
+
+  .oobe-name-field {
+    max-width: none;
+  }
+}
+
+@media (max-width: 560px) {
+  .oobe-mini-scale {
+    transform: scale(0.58) translateX(8%);
+    margin-right: -10%;
+  }
+
+  .oobe-mini-note {
+    right: 8px;
+    bottom: 6px;
+    font-size: 0.5625rem;
+  }
+
+  .oobe-tone-swatch {
+    width: 26px;
+    height: 26px;
+  }
+
+  .oobe-tone-fill {
+    width: 18px;
+    height: 18px;
+  }
+}
+
+.oobe-media-empty-icon {
+  font-size: 32px;
+  line-height: 1;
+  opacity: 0.55;
+}
+
+.oobe-media-empty-text {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+
+/* 左右切换 */
+.oobe-stage.is-slide-out-left {
+  animation: oobe-out-left 0.2s cubic-bezier(0.4, 0, 1, 1) both;
+}
+
+.oobe-stage.is-slide-out-right {
+  animation: oobe-out-right 0.2s cubic-bezier(0.4, 0, 1, 1) both;
+}
+
+.oobe-stage.is-slide-in-right {
+  animation: oobe-in-right 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.oobe-stage.is-slide-in-left {
+  animation: oobe-in-left 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes oobe-out-left {
+  from {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    opacity: 0;
+    transform: translate3d(-28px, 0, 0);
+  }
+}
+
+@keyframes oobe-out-right {
+  from {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    opacity: 0;
+    transform: translate3d(28px, 0, 0);
+  }
+}
+
+@keyframes oobe-in-right {
+  from {
+    opacity: 0;
+    transform: translate3d(36px, 0, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes oobe-in-left {
+  from {
+    opacity: 0;
+    transform: translate3d(-36px, 0, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+/* 外观选择 */
+.oobe-appearance {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: clamp(8px, 1.2vw, 10px);
+  margin-top: 14px;
+  max-width: min(420px, 100%);
+  width: 100%;
+}
+
+.oobe-appearance.oobe-appear-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  max-width: min(420px, 100%);
+}
+
+.oobe-appearance.oobe-appear-4 {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  max-width: min(420px, 100%);
+}
+
+.oobe-wallpaper {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  max-width: min(420px, 100%);
+}
+
+.oobe-appear-card[hidden] {
+  display: none !important;
+}
+
+.oobe-appearance[hidden] {
+  display: none !important;
+}
+
+.oobe-appear-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-height: clamp(76px, 12vw, 92px);
+  padding: clamp(10px, 1.5vw, 14px) 8px clamp(8px, 1.2vw, 12px);
+  border-radius: 14px;
+  border: 1.5px solid color-mix(in srgb, var(--text-primary, #111) 12%, transparent);
+  background: color-mix(in srgb, var(--card-bg, #fff) 70%, transparent);
+  color: var(--text-primary, #1a1a1a);
+  cursor: pointer;
+  font: inherit;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.12s ease;
+}
+
+.oobe-appear-card:hover {
+  border-color: color-mix(in srgb, var(--text-primary, #111) 28%, transparent);
+  background: color-mix(in srgb, var(--card-bg, #fff) 88%, transparent);
+}
+
+.oobe-appear-card.is-active {
+  border-color: var(--text-primary, #1a1a1a);
+  box-shadow: 0 0 0 1px var(--text-primary, #1a1a1a);
+  background: color-mix(in srgb, var(--card-bg, #fff) 96%, transparent);
+}
+
+.oobe-appear-card:active {
+  transform: scale(0.98);
+}
+
+.oobe-appear-icon {
+  font-size: 22px;
+  line-height: 1;
+  opacity: 0.9;
+}
+
+.oobe-appear-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.oobe-appear-tip {
+  font-size: 0.6875rem;
+  color: var(--text-secondary, #6b6b6b);
+  line-height: 1.2;
+  text-align: center;
+}
+
+.oobe-wallpaper-tip {
+  margin: 10px 0 0;
+  font-size: 0.8125rem;
+  color: var(--text-secondary, #6b6b6b);
+  line-height: 1.4;
+}
+
+.oobe-wallpaper-tip[hidden] {
+  display: none !important;
+}
+
+
+
+.oobe-kicker {
+  margin: 0 0 6px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  color: var(--text-secondary, #6b6b6b);
+  /* 与右侧图框顶线对齐 */
+  line-height: 1.2;
+}
+
+.oobe-title {
+  margin: 0 0 10px;
+  font-size: clamp(1.5rem, 3.2vw, 2.2rem);
+  font-weight: 650;
+  line-height: 1.22;
+  letter-spacing: 0;
+  color: var(--text-primary, #1a1a1a);
+  max-width: none;
+}
+
+.oobe-desc {
+  margin: 0;
+  font-size: clamp(0.9375rem, 1.5vw, 1.05rem);
+  line-height: 1.55;
+  color: var(--text-secondary, #6b6b6b);
+  max-width: none;
+}
+
+/* 左侧控件列：统一左缘与宽度，避免各块 max-width 错位 */
+.oobe-body > .oobe-appearance,
+.oobe-body > .oobe-wallpaper,
+.oobe-body > .oobe-tone-block,
+.oobe-body > .oobe-greeting-block,
+.oobe-body > .oobe-points,
+.oobe-body > .oobe-wallpaper-tip {
+  align-self: stretch;
+  width: 100%;
+  max-width: min(420px, 100%);
+  box-sizing: border-box;
+}
+
+.oobe-points {
+  margin: 14px 0 0;
+  padding: 0 0 0 1.15em;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 0.9375rem;
+  line-height: 1.45;
+  color: var(--text-primary, #1a1a1a);
+}
+
+.oobe-points li {
+  padding-left: 2px;
+}
+
+.oobe-points li::marker {
+  color: var(--text-tertiary, #9a9a9a);
+}
+
+/* 欢迎页：引导步骤卡片列表 */
+.oobe-points.oobe-points--cards {
+  list-style: none;
+  margin: 16px 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  max-width: min(420px, 100%);
+  width: 100%;
+}
+
+.oobe-points.oobe-points--cards .oobe-point-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 11px;
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--text-primary, #111) 8%, transparent);
+  background: color-mix(in srgb, var(--text-primary, #111) 3.5%, transparent);
+}
+
+/* 设置步：功能清单不显示序号 */
+.oobe-points.oobe-points--no-num .oobe-point-num {
+  display: none;
+}
+
+.oobe-points.oobe-points--no-num .oobe-point-card {
+  padding-right: 11px;
+}
+
+.oobe-point-icon {
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9px;
+  font-size: 15px;
+  line-height: 1;
+  color: var(--text-primary, #1a1a1a);
+  background: color-mix(in srgb, var(--text-primary, #111) 7%, transparent);
+}
+
+.oobe-point-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.oobe-point-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--text-primary, #1a1a1a);
+}
+
+.oobe-point-tip {
+  font-size: 0.72rem;
+  line-height: 1.3;
+  color: var(--text-secondary, #6b6b6b);
+}
+
+.oobe-point-num {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.65rem;
+  font-weight: 650;
+  color: var(--text-secondary, #6b6b6b);
+  background: color-mix(in srgb, var(--text-primary, #111) 6%, transparent);
+}
+
+.oobe-footer {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+  margin-top: clamp(12px, 2vw, 16px);
+  padding-top: clamp(12px, 2vw, 16px);
+  border-top: 1px solid color-mix(in srgb, var(--text-primary, #111) 8%, transparent);
+}
+
+@media (min-width: 821px) {
+  .oobe-shell {
+    height: min(660px, calc(100dvh - 24px));
+    padding: 0;
+  }
+
+  .oobe-progress {
+    position: absolute;
+    left: 50%;
+    bottom: 0;
+    z-index: 3;
+    transform: translateX(-50%);
+  }
+}
+
+.oobe-footer-spacer {
+  flex: 1 1 auto;
+}
+
+.oobe-footer-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.oobe-btn {
+  min-height: 36px;
+  padding: 0 16px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 560;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease,
+    transform 0.12s ease;
+}
+
+.oobe-btn:active {
+  transform: scale(0.98);
+}
+
+.oobe-btn-text {
+  min-height: 36px;
+  padding: 0 12px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary, #6b6b6b);
+  font-weight: 520;
+}
+
+.oobe-btn-text:hover {
+  color: var(--text-primary, #1a1a1a);
+  background: color-mix(in srgb, var(--text-primary, #111) 5%, transparent);
+}
+
+.oobe-btn-text[hidden] {
+  display: none !important;
+}
+
+.oobe-btn-primary {
+  background: var(--text-primary, #1a1a1a);
+  color: var(--card-bg, #fff);
+  border-color: var(--text-primary, #1a1a1a);
+}
+
+.oobe-btn-primary:hover {
+  filter: brightness(1.08);
+}
+
+html[data-mode="light"] .oobe-btn-primary {
+  background: #1a1a1a;
+  color: #faf8f5;
+  border-color: #1a1a1a;
+}
+
+html[data-mode="dark"] .oobe-btn-primary {
+  background: #f0ebe3;
+  color: #1a1a1a;
+  border-color: #f0ebe3;
+}
+
+.oobe-btn-ghost {
+  background: transparent;
+  color: var(--text-secondary, #6b6b6b);
+  border-color: color-mix(in srgb, var(--text-primary, #111) 14%, transparent);
+}
+
+.oobe-btn-ghost:hover {
+  color: var(--text-primary, #1a1a1a);
+  background: color-mix(in srgb, var(--text-primary, #111) 5%, transparent);
+}
+
+.oobe-btn[hidden] {
+  display: none !important;
+}
+
+/* 首次引导期间完全隐藏真实主页；完成揭示时与卡片退场同时进场。 */
+html.boot-oobe-pending #mainContent,
+html.boot-oobe-pending .page-bg,
+html.boot-oobe-pending .bing-credit-wrap,
+html.boot-oobe-pending .settings-wrapper,
+body.oobe-active:not(.is-oobe-reveal) #mainContent,
+body.oobe-active:not(.is-oobe-reveal) .page-bg,
+body.oobe-active:not(.is-oobe-reveal) .bing-credit-wrap,
+body.oobe-active:not(.is-oobe-reveal) .settings-wrapper {
+  opacity: 0 !important;
+  visibility: hidden !important;
+  animation: none !important;
+  pointer-events: none !important;
+}
+
+/* 揭示中：主页可见并播进场，仍挡住交互直到 OOBE 卸掉 */
+body.oobe-active.is-oobe-reveal #mainContent,
+body.oobe-active.is-oobe-reveal .page-bg,
+body.oobe-active.is-oobe-reveal .bing-credit-wrap,
+body.oobe-active.is-oobe-reveal .settings-wrapper {
+  visibility: visible !important;
+  pointer-events: none !important;
+}
+
+body.oobe-active .settings-wrapper,
+body.oobe-active .settings-panel,
+body.oobe-active .bing-credit-wrap,
+body.oobe-active .modal-overlay,
+body.oobe-active .context-menu {
+  pointer-events: none !important;
+}
+
+/* 点「开始使用」：同一段 zoom — 卡往里缩，主页/背景从外往里收。
+ * canvas 已在 JS 里藏掉换成实色，opacity 可放心用。 */
+.oobe.is-closing {
+  opacity: 1;
+  pointer-events: none;
+  transition: none;
+}
+
+.oobe.is-closing .oobe-bg {
+  opacity: 0;
+  transition: opacity 0.32s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.oobe.is-closing .oobe-grain {
+  opacity: 1 !important;
+  transition: none !important;
+}
+
+.oobe.is-closing .oobe-brand-watermark {
+  opacity: 0 !important;
+  transition: opacity 0.2s ease !important;
+}
+
+/* 整壳向内缩 + 淡出，和主页外→内 zoom 对打 */
+.oobe.is-closing .oobe-shell {
+  opacity: 0;
+  transform: scale(0.86);
+  transform-origin: 50% 48%;
+  transition:
+    opacity 0.42s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.48s cubic-bezier(0.32, 0.04, 0.22, 1);
+  will-change: transform, opacity;
+}
+
+.oobe.is-closing .oobe-card {
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.1);
+}
+
+.oobe.is-closing .oobe-progress {
+  opacity: 0;
+  transition: opacity 0.24s ease;
+}
+
+/* 主页：外侧放大 → 正常（与卡片同拍、同缓动） */
+@keyframes page-enter-from-oobe {
+  0% {
+    opacity: 0;
+    transform: scale(1.1);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes page-enter-from-oobe-soft {
+  0% {
+    opacity: 0;
+    transform: scale(1.06);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes bg-enter-from-oobe {
+  0% {
+    opacity: 1;
+    transform: scale(calc(var(--bg-scale, 1.04) * 1.12));
+  }
+  100% {
+    opacity: 1;
+    transform: scale(var(--bg-scale, 1.04));
+  }
+}
+
+@keyframes page-bg-enter-from-oobe {
+  0% {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+html.boot-from-oobe.boot-ready .greeting-section {
+  animation: page-enter-from-oobe 0.48s cubic-bezier(0.32, 0.04, 0.22, 1) both !important;
+  transform-origin: 50% 45%;
+}
+
+html.boot-from-oobe.boot-ready .search-section .search-box {
+  animation: page-enter-from-oobe 0.48s cubic-bezier(0.32, 0.04, 0.22, 1) both !important;
+  transform-origin: 50% 50%;
+}
+
+html.boot-from-oobe.boot-ready .shortcuts-section .shortcut-btn,
+html.boot-from-oobe.boot-ready .shortcuts-section .shortcut-folder-trigger {
+  animation: page-enter-from-oobe 0.48s cubic-bezier(0.32, 0.04, 0.22, 1) both !important;
+  transform-origin: 50% 50%;
+}
+
+html.boot-from-oobe.boot-ready .bing-credit {
+  animation: page-enter-from-oobe-soft 0.48s cubic-bezier(0.32, 0.04, 0.22, 1) both !important;
+}
+
+html.boot-from-oobe.boot-ready .settings-wrapper {
+  animation: page-enter-from-oobe-soft 0.48s cubic-bezier(0.32, 0.04, 0.22, 1) both !important;
+}
+
+/* 壁纸层 / 整页背景：同一 zoom */
+html.boot-from-oobe.boot-ready.boot-has-image:not(.bg-entered) .page-bg-image.is-active {
+  animation: bg-enter-from-oobe 0.48s cubic-bezier(0.32, 0.04, 0.22, 1) both !important;
+}
+
+html.boot-from-oobe.boot-ready .page-bg {
+  animation: page-bg-enter-from-oobe 0.48s cubic-bezier(0.32, 0.04, 0.22, 1) both;
+  transform-origin: 50% 50%;
+}
+
+html.boot-from-oobe.boot-ready .greeting-section.boot-entered,
+html.boot-from-oobe.boot-ready .search-section.boot-entered .search-box,
+html.boot-from-oobe.boot-ready .shortcuts-section.boot-entered .shortcut-btn,
+html.boot-from-oobe.boot-ready .shortcuts-section.boot-entered .shortcut-folder-trigger,
+html.boot-from-oobe.boot-ready .bing-credit.boot-entered,
+html.boot-from-oobe.boot-ready .settings-wrapper.boot-entered {
+  animation: none !important;
+  opacity: 1 !important;
+  transform: none !important;
+}
+
+/* —— 响应式：图框只用 width + aspect-ratio，禁止 min/max 高度互抢 —— */
+
+@media (max-width: 1024px) {
+  .oobe-shell {
+    width: min(900px, calc(100vw - 32px));
+  }
+
+  .oobe-layout {
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.8fr);
+    gap: 18px;
+  }
+}
+
+/* 小屏：单列，图固定在文案下方，宽度 100%，比例固定 */
+@media (max-width: 820px) {
+  .oobe-brand-watermark {
+    right: -24px;
+    width: clamp(230px, 48%, 310px);
+    opacity: 0;
+  }
+
+  .oobe.is-visible.is-welcome-step .oobe-brand-watermark {
+    opacity: 0.38;
+  }
+
+  .oobe-shell {
+    width: min(640px, calc(100vw - 24px));
+    max-height: calc(100dvh - 12px);
+    padding: 12px;
+  }
+
+  .oobe-card {
+    max-height: calc(100dvh - 64px);
+    overflow: hidden;
+    padding: 18px 16px 14px;
+  }
+
+  .oobe-stage {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .oobe-layout {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 18px;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .oobe-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    order: 1;
+    justify-content: flex-start;
+    padding-top: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+  .oobe-media {
+    order: 2;
+    flex: 0 0 auto;
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+    align-self: stretch;
+    margin-top: 2px;
+  }
+
+  .oobe-kicker {
+    font-size: 0.875rem;
+  }
+
+  .oobe-title {
+    font-size: 1.55rem;
+    margin-bottom: 10px;
+  }
+
+  .oobe-desc {
+    font-size: 1rem;
+    line-height: 1.55;
+  }
+
+  .oobe-points {
+    margin-top: 14px;
+    font-size: 0.9375rem;
+    gap: 8px;
+  }
+
+  .oobe-media-frame {
+    width: 100%;
+    max-width: 100%;
+    aspect-ratio: 16 / 11;
+    height: auto;
+    flex: 0 0 auto;
+    min-height: 0;
+    max-height: none;
+    border-radius: 16px;
+  }
+
+  .oobe-appearance {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    max-width: none;
+  }
+
+  .oobe-wallpaper {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    max-width: none;
+  }
+
+  .oobe-footer {
+    flex-shrink: 0;
+  }
+}
+
+@media (max-width: 560px) {
+  .oobe-brand-watermark {
+    right: -44px;
+    width: 250px;
+  }
+
+  .oobe.is-visible.is-welcome-step .oobe-brand-watermark {
+    opacity: 0.3;
+  }
+
+  .oobe {
+    align-items: stretch;
+  }
+
+  .oobe-shell {
+    width: 100%;
+    max-width: 100%;
+    max-height: 100dvh;
+    height: 100dvh;
+    padding: 10px;
+    gap: 8px;
+  }
+
+  .oobe-card {
+    flex: 1 1 auto;
+    width: 100%;
+    max-height: none;
+    min-height: 0;
+    height: auto;
+    padding: 14px 12px 12px;
+    border-radius: 16px;
+  }
+
+  .oobe-layout {
+    gap: 16px;
+  }
+
+  .oobe-kicker {
+    font-size: 0.875rem;
+  }
+
+  .oobe-title {
+    font-size: 1.5rem;
+    margin-bottom: 10px;
+  }
+
+  .oobe-desc {
+    font-size: 1rem;
+    line-height: 1.55;
+  }
+
+  .oobe-points {
+    margin-top: 12px;
+    font-size: 0.9375rem;
+    gap: 8px;
+  }
+
+  .oobe-points.oobe-points--cards {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+.oobe-media-frame {
+    aspect-ratio: 16 / 9;
+    border-radius: 14px;
+  }
+
+  .oobe-media-empty-icon {
+    font-size: 26px;
+  }
+
+  .oobe-appear-card {
+    min-height: 72px;
+    padding: 10px 6px 8px;
+  }
+
+  .oobe-wallpaper {
+    grid-template-columns: 1fr;
+  }
+
+  .oobe-footer {
+    margin-top: 10px;
+    padding-top: 10px;
+  }
+
+  .oobe-btn {
+    min-height: 40px;
+  }
+}
+
+/* 矮屏：整体可滚动，图框仍只跟宽度走 */
+@media (max-height: 640px) and (min-width: 821px) {
+  .oobe-card {
+    max-height: calc(100dvh - 56px);
+  }
+
+  .oobe-layout {
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.7fr);
+  }
+}
+
+@media (max-height: 560px) {
+  .oobe-shell {
+    max-height: 100dvh;
+    overflow: hidden;
+  }
+
+  .oobe-card {
+    max-height: calc(100dvh - 48px);
+    overflow: hidden;
+  }
+
+  .oobe-body {
+    overflow-y: auto;
+  }
+
+  /* 矮屏单列时缩小图框占比：用 max-width 限制，不改 height */
+  .oobe-media {
+    max-width: min(100%, 420px);
+    margin-inline: auto;
+  }
+}
+
+/* 横屏小高：强制左右栏，图框固定比例不飘 */
+@media (max-height: 480px) and (orientation: landscape) {
+  .oobe-shell {
+    width: min(960px, calc(100vw - 16px));
+    height: 100dvh;
+    max-height: 100dvh;
+    padding: 8px;
+  }
+
+  .oobe-card {
+    max-height: calc(100dvh - 40px);
+    padding: 12px 14px;
+  }
+
+  .oobe-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.7fr);
+    flex-direction: unset;
+    gap: 12px;
+    align-items: stretch;
+    height: 100%;
+  }
+
+  .oobe-body,
+  .oobe-media {
+    order: unset;
+  }
+
+  .oobe-media {
+    max-width: none;
+    margin: 0;
+    height: 100%;
+  }
+
+  .oobe-media-frame {
+    aspect-ratio: auto;
+    height: 100%;
+    flex: 1 1 auto;
+  }
+
+  .oobe-appearance {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .oobe-wallpaper {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/* 欢迎页 / 完成页：居中 logo 开场布局；中间步骤负责配置。 */
+.oobe-card[data-step="welcome"],
+.oobe-card[data-step="ready"] {
+  width: min(960px, 100%);
+  min-height: 0;
+  --oobe-welcome-center-offset: 34px;
+  --oobe-welcome-logo-shift: -56px;
+  --oobe-welcome-copy-y: 52px;
+  --text-primary: #3b2d1b;
+  --text-secondary: #715b39;
+  --text-tertiary: #947c56;
+  --card-bg: #f6f1ea;
+  background: #f6f1ea;
+  border-color: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+html[data-mode="dark"] .oobe-card[data-step="welcome"],
+html[data-mode="dark"] .oobe-card[data-step="ready"] {
+  --text-primary: #f4e6be;
+  --text-secondary: #d6c49a;
+  --text-tertiary: #ad976b;
+  --card-bg: #17140f;
+  background: #17140f;
+  border-color: rgba(244, 230, 190, 0.08);
+  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.42);
+}
+
+html[data-mode="dark"] .oobe-card[data-step="welcome"] .oobe-btn-primary,
+html[data-mode="dark"] .oobe-card[data-step="ready"] .oobe-btn-primary {
+  color: #211b12;
+  background: #f4e6be;
+  border-color: #f4e6be;
+}
+
+html[data-mode="dark"] .oobe-brand-watermark {
+  mix-blend-mode: screen;
+  filter: saturate(1.04) contrast(1.02);
+}
+
+html[data-mode="dark"] .oobe-brand-stop-1,
+html[data-mode="dark"] .oobe-brand-stop-4 {
+  stop-color: #66502d;
+}
+
+html[data-mode="dark"] .oobe-brand-stop-2 {
+  stop-color: #a47b39;
+}
+
+html[data-mode="dark"] .oobe-brand-stop-3 {
+  stop-color: #d8b569;
+}
+
+.oobe-card[data-step="welcome"] .oobe-btn-primary,
+.oobe-card[data-step="ready"] .oobe-btn-primary {
+  color: #f6f1ea;
+  background: #3b2d1b;
+  border-color: #3b2d1b;
+}
+
+.oobe-card[data-step="welcome"] .oobe-footer,
+.oobe-card[data-step="ready"] .oobe-footer {
+  border-top: none;
+}
+
+.oobe-card[data-step="welcome"] .oobe-layout,
+.oobe-card[data-step="ready"] .oobe-layout {
+  display: block;
+  position: relative;
+  text-align: center;
+}
+
+.oobe-card[data-step="welcome"] .oobe-body,
+.oobe-card[data-step="ready"] .oobe-body {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: min(460px, 100%);
+  align-items: center;
+  justify-content: center;
+  overflow: visible;
+  transform: translate(-50%, var(--oobe-welcome-copy-y));
+}
+
+.oobe-card[data-step="welcome"] .oobe-media,
+.oobe-card[data-step="ready"] .oobe-media {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 128px;
+  height: 128px;
+  transform:
+    translate(-50%, -50%)
+    translateY(calc(var(--oobe-welcome-center-offset) + var(--oobe-welcome-logo-shift)));
+}
+
+.oobe-card[data-step="welcome"] .oobe-media-frame,
+.oobe-card[data-step="welcome"] .oobe-logo-panel,
+.oobe-card[data-step="ready"] .oobe-media-frame,
+.oobe-card[data-step="ready"] .oobe-logo-panel {
+  width: 128px;
+  height: 128px;
+  min-height: 0;
+  flex: 0 0 128px;
+  border: none;
+  background: transparent;
+}
+
+.oobe-card[data-step="welcome"] .oobe-logo-svg,
+.oobe-card[data-step="ready"] .oobe-logo-svg {
+  width: 96px;
+  opacity: 0.94;
+}
+
+.oobe-card[data-step="welcome"] .oobe-kicker,
+.oobe-card[data-step="ready"] .oobe-kicker {
+  display: none;
+}
+
+.oobe-card[data-step="welcome"] .oobe-title,
+.oobe-card[data-step="welcome"] .oobe-desc,
+.oobe-card[data-step="ready"] .oobe-title,
+.oobe-card[data-step="ready"] .oobe-desc {
+  max-width: 460px;
+  text-align: center;
+}
+
+.oobe-card[data-step="welcome"] .oobe-title,
+.oobe-card[data-step="ready"] .oobe-title {
+  margin-bottom: 12px;
+  font-size: clamp(1.8rem, 3.6vw, 2.25rem);
+}
+
+.oobe-card[data-step="welcome"] .oobe-points,
+.oobe-card[data-step="ready"] .oobe-points {
+  display: none !important;
+}
+
+.oobe.is-welcome-intro .oobe-card[data-step="welcome"] .oobe-media {
+  animation: oobe-welcome-logo-intro 2.15s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.oobe.is-welcome-intro .oobe-card[data-step="welcome"] .oobe-body {
+  animation: oobe-welcome-copy-intro 0.82s cubic-bezier(0.22, 1, 0.36, 1) 1.12s both;
+}
+
+.oobe.is-welcome-intro .oobe-card[data-step="welcome"] .oobe-footer,
+.oobe.is-welcome-intro .oobe-progress {
+  animation: oobe-welcome-controls-intro 0.68s ease 1.48s both;
+}
+
+@keyframes oobe-welcome-logo-intro {
+  0% {
+    opacity: 0;
+    transform:
+      translate(-50%, -50%)
+      translateY(var(--oobe-welcome-center-offset))
+      scale(0.98);
+  }
+  42% {
+    opacity: 1;
+    transform:
+      translate(-50%, -50%)
+      translateY(var(--oobe-welcome-center-offset))
+      scale(1);
+  }
+  100% {
+    opacity: 1;
+    transform:
+      translate(-50%, -50%)
+      translateY(calc(var(--oobe-welcome-center-offset) + var(--oobe-welcome-logo-shift)))
+      scale(1);
+  }
+}
+
+@keyframes oobe-welcome-copy-intro {
+  from {
+    opacity: 0;
+    transform: translate(-50%, calc(var(--oobe-welcome-copy-y) + 10px));
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, var(--oobe-welcome-copy-y));
+  }
+}
+
+@keyframes oobe-welcome-controls-intro {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (max-width: 820px) {
+  .oobe-card[data-step="welcome"],
+  .oobe-card[data-step="ready"] {
+    min-height: 0;
+    --oobe-welcome-center-offset: 32px;
+    --oobe-welcome-logo-shift: -48px;
+    --oobe-welcome-copy-y: 50px;
+  }
+
+  .oobe-card[data-step="welcome"] .oobe-layout,
+  .oobe-card[data-step="ready"] .oobe-layout {
+    display: block;
+  }
+
+  .oobe-card[data-step="welcome"] .oobe-media,
+  .oobe-card[data-step="ready"] .oobe-media {
+    width: 96px;
+    height: 96px;
+    margin: 0;
+    transform: translate(-50%, -50%) translateY(var(--oobe-welcome-logo-shift));
+  }
+
+  .oobe-card[data-step="welcome"] .oobe-media-frame,
+  .oobe-card[data-step="ready"] .oobe-media-frame {
+    width: 96px;
+    height: 96px;
+    flex-basis: 96px;
+    aspect-ratio: auto;
+  }
+
+  .oobe-card[data-step="welcome"] .oobe-logo-svg,
+  .oobe-card[data-step="ready"] .oobe-logo-svg {
+    width: 72px;
+  }
+}
+
+@media (max-width: 560px) {
+  .oobe-card[data-step="welcome"],
+  .oobe-card[data-step="ready"] {
+    --oobe-welcome-center-offset: 30px;
+    --oobe-welcome-logo-shift: -42px;
+    --oobe-welcome-copy-y: 44px;
+  }
+
+  .oobe-card[data-step="welcome"] .oobe-media,
+  .oobe-card[data-step="welcome"] .oobe-media-frame,
+  .oobe-card[data-step="ready"] .oobe-media,
+  .oobe-card[data-step="ready"] .oobe-media-frame {
+    width: 80px;
+    height: 80px;
+    flex-basis: 80px;
+  }
+
+  .oobe-card[data-step="welcome"] .oobe-logo-svg,
+  .oobe-card[data-step="ready"] .oobe-logo-svg {
+    width: 60px;
+  }
+
+  .oobe-card[data-step="welcome"] .oobe-body,
+  .oobe-card[data-step="ready"] .oobe-body {
+    width: min(420px, calc(100% - 8px));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .oobe {
+    transition: none;
+  }
+
+  .oobe-dot {
+    transition: none;
+  }
+
+  .oobe-bg,
+  .oobe-shell,
+  .oobe-media-frame {
+    transition: none;
+  }
+
+  .oobe.is-closing,
+  .oobe.is-closing .oobe-bg,
+  .oobe.is-closing .oobe-shell,
+  .oobe.is-closing .oobe-progress {
+    transition: none !important;
+    transform: none !important;
+    opacity: 0 !important;
+  }
+
+  html.boot-from-oobe.boot-ready.boot-has-image:not(.bg-entered) .page-bg-image.is-active,
+  html.boot-from-oobe.boot-ready .page-bg {
+    animation: none !important;
+  }
+
+  .oobe-media-frame.is-preview-entering {
+    animation: none !important;
+  }
+
+  .oobe.is-welcome-intro .oobe-card[data-step="welcome"] .oobe-media,
+  .oobe.is-welcome-intro .oobe-card[data-step="welcome"] .oobe-body,
+  .oobe.is-welcome-intro .oobe-card[data-step="welcome"] .oobe-footer,
+  .oobe.is-welcome-intro .oobe-progress {
+    animation: none !important;
+  }
+
+  .oobe-stage.is-slide-out-left,
+  .oobe-stage.is-slide-out-right,
+  .oobe-stage.is-slide-in-left,
+  .oobe-stage.is-slide-in-right {
+    animation: none !important;
+  }
+
+  html.boot-from-oobe.boot-ready .greeting-section,
+  html.boot-from-oobe.boot-ready .search-section .search-box,
+  html.boot-from-oobe.boot-ready .shortcuts-section .shortcut-btn,
+  html.boot-from-oobe.boot-ready .shortcuts-section .shortcut-folder-trigger,
+  html.boot-from-oobe.boot-ready .bing-credit,
+  html.boot-from-oobe.boot-ready .settings-wrapper {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
