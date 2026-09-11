@@ -221,7 +221,7 @@
       sceneL,
       themeStyle: 'TONAL_SPOT',
       seedHex: roles.seedHex,
-      text: rgba(r.onBackground || (sceneDark ? -1 : 0x1A181400), 0.92),
+      text: rgba(r.onBackground || (sceneDark ? 0xFFFFFFFF : 0xFF1A1814), 0.92),
       textSecondary: rgba(sceneDark
         ? ColorUtils.argbFromRgb(230, 228, 220)
         : ColorUtils.argbFromRgb(60, 56, 48), 0.84),
@@ -246,7 +246,7 @@
       border: rgba(r.outline, borderAlpha),
       shadow: userDark ? 'rgba(0,0,0,0.3)' : 'rgba(0,0,0,0.08)',
       creditBg: rgba(ColorUtils.argbFromRgb(creditBg.r, creditBg.g, creditBg.b), userDark ? 0.55 : 0.78),
-      creditText: rgba(sceneDark ? -1 : ColorUtils.argbFromRgb(26, 24, 20), 0.9),
+      creditText: rgba(sceneDark ? 0xFFFFFFFF : 0xFF1A1814, 0.9),
       wash: rgba(ColorUtils.argbFromRgb(washRgb.r, washRgb.g, washRgb.b), washAlpha),
       accent: rgba(r.primary, 0.95),
       accentSoft: rgba(r.primary, userDark ? 0.18 : 0.12),

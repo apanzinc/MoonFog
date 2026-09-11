@@ -7143,6 +7143,20 @@ class  Scheme {
         };
     }
 }
+// ─── ColorUtils namespace (wrap standalone functions) ──────────────────────
+const ColorUtils = {
+    argbFromRgb,
+    argbFromLinrgb,
+    alphaFromArgb,
+    redFromArgb,
+    greenFromArgb,
+    blueFromArgb,
+    argbFromLstar,
+    lstarFromArgb,
+    yFromLstar,
+    labFromArgb,
+    argbFromLab,
+};
 // ─── Public API ────────────────────────────────────────────────────────────
 window.MaterialColorUtilities = {
     Hct: Hct,
