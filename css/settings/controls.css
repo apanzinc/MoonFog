@@ -50,7 +50,7 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding: 8px 8px 10px !important;
+  padding: 10px !important;
 }
 
 .mode-segment {
@@ -1981,7 +1981,7 @@
    关于区域
    ============================================ */
 .about-card {
-  padding: 6px 4px 4px;
+  padding: 10px;
   border: none;
   border-radius: 0;
   background: transparent;
@@ -2137,7 +2137,7 @@ html[data-mode="dark"] .about-reset-btn.is-confirm {
 
 .about-banner {
   position: relative;
-  margin: 0 -4px 12px;
+  margin: 0 0 12px;
   border-radius: 12px;
   overflow: hidden;
   aspect-ratio: 16 / 9;
