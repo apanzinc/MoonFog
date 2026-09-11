@@ -695,7 +695,7 @@ body.has-image-bg .mf-scrollbar.is-dragging .mf-scrollbar-thumb {
 .settings-nav-item {
   position: relative;
   display: grid;
-  grid-template-columns: 28px 1fr;
+  grid-template-columns: 32px 1fr;
   align-items: center;
   column-gap: 10px;
   width: 100%;
@@ -732,8 +732,8 @@ body.has-image-bg .mf-scrollbar.is-dragging .mf-scrollbar-thumb {
 
 /* MingCute 线标：始终用主题色 */
 .settings-nav-icon {
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
