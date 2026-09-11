@@ -221,23 +221,32 @@
       sceneL,
       themeStyle: 'TONAL_SPOT',
       seedHex: roles.seedHex,
-      text: rgba(argbToRgb(r.onBackground).r ? r.onBackground : (sceneDark ? 0xFFFFFFFF : 0x1A181400), 0.92),
-      textSecondary: rgba(sceneDark ? 0xFFE6E4DC : 0xFF3C3830, 0.84),
-      textMuted: rgba(sceneDark ? 0xFFC8C4BA : 0xFF5A5548, 0.72),
+      text: rgba(r.onBackground || (sceneDark ? -1 : 0x1A181400), 0.92),
+      textSecondary: rgba(sceneDark
+        ? ColorUtils.argbFromRgb(230, 228, 220)
+        : ColorUtils.argbFromRgb(60, 56, 48), 0.84),
+      textMuted: rgba(sceneDark
+        ? ColorUtils.argbFromRgb(200, 196, 186)
+        : ColorUtils.argbFromRgb(90, 86, 76), 0.72),
       textAccent: rgba(r.primary, 0.92),
       textShadow: 'none',
       textShadowSoft: 'none',
       textGlow: 'transparent',
       chromeText: rgba(r.onSurface, 0.96),
       chromeTextSecondary: rgba(r.onSurfaceVariant, 0.88),
-      chromeTextMuted: rgba(chromeMuted.r ? ColorUtils.argbFromRgb(chromeMuted.r, chromeMuted.g, chromeMuted.b) : r.onSurfaceVariant, userDark ? 0.72 : 0.7),
+      chromeTextMuted: rgba(
+        chromeMuted.r != null
+          ? ColorUtils.argbFromRgb(chromeMuted.r, chromeMuted.g, chromeMuted.b)
+          : r.onSurfaceVariant,
+        userDark ? 0.72 : 0.7
+      ),
       surface: rgba(ColorUtils.argbFromRgb(surface.r, surface.g, surface.b), surfaceAlpha),
       surfaceHover: rgba(ColorUtils.argbFromRgb(surfaceHover.r, surfaceHover.g, surfaceHover.b), userDark ? 0.78 : 0.94),
       chip: rgba(ColorUtils.argbFromRgb(chip.r, chip.g, chip.b), chipAlpha),
       border: rgba(r.outline, borderAlpha),
       shadow: userDark ? 'rgba(0,0,0,0.3)' : 'rgba(0,0,0,0.08)',
       creditBg: rgba(ColorUtils.argbFromRgb(creditBg.r, creditBg.g, creditBg.b), userDark ? 0.55 : 0.78),
-      creditText: rgba(sceneDark ? 0xFFFFFFFF : 0x1A181400, 0.9),
+      creditText: rgba(sceneDark ? -1 : ColorUtils.argbFromRgb(26, 24, 20), 0.9),
       wash: rgba(ColorUtils.argbFromRgb(washRgb.r, washRgb.g, washRgb.b), washAlpha),
       accent: rgba(r.primary, 0.95),
       accentSoft: rgba(r.primary, userDark ? 0.18 : 0.12),
