@@ -1653,16 +1653,29 @@ async function extractPaletteFromImage(url, mode) {
     }
 
     const polarity = detectScenePolarity(data, sw, sh);
-    const colors = pickMonetColors([...buckets.values()]);
+
+    // Material You: 用 MCU 量化器提取种子色（HCT）
+    let seedHct = null;
+    let colors;
+    if (window.MoonFogColor) {
+      try {
+        seedHct = window.MoonFogColor.extractSeedFromPixelData(data, sw, sh);
+      } catch (_) {}
+    }
+    if (!seedHct) {
+      // fallback: 旧 pickMonetColors
+      colors = pickMonetColors([...buckets.values()]);
+    }
 
     lastDominant = {
       url,
-      r: colors.primary.r,
-      g: colors.primary.g,
-      b: colors.primary.b,
-      primary: colors.primary,
-      secondary: colors.secondary,
-      accent: colors.accent,
+      r: colors ? colors.primary.r : (seedHct ? ((seedHct.toInt() >> 16) & 0xff) : 103),
+      g: colors ? colors.primary.g : (seedHct ? ((seedHct.toInt() >> 8) & 0xff) : 80),
+      b: colors ? colors.primary.b : (seedHct ? (seedHct.toInt() & 0xff) : 164),
+      primary: colors ? colors.primary : null,
+      secondary: colors ? colors.secondary : null,
+      accent: colors ? colors.accent : null,
+      seedHct: seedHct || null,
       sceneL: polarity.sceneL,
       sceneDark: polarity.sceneDark,
       sceneMeta: polarity.sceneMeta
@@ -1857,6 +1870,15 @@ function buildPaletteFromDominant(input, modeOrScene, maybeMode) {
   const sceneDark = isSceneDarkForText(scene, seed.sceneDark);
   const userDark = userMode === 'dark';
   const midTone = scene >= 38 && scene <= 62;
+
+  // Material You: 有 HCT 种子时走 MCU 配色路径
+  if (input && input.seedHct && window.MoonFogColor) {
+    try {
+      return window.MoonFogColor.buildPaletteNew(
+        input.seedHct, userDark, sceneDark, scene
+      );
+    } catch (_) {}
+  }
 
   // 职责分离（
   // - 裸露问候字 / 全屏 wash →跟壁纸场景
