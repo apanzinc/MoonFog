@@ -99,7 +99,7 @@ function detectIconHasRoundedCorners(src) {
       const canvas = document.createElement('canvas');
       canvas.width = w;
       canvas.height = h;
-      const ctx = canvas.getContext('2d');
+      const ctx = canvas.getContext('2d', { willReadFrequently: true });
       if (!ctx) return false;
       ctx.drawImage(img, 0, 0, w, h);
       // 取四角4x4 区域的平均透明度
