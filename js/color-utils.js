@@ -43,7 +43,9 @@
    * 返回 HCT 色彩对象（用于创建 DynamicScheme）
    */
   function extractSeedFromPixelData(data, width, height) {
-    const pixels = []
+    // 简单 HCT 色相分桶：不依赖 MCU 量化器，直接统计占比最高的色相区间
+    const hueBuckets = new Map() // key: hueBucket → { count, sumH, sumC, sumT, sumChroma }
+
     for (let i = 0; i < data.length; i += 4) {
       const a = data[i + 3]
       if (a < 200) continue
@@ -53,32 +55,35 @@
       const max = Math.max(r, g, b)
       const min = Math.min(r, g, b)
       if (max < 10 || min > 245) continue
-      pixels.push(ColorUtils.argbFromRgb(r, g, b))
+
+      try {
+        const hct = Hct.fromInt(ColorUtils.argbFromRgb(r, g, b))
+        // 跳过近灰（色度太低）和极端明暗
+        if (hct.chroma < 8 || hct.tone < 5 || hct.tone > 95) continue
+        // 色相 10° 分桶
+        const hueKey = Math.round(hct.hue / 10) * 10
+        const bucket = hueBuckets.get(hueKey) || { count: 0, sumH: 0, sumC: 0, sumT: 0 }
+        bucket.count++
+        bucket.sumH += hct.hue
+        bucket.sumC += hct.chroma
+        bucket.sumT += hct.tone
+        hueBuckets.set(hueKey, bucket)
+      } catch (_) {}
     }
 
-    if (!pixels.length) {
-      return Hct.from(250, 48, 50)
+    if (hueBuckets.size === 0) return Hct.from(250, 48, 50)
+
+    // 按像素数量排序，选占比最高的色相桶
+    let bestBucket = null
+    for (const bucket of hueBuckets.values()) {
+      if (!bestBucket || bucket.count > bestBucket.count) bestBucket = bucket
     }
 
-    const quantized = QuantizerCelebi.quantize(pixels, 16)
+    const avgHue = bestBucket.sumH / bestBucket.count
+    const avgChroma = bestBucket.sumC / bestBucket.count
+    const avgTone = bestBucket.sumT / bestBucket.count
 
-    // 不用 Score.score（它偏爱高色度小众色），直接选占比最高且色度足够的颜色
-    let bestArgb = null
-    let bestPop = 0
-    for (const [argb, pop] of quantized.entries()) {
-      if (pop <= bestPop) continue
-      const hct = Hct.fromInt(argb)
-      if (hct.chroma < 8) continue
-      bestPop = pop
-      bestArgb = argb
-    }
-    if (bestArgb == null) {
-      for (const [argb, pop] of quantized.entries()) {
-        if (pop > bestPop) { bestPop = pop; bestArgb = argb }
-      }
-    }
-
-    return Hct.fromInt(bestArgb)
+    return Hct.from(avgHue, avgChroma, avgTone)
   }
 
   /* ── scheme generation ─────────────────────────────────────────────────── */
