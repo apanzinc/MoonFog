@@ -43,15 +43,13 @@
    * 返回 HCT 色彩对象（用于创建 DynamicScheme）
    */
   function extractSeedFromPixelData(data, width, height) {
-    // 量化像素：取 RGBA 整数数组
     const pixels = []
     for (let i = 0; i < data.length; i += 4) {
       const a = data[i + 3]
-      if (a < 200) continue // 跳过半透明
+      if (a < 200) continue
       const r = data[i]
       const g = data[i + 1]
       const b = data[i + 2]
-      // 跳过近白近黑
       const max = Math.max(r, g, b)
       const min = Math.min(r, g, b)
       if (max < 10 || min > 245) continue
@@ -59,15 +57,28 @@
     }
 
     if (!pixels.length) {
-      return Hct.from(250, 48, 50) // fallback: 默认紫色种子
+      return Hct.from(250, 48, 50)
     }
 
-    // 量化 → 取 Top 16 色 → 评分排序
     const quantized = QuantizerCelebi.quantize(pixels, 16)
-    const ranked = Score.score(quantized)
-    const seedArgb = ranked[0]
 
-    return Hct.fromInt(seedArgb)
+    // 不用 Score.score（它偏爱高色度小众色），直接选占比最高且色度足够的颜色
+    let bestArgb = null
+    let bestPop = 0
+    for (const [argb, pop] of quantized.entries()) {
+      if (pop <= bestPop) continue
+      const hct = Hct.fromInt(argb)
+      if (hct.chroma < 8) continue
+      bestPop = pop
+      bestArgb = argb
+    }
+    if (bestArgb == null) {
+      for (const [argb, pop] of quantized.entries()) {
+        if (pop > bestPop) { bestPop = pop; bestArgb = argb }
+      }
+    }
+
+    return Hct.fromInt(bestArgb)
   }
 
   /* ── scheme generation ─────────────────────────────────────────────────── */
