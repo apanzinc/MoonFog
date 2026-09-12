@@ -3647,7 +3647,7 @@ class  DynamicColor {
         if (cachedAnswer != null) {
             return cachedAnswer;
         }
-        const answer = getSpec(scheme.specVersion).getHct(scheme, this);
+        const answer = getCalcSpec(scheme.specVersion).getHct(scheme, this);
         if (this.hctCache.size > 4) {
             this.hctCache.clear();
         }
@@ -3663,7 +3663,7 @@ class  DynamicColor {
      *     contrast level is.
      */
     getTone(scheme) {
-        return getSpec(scheme.specVersion).getTone(scheme, this);
+        return getCalcSpec(scheme.specVersion).getTone(scheme, this);
     }
     /**
      * Given a background tone, finds a foreground tone, while ensuring they reach
@@ -4047,13 +4047,13 @@ class ColorCalculationDelegateImpl2025 {
         }
     }
 }
-const spec2021 = new ColorCalculationDelegateImpl2021();
-const spec2025 = new ColorCalculationDelegateImpl2025();
+const calcSpec2021 = new ColorCalculationDelegateImpl2021();
+const calcSpec2025 = new ColorCalculationDelegateImpl2025();
 /**
  * Returns the ColorCalculationDelegate for the given spec version.
  */
-function getSpec(specVersion) {
-    return specVersion === '2025' ? spec2025 : spec2021;
+function getCalcSpec(specVersion) {
+    return specVersion === '2025' ? calcSpec2025 : calcSpec2021;
 }
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -6880,13 +6880,13 @@ class DynamicSchemePalettesDelegateImpl2025 extends DynamicSchemePalettesDelegat
         }
     }
 }
-const spec2021 = new DynamicSchemePalettesDelegateImpl2021();
-const spec2025 = new DynamicSchemePalettesDelegateImpl2025();
+const paletteSpec2021 = new DynamicSchemePalettesDelegateImpl2021();
+const paletteSpec2025 = new DynamicSchemePalettesDelegateImpl2025();
 /**
  * Returns the DynamicSchemePalettesDelegate for the given spec version.
  */
 function getSpec(specVersion) {
-    return specVersion === '2025' ? spec2025 : spec2021;
+    return specVersion === '2025' ? paletteSpec2025 : paletteSpec2021;
 }
 
 // ────────────────────────────────────────────────────────────────────────────
