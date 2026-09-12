@@ -116,6 +116,7 @@
 
     // --- 4c. 图片壁纸 surface tokens ---
     if (state.imageBg && state.imagePalette) {
+      var ip = state.imagePalette
       // 图片模式：surface-text 跟随 chrome-text（白色），surface-bg 用 img-surface
       root.style.setProperty('--surface-text-primary', '#FFFFFF')
       root.style.setProperty('--surface-text-secondary', 'rgba(255,255,255,0.75)')
@@ -123,7 +124,11 @@
       root.style.setProperty('--surface-bg', 'rgba(255,255,255,0.80)')
       root.style.setProperty('--surface-bg-hover', 'rgba(255,255,255,0.88)')
       root.style.setProperty('--surface-border', 'rgba(255,255,255,0.2)')
-      root.style.setProperty('--surface-chip', state.imagePalette.chip || 'transparent')
+      root.style.setProperty('--surface-chip', ip.chip || 'transparent')
+      // 图片模式：accent 颜色跟随壁纸种子色（而非静态主题）
+      if (ip.accent) root.style.setProperty('--accent', ip.accent)
+      if (ip.accentSoft) root.style.setProperty('--accent-glow', ip.accentSoft)
+      if (ip.accent2) root.style.setProperty('--accent-hover', ip.accent2)
     } else if (state.grainActive && state.grainPalette) {
       // 流光模式：surface-text 跟随主题文字色（白色）
       root.style.setProperty('--surface-text-primary', '#FFFFFF')
