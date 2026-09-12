@@ -86,18 +86,26 @@ function initDeferred(boot) {
     boot.mode ||
     localStorage.getItem('moonfog_mode') ||
     DEFAULT_MODE;
-  if (typeof applyTheme === 'function') {
-    applyTheme(savedTone, savedPref, { animate: false });
+  try {
+    if (typeof applyTheme === 'function') {
+      applyTheme(savedTone, savedPref, { animate: false });
+    }
+  } catch (err) {
+    console.error('[MoonFog] applyTheme failed:', err);
   }
 
-  if (typeof applyTypeRoles === 'function') {
-    applyTypeRoles(typeof loadTypeRoles === 'function' ? loadTypeRoles() : null);
-  } else if (typeof applyFont === 'function') {
-    const rawFont = boot.fontKey || localStorage.getItem('moonfog_font') || DEFAULT_FONT;
-    const savedFont = typeof resolveFontKey === 'function' ? resolveFontKey(rawFont) : rawFont;
-    const savedWeight = boot.weight || localStorage.getItem('moonfog_weight') || DEFAULT_WEIGHT;
-    applyFont(savedFont);
-    applyWeight(savedWeight);
+  try {
+    if (typeof applyTypeRoles === 'function') {
+      applyTypeRoles(typeof loadTypeRoles === 'function' ? loadTypeRoles() : null);
+    } else if (typeof applyFont === 'function') {
+      const rawFont = boot.fontKey || localStorage.getItem('moonfog_font') || DEFAULT_FONT;
+      const savedFont = typeof resolveFontKey === 'function' ? resolveFontKey(rawFont) : rawFont;
+      const savedWeight = boot.weight || localStorage.getItem('moonfog_weight') || DEFAULT_WEIGHT;
+      applyFont(savedFont);
+      applyWeight(savedWeight);
+    }
+  } catch (err) {
+    console.error('[MoonFog] applyFont/TypeRoles failed:', err);
   }
 
   // 一言已在 init 同步拉过；这里只补非一言问候 + 定时器
@@ -110,10 +118,18 @@ function initDeferred(boot) {
     if (typeof updateGreetingDisplay === 'function') updateGreetingDisplay();
   }, 1000);
 
-  if (typeof initQuoteClick === 'function') initQuoteClick();
-  if (typeof initSearch === 'function') initSearch();
-  if (typeof renderShortcuts === 'function') renderShortcuts();
-  if (typeof initSettings === 'function') initSettings();
+  try { if (typeof initQuoteClick === 'function') initQuoteClick(); } catch (err) {
+    console.error('[MoonFog] initQuoteClick failed:', err);
+  }
+  try { if (typeof initSearch === 'function') initSearch(); } catch (err) {
+    console.error('[MoonFog] initSearch failed:', err);
+  }
+  try { if (typeof renderShortcuts === 'function') renderShortcuts(); } catch (err) {
+    console.error('[MoonFog] renderShortcuts failed:', err);
+  }
+  try { if (typeof initSettings === 'function') initSettings(); } catch (err) {
+    console.error('[MoonFog] initSettings failed:', err);
+  }
 
   // 背景校验 / 必应刷新完全后台
   Promise.resolve()
@@ -121,7 +137,9 @@ function initDeferred(boot) {
     .then(() => {
       if (typeof initBingCreditPop === 'function') initBingCreditPop();
     })
-    .catch(() => {});
+    .catch((err) => {
+      console.error('[MoonFog] initBackground/initBingCreditPop failed:', err);
+    });
 }
 
 /**
@@ -192,7 +210,7 @@ function init() {
     try {
       initDeferred(boot);
     } catch (err) {
-      // 延迟初始化失败：静默，避免阻塞进入
+      console.error('[MoonFog] Deferred initialization failed:', err);
     }
   };
   if (typeof requestIdleCallback === 'function') {
