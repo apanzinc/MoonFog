@@ -432,6 +432,14 @@ function labInvf(ft) {
     }
 }
 
+// ─── utils namespace (wrap standalone color_utils functions) ────────────────
+const utils = {
+    argbFromRgb, argbFromLinrgb, alphaFromArgb, redFromArgb,
+    greenFromArgb, blueFromArgb, isOpaque, argbFromXyz, xyzFromArgb,
+    argbFromLab, labFromArgb, argbFromLstar, lstarFromArgb,
+    yFromLstar, lstarFromY, linearized, delinearized, whitePointD65,
+};
+
 // ────────────────────────────────────────────────────────────────────────────
 
 /**
