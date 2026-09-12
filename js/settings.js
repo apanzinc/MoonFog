@@ -425,9 +425,9 @@ function bindSettingsNavigation() {
  * 按父选项统一刷新条件启用项（隐藏 = 不可用，不清除已存值）
  */
 function refreshSettingsAvailability() {
-  syncTypeRoleSettingsUI();
-  updateUsernameSettingVisibility();
-  updateBgSettingsUI();
+  try { syncTypeRoleSettingsUI(); } catch (_) {}
+  try { updateUsernameSettingVisibility(); } catch (_) {}
+  try { updateBgSettingsUI(); } catch (_) {}
   if (typeof syncSurfaceBlurAvailability === 'function') syncSurfaceBlurAvailability();
   else if (typeof updateSearchBlurAvailability === 'function') updateSearchBlurAvailability();
 }
