@@ -593,30 +593,30 @@ function syncSettingsPanel() {
   if (customTextInput) {
     customTextInput.value = currentCustomText || '';
   }
-  if (typeof updateCustomTextCount === 'function') {
+  try { if (typeof updateCustomTextCount === 'function') {
     updateCustomTextCount(customTextInput ? customTextInput.value : currentCustomText);
-  }
-  if (typeof updateGreetingSettingsVisibility === 'function') {
+  } } catch (_) {}
+  try { if (typeof updateGreetingSettingsVisibility === 'function') {
     updateGreetingSettingsVisibility();
-  }
-  if (typeof updateClockOptionsUI === 'function') {
+  } } catch (_) {}
+  try { if (typeof updateClockOptionsUI === 'function') {
     updateClockOptionsUI();
-  }
-  if (typeof loadQuoteMaxLen === 'function') loadQuoteMaxLen();
-  if (typeof updateQuoteMaxLenUI === 'function') updateQuoteMaxLenUI();
-  if (typeof updateGreetingPreview === 'function') {
+  } } catch (_) {}
+  try { if (typeof loadQuoteMaxLen === 'function') loadQuoteMaxLen(); } catch (_) {}
+  try { if (typeof updateQuoteMaxLenUI === 'function') updateQuoteMaxLenUI(); } catch (_) {}
+  try { if (typeof updateGreetingPreview === 'function') {
     updateGreetingPreview();
-  }
+  } } catch (_) {}
 
-  renderCustomEngines();
+  try { renderCustomEngines(); } catch (_) {}
   initCardSelection('greetingModeGrid', 'moonfog_greeting_mode', DEFAULT_GREETING_MODE);
   initCardSelection('bgModeGrid', BG_MODE_KEY, DEFAULT_BG_MODE);
-  if (typeof syncGrainSettingsUI === 'function') syncGrainSettingsUI();
+  try { if (typeof syncGrainSettingsUI === 'function') syncGrainSettingsUI(); } catch (_) {}
   initCardSelection('themeGrid', 'moonfog_tone', DEFAULT_TONE);
   initCardSelection('engineGrid', 'moonfog_engine', DEFAULT_ENGINE);
 
-  refreshSettingsAvailability();
-  if (typeof updateModeToggleUI === 'function') {
+  try { refreshSettingsAvailability(); } catch (_) {}
+  try { if (typeof updateModeToggleUI === 'function') {
     const pref = typeof loadModePref === 'function'
       ? loadModePref()
       : (document.documentElement.getAttribute('data-mode-pref') || localStorage.getItem('moonfog_mode') || DEFAULT_MODE);
@@ -625,16 +625,16 @@ function syncSettingsPanel() {
       localStorage.getItem('moonfog_mode') ||
       DEFAULT_MODE;
     updateModeToggleUI(pref, resolved);
-  }
-  updateBgBlurUI();
-  if (typeof updateBgWashUI === 'function') updateBgWashUI();
-  if (typeof updateSearchBlurUI === 'function') updateSearchBlurUI();
-  if (typeof updatePanelBlurUI === 'function') updatePanelBlurUI();
-  if (typeof updateLowPerfUI === 'function') updateLowPerfUI();
-  if (typeof syncSurfaceBlurAvailability === 'function') syncSurfaceBlurAvailability();
-  renderShortcutList();
-  updateAboutBannerBg();
-  updateSettingsBannerBg();
+  } } catch (_) {}
+  try { updateBgBlurUI(); } catch (_) {}
+  try { if (typeof updateBgWashUI === 'function') updateBgWashUI(); } catch (_) {}
+  try { if (typeof updateSearchBlurUI === 'function') updateSearchBlurUI(); } catch (_) {}
+  try { if (typeof updatePanelBlurUI === 'function') updatePanelBlurUI(); } catch (_) {}
+  try { if (typeof updateLowPerfUI === 'function') updateLowPerfUI(); } catch (_) {}
+  try { if (typeof syncSurfaceBlurAvailability === 'function') syncSurfaceBlurAvailability(); } catch (_) {}
+  try { renderShortcutList(); } catch (_) {}
+  try { updateAboutBannerBg(); } catch (_) {}
+  try { updateSettingsBannerBg(); } catch (_) {}
 }
 
 /** 打开设置面板 */
