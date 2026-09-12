@@ -257,12 +257,17 @@
 
   /* ── public API ────────────────────────────────────────────────────────── */
 
+  function hctFromRgb(r, g, b) {
+    return Hct.fromInt(ColorUtils.argbFromRgb(r, g, b))
+  }
+
   window.MoonFogColor = {
     extractSeedFromPixelData,
     createScheme,
     extractRoles,
     buildMonetRolesNew,
     buildPaletteNew,
+    hctFromRgb,
     Hct,
     argbToHex,
     argbToRgb,

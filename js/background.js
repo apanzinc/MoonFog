@@ -1970,7 +1970,7 @@ function buildPaletteFromDominant(input, modeOrScene, maybeMode) {
  * seed 用于明暗切换时无 lastDominant 也能立刻重算
  */
 // v30：控件设置跟用户浅深；问候字跟壁纸场景
-const IMAGE_PALETTE_VERSION = 30;
+const IMAGE_PALETTE_VERSION = 31;
 
 function persistImagePalette(palette, seed) {
   try {
@@ -2022,7 +2022,9 @@ function persistImagePalette(palette, seed) {
             secondary: s.secondary || null,
             accent: s.accent || s.tertiary || null
           }
-        : null
+        : null,
+      // MCU seedHct：序列化为 {h, c, t} 供重载后重建 HCT 对象
+      seedHct: s && s.seedHct ? { h: s.seedHct.hue, c: s.seedHct.chroma, t: s.seedHct.tone } : null
     }));
   } catch (_) {}
 }
@@ -2051,6 +2053,12 @@ function hydrateImagePaletteSeed() {
         secondary: s.secondary,
         accent: s.accent || s.tertiary
       });
+      // 重建 MCU seedHct（序列化时保存了 {h, c, t}）
+      if (cached.seedHct && lastDominant && window.MoonFogColor && window.MoonFogColor.hctFromRgb) {
+        try {
+          lastDominant.seedHct = window.MoonFogColor.hctFromRgb(lastDominant.r, lastDominant.g, lastDominant.b);
+        } catch (_) {}
+      }
       if (cached.v < IMAGE_PALETTE_VERSION) {
         // 旧算注sceneL 不可信：去掉 polarity 提示，等重采标        delete lastDominant.sceneDark;
       }
