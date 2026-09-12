@@ -1631,9 +1631,11 @@ async function extractPaletteFromImage(url, mode) {
   if (!url) return null;
   const uiMode = mode || getUiMode();
   const { w: sw, h: sh } = getPaletteSampleSize();
+  console.log('[MoonFog] extractPaletteFromImage url:', url.substring(0, 120), 'canvas:', sw, 'x', sh);
 
   try {
     const img = await loadImageForPalette(url);
+    console.log('[MoonFog] img naturalSize:', img.naturalWidth, 'x', img.naturalHeight);
     const canvas = document.createElement('canvas');
     canvas.width = sw;
     canvas.height = sh;
@@ -1641,6 +1643,16 @@ async function extractPaletteFromImage(url, mode) {
     // 关键：必页cover，禁歉stretch
     drawImageAsCover(ctx, img, sw, sh);
     const { data } = ctx.getImageData(0, 0, sw, sh);
+
+    // 调试：采样中心像素看颜色分布
+    let rSum = 0, gSum = 0, bSum = 0, count = 0;
+    for (let i = 0; i < data.length; i += 4) {
+      if (data[i + 3] < 200) continue;
+      rSum += data[i]; gSum += data[i + 1]; bSum += data[i + 2]; count++;
+    }
+    if (count > 0) {
+      console.log('[MoonFog] canvas avg color: rgb(' + Math.round(rSum/count) + ',' + Math.round(gSum/count) + ',' + Math.round(bSum/count) + ')  pixels:', count, '/' , sw * sh);
+    }
 
     const buckets = new Map();
     for (let y = 0; y < sh; y++) {
