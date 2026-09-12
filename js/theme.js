@@ -187,9 +187,16 @@ function hexToRgb(hex) {
   return { r: parseInt(m[1], 16), g: parseInt(m[2], 16), b: parseInt(m[3], 16) };
 }
 
-/** RGB hex */
-function rgbToHex(rgb) {
-  return '#' + [rgb.r, rgb.g, rgb.b].map(c => c.toString(16).padStart(2, '0')).join('');
+/** RGB hex — accepts (rgb) object or (r, g, b) */
+function rgbToHex(rgbOrR, g, b) {
+  let r, green, blue;
+  if (typeof rgbOrR === 'object' && rgbOrR !== null) {
+    r = rgbOrR.r; green = rgbOrR.g; blue = rgbOrR.b;
+  } else {
+    r = rgbOrR; green = g; blue = b;
+  }
+  const toHex = (c) => (c == null ? '00' : Math.max(0, Math.min(255, Math.round(c))).toString(16).padStart(2, '0'));
+  return '#' + toHex(r) + toHex(green) + toHex(blue);
 }
 
 /** 混合颜色：blendColor(rgb, [r,g,b], ratio) hex */
