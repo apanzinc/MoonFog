@@ -157,6 +157,7 @@ const MathUtils = {
     rotationDirection, differenceDegrees, matrixMultiply,
 };
 const mathUtils = MathUtils;
+const math = MathUtils;
 
 /**
  * @license
@@ -3076,7 +3077,6 @@ class  QuantizerCelebi {
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-const math = MathUtils;
 const SCORE_OPTION_DEFAULTS = {
     desired: 4,
     fallbackColorARGB: 0xff4285f4,
