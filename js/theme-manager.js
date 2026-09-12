@@ -104,9 +104,12 @@
     const isDark = state.mode === 'dark'
     const palette = (THEMES[tone] && THEMES[tone][isDark ? 'dark' : 'light']) || THEMES.sand.light
 
-    Object.keys(palette).forEach(function (k) {
-      root.style.setProperty(k, palette[k])
-    })
+    // 图片模式：跳过基础色板，避免无 !important 的值先写入后被覆盖
+    if (!(state.imageBg && state.imagePalette)) {
+      Object.keys(palette).forEach(function (k) {
+        root.style.setProperty(k, palette[k])
+      })
+    }
 
     // --- 4b. color-scheme ---
     root.style.colorScheme = isDark ? 'dark' : 'light'
@@ -117,7 +120,6 @@
     // --- 4c. 图片壁纸 surface tokens ---
     if (state.imageBg && state.imagePalette) {
       var ip = state.imagePalette
-      console.log('[ThemeManager] imageBg=true, accent:', ip.accent, 'text:', ip.text)
       var imp = 'important'
       // 图片模式：面板主色全部跟随壁纸种子色（important 覆盖静态主题）
       root.style.setProperty('--bg-warm', ip.surface || 'rgba(255,255,255,0.80)', imp)
