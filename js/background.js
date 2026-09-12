@@ -1660,7 +1660,9 @@ async function extractPaletteFromImage(url, mode) {
     if (window.MoonFogColor) {
       try {
         seedHct = window.MoonFogColor.extractSeedFromPixelData(data, sw, sh);
-      } catch (_) {}
+      } catch (err) {
+        console.warn('[MoonFog] MCU seed extraction failed, fallback to pickMonetColors:', err);
+      }
     }
     if (!seedHct) {
       // fallback: 旧 pickMonetColors
@@ -1877,7 +1879,9 @@ function buildPaletteFromDominant(input, modeOrScene, maybeMode) {
       return window.MoonFogColor.buildPaletteNew(
         input.seedHct, userDark, sceneDark, scene
       );
-    } catch (_) {}
+    } catch (err) {
+      console.warn('[MoonFog] MCU buildPaletteNew failed, fallback to HSL buildMonetRoles:', err);
+    }
   }
 
   // 职责分离（
