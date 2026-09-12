@@ -2391,11 +2391,9 @@ function applyImagePalette(palette) {
   root.style.setProperty('--img-credit-bg', 'rgba(0,0,0,0.45)');
   root.style.setProperty('--img-credit-text', 'rgba(255,255,255,0.7)');
 
-  // 全屏遮罩：浅色模式压暗壁纸，深色模式用黑色底
+  // 全屏遮罩：统一 40% 压暗，不随浅深模式变化
   const overlay = document.getElementById('pageBgOverlay');
-  const overlayColor = isDark
-    ? 'rgba(0,0,0,0.82)'
-    : 'linear-gradient(180deg, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.35) 100%)';
+  const overlayColor = 'rgba(0,0,0,0.4)';
   root.style.setProperty('--img-wash', overlayColor);
   root.style.setProperty('--bg-neutral-wash', overlayColor);
   if (overlay) overlay.style.setProperty('background', overlayColor, 'important');
