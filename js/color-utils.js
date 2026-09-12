@@ -43,8 +43,8 @@
    * 返回 HCT 色彩对象（用于创建 DynamicScheme）
    */
   function extractSeedFromPixelData(data, width, height) {
-    // 简单 HCT 色相分桶：不依赖 MCU 量化器，直接统计占比最高的色相区间
-    const hueBuckets = new Map() // key: hueBucket → { count, sumH, sumC, sumT, sumChroma }
+    // HCT 色相分桶 + 色度加权：暗绿植被像素多但色度低，紫色天空像素少但色度高，加权让鲜艳色胜出
+    const hueBuckets = new Map()
 
     for (let i = 0; i < data.length; i += 4) {
       const a = data[i + 3]
@@ -58,12 +58,12 @@
 
       try {
         const hct = Hct.fromInt(ColorUtils.argbFromRgb(r, g, b))
-        // 跳过近灰（色度太低）和极端明暗
-        if (hct.chroma < 8 || hct.tone < 5 || hct.tone > 95) continue
-        // 色相 10° 分桶
+        if (hct.tone < 5 || hct.tone > 95) continue
         const hueKey = Math.round(hct.hue / 10) * 10
-        const bucket = hueBuckets.get(hueKey) || { count: 0, sumH: 0, sumC: 0, sumT: 0 }
-        bucket.count++
+        const bucket = hueBuckets.get(hueKey) || { weightedPop: 0, rawPop: 0, sumH: 0, sumC: 0, sumT: 0 }
+        const weight = Math.max(1, hct.chroma / 8)
+        bucket.weightedPop += weight
+        bucket.rawPop++
         bucket.sumH += hct.hue
         bucket.sumC += hct.chroma
         bucket.sumT += hct.tone
@@ -73,15 +73,14 @@
 
     if (hueBuckets.size === 0) return Hct.from(250, 48, 50)
 
-    // 按像素数量排序，选占比最高的色相桶
     let bestBucket = null
     for (const bucket of hueBuckets.values()) {
-      if (!bestBucket || bucket.count > bestBucket.count) bestBucket = bucket
+      if (!bestBucket || bucket.weightedPop > bestBucket.weightedPop) bestBucket = bucket
     }
 
-    const avgHue = bestBucket.sumH / bestBucket.count
-    const avgChroma = bestBucket.sumC / bestBucket.count
-    const avgTone = bestBucket.sumT / bestBucket.count
+    const avgHue = bestBucket.sumH / bestBucket.rawPop
+    const avgChroma = bestBucket.sumC / bestBucket.rawPop
+    const avgTone = bestBucket.sumT / bestBucket.rawPop
 
     return Hct.from(avgHue, avgChroma, avgTone)
   }
