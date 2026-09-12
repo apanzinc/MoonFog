@@ -10,6 +10,19 @@ function normalizeBgMode(mode) {
 }
 
 /**
+ * 防呆：始终从 localStorage 获取真实 bgMode，全局缓存仅作为 fallback。
+ * 消除异步链路中 currentBgMode 过期导致 UI 错乱的问题。
+ */
+function getEffectiveBgMode() {
+  try {
+    const stored = localStorage.getItem(BG_MODE_KEY);
+    return normalizeBgMode(stored || currentBgMode);
+  } catch (_) {
+    return normalizeBgMode(currentBgMode);
+  }
+}
+
+/**
  * 切换独立的Grain Gradient 背景层。 */
 function setGrainBackgroundActive(active) {
   const enabled = Boolean(active);
@@ -126,9 +139,10 @@ function normalizeSurfaceBlur(value, fallback) {
 /**
  * 图片背景是否处于生效态 * 以currentBgMode为主；同时兼容boot 首屏 class，避免初始化时序把搜索毛玻璃误判成纯色 */
 function isImageBackgroundActive(mode) {
+  // 防呆：始终读 localStorage 真实值，不依赖可能过期的全局缓存
   const resolved = typeof mode === 'string' && mode
     ? normalizeBgMode(mode)
-    : (typeof currentBgMode === 'string' ? normalizeBgMode(currentBgMode) : DEFAULT_BG_MODE);
+    : getEffectiveBgMode();
   if (resolved === 'local' || resolved === 'bing') return true;
   try {
     if (document.body && document.body.classList.contains('has-image-bg')) return true;
@@ -572,10 +586,12 @@ function updateBgSettingsUI() {
   const bingPreview = document.getElementById('bgBingPreview');
   const bingPreviewFallback = document.getElementById('bgBingPreviewFallback');
   const bingLink = document.getElementById('bgBingLink');
-  const isBing = currentBgMode === 'bing';
-  const isLocal = currentBgMode === 'local';
-  const isGrain = currentBgMode === 'grain';
-  const isSolid = currentBgMode === 'solid';
+  // 防呆：直接从 localStorage 读真实值，不依赖可能过期的全局缓存
+  const effectiveMode = getEffectiveBgMode();
+  const isBing = effectiveMode === 'bing';
+  const isLocal = effectiveMode === 'local';
+  const isGrain = effectiveMode === 'grain';
+  const isSolid = effectiveMode === 'solid';
 
   // 条件启用：本地图 / 模糊仅图片；必应信息单独区域；色调仅纯色（进出动画镜像）
   if (typeof setSettingsReveal === 'function') {
@@ -1615,11 +1631,9 @@ async function extractPaletteFromImage(url, mode) {
   if (!url) return null;
   const uiMode = mode || getUiMode();
   const { w: sw, h: sh } = getPaletteSampleSize();
-  console.log('[MoonFog] extractPaletteFromImage url:', url, 'size:', sw, 'x', sh);
 
   try {
     const img = await loadImageForPalette(url);
-    console.log('[MoonFog] img loaded:', img.naturalWidth, 'x', img.naturalHeight);
     const canvas = document.createElement('canvas');
     canvas.width = sw;
     canvas.height = sh;
@@ -1662,9 +1676,6 @@ async function extractPaletteFromImage(url, mode) {
     if (window.MoonFogColor) {
       try {
         seedHct = window.MoonFogColor.extractSeedFromPixelData(data, sw, sh);
-        if (seedHct) {
-          console.log('[MoonFog] seedHct:', JSON.stringify({hue: seedHct.hue, chroma: seedHct.chroma, tone: seedHct.tone}));
-        }
       } catch (err) {
         console.warn('[MoonFog] MCU seed extraction failed, fallback to pickMonetColors:', err);
       }
@@ -2412,11 +2423,13 @@ function applyImagePalette(palette) {
  * 图片背景色板刷新（ * - 裸露文字跟壁纸场景 * - 控件表面/字色跟用户浅深mode
  */
 function refreshImagePaletteForMode(mode) {
-  if (currentBgMode === 'solid') return;
+  // 防呆：从 localStorage 读真实 bgMode，避免异步延迟导致的缓存过期
+  const effective = getEffectiveBgMode();
+  if (effective === 'solid') return;
   if (
     !document.body.classList.contains('has-image-bg') &&
-    currentBgMode !== 'local' &&
-    currentBgMode !== 'bing'
+    effective !== 'local' &&
+    effective !== 'bing'
   ) {
     return;
   }
@@ -2459,8 +2472,15 @@ async function applyPaletteForUrl(url) {
 /**
  * 应用背景模式
  */
+let _bgModeApplyLock = null;
 async function applyBackgroundMode(mode, options = {}) {
   const nextMode = normalizeBgMode(mode);
+  // 防呆：防止并发调用导致中间状态被覆盖（200ms 内相同模式跳过）
+  const lockKey = nextMode + ':' + (options.persist ? 'p' : 'n');
+  if (_bgModeApplyLock === lockKey && !options.force) return null;
+  _bgModeApplyLock = lockKey;
+  setTimeout(() => { if (_bgModeApplyLock === lockKey) _bgModeApplyLock = null; }, 300);
+
   currentBgMode = nextMode;
   // OOBE 中默认实时切背景预览，不写盘
   const oobeLive =

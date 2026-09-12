@@ -365,7 +365,7 @@ function applyTheme(tone, mode, options = {}) {
   if (changed && typeof refreshImagePaletteForMode === 'function') {
     refreshImagePaletteForMode(nextMode);
   }
-  if (typeof currentBgMode !== 'undefined' && currentBgMode === 'solid') {
+  if (typeof getEffectiveBgMode === 'function' ? getEffectiveBgMode() === 'solid' : typeof currentBgMode !== 'undefined' && currentBgMode === 'solid') {
     document.body.classList.remove('img-ui-dark', 'img-ui-light', 'img-scene-dark', 'img-scene-light');
   }
 

@@ -66,6 +66,12 @@ function initCardSelection(gridId, storageKey, defaultValue) {
   if (storageKey === 'moonfog_tone' && typeof resolveToneKey === 'function') {
     savedValue = resolveToneKey(savedValue);
   }
+  // 防呆：验证 savedValue 是否属于 grid 内的有效选项，无效则回退 defaultValue
+  const validValues = Array.from(grid.querySelectorAll('[data-value]')).map(item => item.dataset.value);
+  if (validValues.length > 0 && validValues.indexOf(savedValue) === -1) {
+    savedValue = defaultValue;
+    try { localStorage.setItem(storageKey, defaultValue); } catch (_) {}
+  }
 
   grid.querySelectorAll('[data-value]').forEach((item) => {
     item.classList.toggle('active', item.dataset.value === savedValue);
