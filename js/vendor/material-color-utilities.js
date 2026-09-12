@@ -150,7 +150,13 @@ function  matrixMultiply(row, matrix) {
     return [a, b, c];
 }
 
-// ────────────────────────────────────────────────────────────────────────────
+// ─── MathUtils namespace (wrap standalone math functions) ──────────────────
+const MathUtils = {
+    signum, lerp, clampInt, clampDouble,
+    sanitizeDegreesInt, sanitizeDegreesDouble,
+    rotationDirection, differenceDegrees, matrixMultiply,
+};
+const mathUtils = MathUtils;
 
 /**
  * @license
