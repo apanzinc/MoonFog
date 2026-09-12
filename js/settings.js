@@ -1817,25 +1817,25 @@ function bindDataSettings() {
 }
 
 function initSettings() {
-  if (typeof initOverlayScrollbars === 'function') initOverlayScrollbars(document);
-  bindSettingsChrome();
-  bindSettingsNavigation();
-  bindUsernameSetting();
-  bindCustomTextSetting();
-  bindGreetingModeSetting();
-  bindClockOptionsSetting();
-  bindQuoteOptionsSetting();
-  bindBackgroundSetting();
-  bindDisplaySetting();
-  bindThemeSetting();
-  bindFontSetting();
-  bindDataSettings();
-  initEngineSettings();
-  initShortcutSettings();
-  if (typeof bindImportBookmarksUI === 'function') bindImportBookmarksUI();
-  if (typeof initDisplayEffects === 'function') initDisplayEffects();
-  if (typeof syncSurfaceBlurAvailability === 'function') syncSurfaceBlurAvailability();
-  bindAboutBannerUpdates();
+  try { if (typeof initOverlayScrollbars === 'function') initOverlayScrollbars(document); } catch (_) {}
+  try { bindSettingsChrome(); } catch (_) {}
+  try { bindSettingsNavigation(); } catch (_) {}
+  try { bindUsernameSetting(); } catch (_) {}
+  try { bindCustomTextSetting(); } catch (_) {}
+  try { bindGreetingModeSetting(); } catch (_) {}
+  try { bindClockOptionsSetting(); } catch (_) {}
+  try { bindQuoteOptionsSetting(); } catch (_) {}
+  try { bindBackgroundSetting(); } catch (_) {}
+  try { bindDisplaySetting(); } catch (_) {}
+  try { bindThemeSetting(); } catch (_) {}
+  try { bindFontSetting(); } catch (_) {}
+  try { bindDataSettings(); } catch (_) {}
+  try { initEngineSettings(); } catch (_) {}
+  try { initShortcutSettings(); } catch (_) {}
+  try { if (typeof bindImportBookmarksUI === 'function') bindImportBookmarksUI(); } catch (_) {}
+  try { if (typeof initDisplayEffects === 'function') initDisplayEffects(); } catch (_) {}
+  try { if (typeof syncSurfaceBlurAvailability === 'function') syncSurfaceBlurAvailability(); } catch (_) {}
+  try { bindAboutBannerUpdates(); } catch (_) {}
 }
 
 /**
