@@ -484,8 +484,14 @@ let quoteCommitId = 0;
 // 一言字数上限（运行时）
 let currentQuoteMaxLen =
   typeof DEFAULT_QUOTE_MAX_LEN === 'number' ? DEFAULT_QUOTE_MAX_LEN : 32;
-// 背景状态
+// 背景状态：同步读 localStorage，避免 initBackground 异步/异常导致设置面板显示错误模式
 let currentBgMode = DEFAULT_BG_MODE;
+try {
+  const _saved = localStorage.getItem(BG_MODE_KEY);
+  if (_saved === 'solid' || _saved === 'bing' || _saved === 'local' || _saved === 'grain') {
+    currentBgMode = _saved;
+  }
+} catch (_) {}
 let currentBingMeta = null;
 let localBgDataUrl = '';
 let currentBgBlur = DEFAULT_BG_BLUR;
