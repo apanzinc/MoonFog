@@ -1615,9 +1615,11 @@ async function extractPaletteFromImage(url, mode) {
   if (!url) return null;
   const uiMode = mode || getUiMode();
   const { w: sw, h: sh } = getPaletteSampleSize();
+  console.log('[MoonFog] extractPaletteFromImage url:', url, 'size:', sw, 'x', sh);
 
   try {
     const img = await loadImageForPalette(url);
+    console.log('[MoonFog] img loaded:', img.naturalWidth, 'x', img.naturalHeight);
     const canvas = document.createElement('canvas');
     canvas.width = sw;
     canvas.height = sh;
@@ -1660,6 +1662,9 @@ async function extractPaletteFromImage(url, mode) {
     if (window.MoonFogColor) {
       try {
         seedHct = window.MoonFogColor.extractSeedFromPixelData(data, sw, sh);
+        if (seedHct) {
+          console.log('[MoonFog] seedHct:', JSON.stringify({hue: seedHct.hue, chroma: seedHct.chroma, tone: seedHct.tone}));
+        }
       } catch (err) {
         console.warn('[MoonFog] MCU seed extraction failed, fallback to pickMonetColors:', err);
       }
