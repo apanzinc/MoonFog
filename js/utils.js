@@ -144,7 +144,8 @@ function initSegment(segmentId, storageKey, callback, options = {}) {
   const { attr = 'data-value', keyboard = true } = options;
   const buttons = segment.querySelectorAll(`[${attr}]`);
 
-  // 从存储恢复选中�  const saved = getStorage(storageKey);
+  // 从存储恢复选中
+  const saved = getStorage(storageKey);
   if (saved) {
     buttons.forEach(btn => {
       const active = btn.getAttribute(attr) === saved;
@@ -197,7 +198,8 @@ function initSlider(sliderId, options) {
 
   const valueEl = valueId ? document.getElementById(valueId) : null;
 
-  // 从存储恢�  const saved = getStorageTyped(storageKey, null, 'number');
+  // 从存储恢复
+  const saved = getStorageTyped(storageKey, null, 'number');
   if (saved !== null) {
     slider.value = String(clampNumber(saved, min, max, min));
   }

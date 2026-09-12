@@ -829,7 +829,8 @@ function bindQuoteOptionsSetting() {
     };
     slider.addEventListener('input', () => {
       if (typeof updateQuoteMaxLenUI === 'function') {
-        // 仅更新标签预�        const label = document.getElementById('quoteMaxLenValue');
+        // 仅更新标签预览
+        const label = document.getElementById('quoteMaxLenValue');
         if (label) label.textContent = String(slider.value) + ' �';
       }
     });
@@ -1409,7 +1410,8 @@ function bindBackgroundSetting() {
 
   if (bgLocalClear) {
     bgLocalClear.addEventListener('click', async () => {
-      // 破坏性操作：先确�      if (!window.confirm('确定要清除已上传的本地背景图片吗？此操作不可撤销题')) return;
+      // 破坏性操作：先确认
+      if (!window.confirm('确定要清除已上传的本地背景图片吗？此操作不可撤销')) return;
       clearLocalBackground();
       if (bgLocalTip) bgLocalTip.textContent = '已清除本地图�';
       await applyBackgroundMode('local');
@@ -1495,7 +1497,8 @@ function bindThemeSetting() {
 
   const customBtn = document.getElementById('toneCustomBtn');
   if (customBtn) {
-    // 不用 disabled（会�click 监听失效）；保留 aria-disabled + is-disabled 表达「未开放�    customBtn.setAttribute('aria-disabled', 'true');
+    // 不用 disabled（会导click 监听失效）；保留 aria-disabled + is-disabled 表达「未开放
+    customBtn.setAttribute('aria-disabled', 'true');
     customBtn.classList.add('is-disabled');
     customBtn.addEventListener('click', (e) => {
       e.preventDefault();
@@ -1519,12 +1522,13 @@ function bindThemeSetting() {
     let pref = typeof normalizeModePref === 'function'
       ? normalizeModePref(newMode)
       : (newMode || 'light');
-    // 当前背景没有可取样场景时，「壁纸」模式改为系统�    const unsupportedBg =
+    // 当前背景没有可取样场景时，「壁纸」模式改为系统
+    const unsupportedBg =
       (typeof isImageBackgroundActive === 'function' && !isImageBackgroundActive());
     if (pref === 'wallpaper' && unsupportedBg) {
       pref = 'system';
       const tip = document.getElementById('modeSettingTip');
-      if (tip) tip.textContent = '当前背景无壁纸场景，已改为跟随系题';
+      if (tip) tip.textContent = '当前背景无壁纸场景，已改为跟随系统主题';
     }
     applyTheme(tone, pref, { animate: true });
   };
@@ -1539,7 +1543,8 @@ function bindThemeSetting() {
     });
   }
 
-  // 兼容旧按钮：�light/dark 间切换固定偏�  const modeToggle = document.getElementById('modeToggle');
+  // 兼容旧按钮：light/dark 间切换固定偏好
+  const modeToggle = document.getElementById('modeToggle');
   if (modeToggle) {
     modeToggle.addEventListener('click', () => {
       const currentMode =
