@@ -2344,6 +2344,10 @@ function applyShortcutContrastInline(palette) {
 /**
  * 把取色结果写则CSS 变量（Monet roles →UI tokens（ * 图片壁纸：始终压暐+ 白色文字；深色模式仅捧UI 底色为黑色 */
 function applyImagePalette(palette) {
+  // 防呆：防止 applyImagePalette → syncModeWithWallpaperScene → applyTheme → refreshImagePaletteForMode → applyImagePalette 无限递归
+  if (applyImagePalette._running) return;
+  applyImagePalette._running = true;
+  try {
   if (!palette) {
     clearImagePalette();
     persistImagePalette(null);
@@ -2417,6 +2421,9 @@ function applyImagePalette(palette) {
   palette.isDarkUi = uiDark;
   applyShortcutContrastInline(palette);
   persistImagePalette(palette, lastDominant);
+  } finally {
+    applyImagePalette._running = false;
+  }
 }
 
 /**
