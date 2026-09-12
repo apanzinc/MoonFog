@@ -117,29 +117,29 @@
     // --- 4c. 图片壁纸 surface tokens ---
     if (state.imageBg && state.imagePalette) {
       var ip = state.imagePalette
-      // 图片模式：面板主色全部跟随壁纸种子色（覆盖静态主题）
-      root.style.setProperty('--bg-warm', ip.surface || 'rgba(255,255,255,0.80)')
-      root.style.setProperty('--bg-warm-alt', ip.surfaceHover || 'rgba(255,255,255,0.88)')
-      root.style.setProperty('--card-bg', 'rgba(255,255,255,0.82)')
-      root.style.setProperty('--text-primary', ip.text || '#FFFFFF')
-      root.style.setProperty('--text-secondary', ip.textSecondary || 'rgba(255,255,255,0.75)')
-      root.style.setProperty('--text-tertiary', ip.textMuted || 'rgba(255,255,255,0.5)')
-      root.style.setProperty('--border', ip.border || 'rgba(255,255,255,0.2)')
-      root.style.setProperty('--border-strong', ip.border || 'rgba(255,255,255,0.3)')
-      root.style.setProperty('--shadow', ip.shadow || '0 4px 20px rgba(0,0,0,0.3)')
-      root.style.setProperty('--shadow-hover', ip.shadow || '0 8px 30px rgba(0,0,0,0.4)')
-      // accent 颜色跟随壁纸种子色
-      if (ip.accent) root.style.setProperty('--accent', ip.accent)
-      if (ip.accentSoft) root.style.setProperty('--accent-glow', ip.accentSoft)
-      if (ip.accent2) root.style.setProperty('--accent-hover', ip.accent2)
-      // surface tokens
-      root.style.setProperty('--surface-text-primary', '#FFFFFF')
-      root.style.setProperty('--surface-text-secondary', 'rgba(255,255,255,0.75)')
-      root.style.setProperty('--surface-text-muted', 'rgba(255,255,255,0.5)')
-      root.style.setProperty('--surface-bg', 'rgba(255,255,255,0.80)')
-      root.style.setProperty('--surface-bg-hover', 'rgba(255,255,255,0.88)')
-      root.style.setProperty('--surface-border', 'rgba(255,255,255,0.2)')
-      root.style.setProperty('--surface-chip', ip.chip || 'transparent')
+      console.log('[ThemeManager] imageBg=true, accent:', ip.accent, 'text:', ip.text)
+      var imp = 'important'
+      // 图片模式：面板主色全部跟随壁纸种子色（important 覆盖静态主题）
+      root.style.setProperty('--bg-warm', ip.surface || 'rgba(255,255,255,0.80)', imp)
+      root.style.setProperty('--bg-warm-alt', ip.surfaceHover || 'rgba(255,255,255,0.88)', imp)
+      root.style.setProperty('--card-bg', 'rgba(255,255,255,0.82)', imp)
+      root.style.setProperty('--text-primary', ip.text || '#FFFFFF', imp)
+      root.style.setProperty('--text-secondary', ip.textSecondary || 'rgba(255,255,255,0.75)', imp)
+      root.style.setProperty('--text-tertiary', ip.textMuted || 'rgba(255,255,255,0.5)', imp)
+      root.style.setProperty('--border', ip.border || 'rgba(255,255,255,0.2)', imp)
+      root.style.setProperty('--border-strong', ip.border || 'rgba(255,255,255,0.3)', imp)
+      root.style.setProperty('--shadow', ip.shadow || '0 4px 20px rgba(0,0,0,0.3)', imp)
+      root.style.setProperty('--shadow-hover', ip.shadow || '0 8px 30px rgba(0,0,0,0.4)', imp)
+      if (ip.accent) root.style.setProperty('--accent', ip.accent, imp)
+      if (ip.accentSoft) root.style.setProperty('--accent-glow', ip.accentSoft, imp)
+      if (ip.accent2) root.style.setProperty('--accent-hover', ip.accent2, imp)
+      root.style.setProperty('--surface-text-primary', '#FFFFFF', imp)
+      root.style.setProperty('--surface-text-secondary', 'rgba(255,255,255,0.75)', imp)
+      root.style.setProperty('--surface-text-muted', 'rgba(255,255,255,0.5)', imp)
+      root.style.setProperty('--surface-bg', 'rgba(255,255,255,0.80)', imp)
+      root.style.setProperty('--surface-bg-hover', 'rgba(255,255,255,0.88)', imp)
+      root.style.setProperty('--surface-border', 'rgba(255,255,255,0.2)', imp)
+      root.style.setProperty('--surface-chip', ip.chip || 'transparent', imp)
     } else if (state.grainActive && state.grainPalette) {
       // 流光模式：surface-text 跟随主题文字色（白色）
       root.style.setProperty('--surface-text-primary', '#FFFFFF')
