@@ -169,7 +169,7 @@
     }
 
     // 图片/流光模式：跳过基础色板，避免无 !important 的值先写入后被覆盖
-    if (!(state.imageBg && state.imagePalette) && !(state.grainActive && state.grainPalette)) {
+    if (!(state.imageBg && state.imagePalette) && !state.grainActive) {
       Object.keys(palette).forEach(function (k) {
         root.style.setProperty(k, palette[k])
       })

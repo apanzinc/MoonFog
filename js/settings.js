@@ -1488,6 +1488,7 @@ function bindThemeSetting() {
   } catch (_) {}
 
   initCardClick('themeGrid', 'moonfog_tone', (value) => {
+    if (value === 'custom') return;
     const pref = typeof loadModePref === 'function'
       ? loadModePref()
       : (document.documentElement.getAttribute('data-mode-pref') || localStorage.getItem('moonfog_mode') || DEFAULT_MODE);
@@ -1498,25 +1499,21 @@ function bindThemeSetting() {
   const colorPicker = document.getElementById('toneColorPicker');
   const customPreview = document.getElementById('toneCustomPreview');
   if (customBtn && colorPicker) {
-    // 恢复已保存的自定义色
     const savedColor = localStorage.getItem('moonfog_custom_color');
     if (savedColor && customPreview) {
       customPreview.style.backgroundColor = savedColor;
     }
-    // 点击自定义按钮 → 打开取色器
     customBtn.addEventListener('click', (e) => {
       e.preventDefault();
       e.stopPropagation();
+      colorPicker.value = savedColor || '#D4A855';
       colorPicker.click();
     });
-    // 取色器选色 → 生成色板并应用
     colorPicker.addEventListener('input', (e) => {
       const hex = e.target.value;
       localStorage.setItem('moonfog_custom_color', hex);
       if (customPreview) customPreview.style.backgroundColor = hex;
-      // 激活自定义 tone
       localStorage.setItem('moonfog_tone', 'custom');
-      // 更新 UI 选中态
       document.querySelectorAll('#themeGrid .theme-swatch').forEach(s => {
         s.classList.remove('active');
         s.setAttribute('aria-checked', 'false');
