@@ -49,28 +49,28 @@ function applyGrainPalette() {
   const root = document.documentElement;
 
   if (typeof currentBgMode === 'undefined' || currentBgMode !== 'grain') {
-    // 非流光模式：清除自定义变量，回退tokens.css
-    console.log('[MoonFog] applyGrainPalette: removing vars, currentBgMode:', currentBgMode, '| before: --bg-warm=', root.style.getPropertyValue('--bg-warm'), '| --text-primary=', root.style.getPropertyValue('--text-primary'))
-    root.style.removeProperty('--bg-warm');
-    root.style.removeProperty('--bg-warm-alt');
-    root.style.removeProperty('--card-bg');
-    root.style.removeProperty('--text-primary');
-    root.style.removeProperty('--text-secondary');
-    root.style.removeProperty('--text-tertiary');
-    root.style.removeProperty('--accent');
-    root.style.removeProperty('--accent-hover');
-    root.style.removeProperty('--accent-glow');
-    root.style.removeProperty('--border');
-    root.style.removeProperty('--border-strong');
+    // 图片壁纸模式（bing/local）的面板色板由 ThemeManager 管理，仅清理流光UI类
+    var isImageMode = currentBgMode === 'bing' || currentBgMode === 'local';
+    if (!isImageMode) {
+      root.style.removeProperty('--bg-warm');
+      root.style.removeProperty('--bg-warm-alt');
+      root.style.removeProperty('--card-bg');
+      root.style.removeProperty('--text-primary');
+      root.style.removeProperty('--text-secondary');
+      root.style.removeProperty('--text-tertiary');
+      root.style.removeProperty('--accent');
+      root.style.removeProperty('--accent-hover');
+      root.style.removeProperty('--accent-glow');
+      root.style.removeProperty('--border');
+      root.style.removeProperty('--border-strong');
+      root.style.removeProperty('--img-text');
+      let greetingEl = document.getElementById('greeting');
+      let subEl = document.getElementById('greetingSub');
+      if (greetingEl) greetingEl.style.removeProperty('color');
+      if (subEl) subEl.style.removeProperty('color');
+    }
     root.classList.remove('has-grain-ui');
     document.body.classList.remove('has-grain-ui');
-    // 清除流光模式强制白字
-    root.style.removeProperty('--img-text');
-    let greetingEl = document.getElementById('greeting');
-    let subEl = document.getElementById('greetingSub');
-    if (greetingEl) greetingEl.style.removeProperty('color');
-    if (subEl) subEl.style.removeProperty('color');
-    console.log('[MoonFog] applyGrainPalette: AFTER removal — --bg-warm=', root.style.getPropertyValue('--bg-warm') || '(empty)', '| --text-primary=', root.style.getPropertyValue('--text-primary') || '(empty)')
     return;
   }
 
