@@ -206,12 +206,17 @@
   function setImagePalette (palette) {
     state.imagePalette = palette
     state.imageBg = !!palette
+    // 同步 DOM 上的 data-mode，防止旧 state.mode 覆盖
+    var dm = document.documentElement.getAttribute('data-mode')
+    if (dm) state.mode = dm
     apply()
   }
 
   function clearImagePalette () {
     state.imagePalette = null
     state.imageBg = false
+    var dm = document.documentElement.getAttribute('data-mode')
+    if (dm) state.mode = dm
     apply()
   }
 
