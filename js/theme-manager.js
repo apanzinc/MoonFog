@@ -154,8 +154,6 @@
     const root = document.documentElement
     if (!root) return
 
-    console.log('[MoonFog] ThemeManager.apply() called, imageBg:', state.imageBg, 'imagePalette:', !!state.imagePalette, 'patch:', patch ? Object.keys(patch) : 'none')
-
     // --- 4a. 主题色板 ---
     const isDark = state.mode === 'dark'
     let palette
