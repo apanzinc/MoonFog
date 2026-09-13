@@ -1488,7 +1488,6 @@ function bindThemeSetting() {
   } catch (_) {}
 
   initCardClick('themeGrid', 'moonfog_tone', (value) => {
-    if (value === 'custom') return; // 自定义暂未开放
     const pref = typeof loadModePref === 'function'
       ? loadModePref()
       : (document.documentElement.getAttribute('data-mode-pref') || localStorage.getItem('moonfog_mode') || DEFAULT_MODE);
@@ -1496,29 +1495,43 @@ function bindThemeSetting() {
   });
 
   const customBtn = document.getElementById('toneCustomBtn');
-  if (customBtn) {
-    // 不用 disabled（会导click 监听失效）；保留 aria-disabled + is-disabled 表达「未开放
-    customBtn.setAttribute('aria-disabled', 'true');
-    customBtn.classList.add('is-disabled');
+  const colorPicker = document.getElementById('toneColorPicker');
+  const customPreview = document.getElementById('toneCustomPreview');
+  if (customBtn && colorPicker) {
+    // 恢复已保存的自定义色
+    const savedColor = localStorage.getItem('moonfog_custom_color');
+    if (savedColor && customPreview) {
+      customPreview.style.backgroundColor = savedColor;
+    }
+    // 点击自定义按钮 → 打开取色器
     customBtn.addEventListener('click', (e) => {
       e.preventDefault();
       e.stopPropagation();
-      const tip = document.getElementById('toneSettingTip');
-      if (tip) {
-        tip.textContent = '自定义暂未开�';
-        tip.classList.add('is-notice');
-        clearTimeout(customBtn._tipTimer);
-        customBtn._tipTimer = setTimeout(() => {
-          tip.textContent = '仅纯色背景生题';
-          tip.classList.remove('is-notice');
-        }, 1800);
-      }
+      colorPicker.click();
+    });
+    // 取色器选色 → 生成色板并应用
+    colorPicker.addEventListener('input', (e) => {
+      const hex = e.target.value;
+      localStorage.setItem('moonfog_custom_color', hex);
+      if (customPreview) customPreview.style.backgroundColor = hex;
+      // 激活自定义 tone
+      localStorage.setItem('moonfog_tone', 'custom');
+      // 更新 UI 选中态
+      document.querySelectorAll('#themeGrid .theme-swatch').forEach(s => {
+        s.classList.remove('active');
+        s.setAttribute('aria-checked', 'false');
+      });
+      customBtn.classList.add('active');
+      customBtn.setAttribute('aria-checked', 'true');
+      const pref = typeof loadModePref === 'function'
+        ? loadModePref()
+        : (document.documentElement.getAttribute('data-mode-pref') || localStorage.getItem('moonfog_mode') || DEFAULT_MODE);
+      applyTheme('custom', pref, { animate: true });
     });
   }
 
   const applyMode = (newMode) => {
     let tone = localStorage.getItem('moonfog_tone') || DEFAULT_TONE;
-    if (tone === 'custom') tone = DEFAULT_TONE || 'sand';
     let pref = typeof normalizeModePref === 'function'
       ? normalizeModePref(newMode)
       : (newMode || 'light');

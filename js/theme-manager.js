@@ -46,7 +46,62 @@
   }
 
   /* =============================================
-     2. 状态
+     2. 自定义色板生成
+     ============================================= */
+  const CUSTOM_TONE_KEY = 'moonfog_custom_color'
+
+  function generateCustomPalette(hex, isDark) {
+    const MCU = window.MaterialColorUtilities
+    if (!MCU || !MCU.Hct) return null
+    try {
+      const argb = MCU.ColorUtils.argbFromHex(hex)
+      const hct = MCU.Hct.fromInt(argb)
+      const scheme = new MCU.SchemeTonalSpot(hct, isDark)
+      const role = (fn) => {
+        const argb = fn(scheme)
+        const r = (argb >>> 16) & 0xff
+        const g = (argb >>> 8) & 0xff
+        const b = argb & 0xff
+        return `rgb(${r},${g},${b})`
+      }
+      const hexFrom = (fn) => {
+        const argb = fn(scheme)
+        return '#' + ((1 << 24) | ((argb >>> 16) & 0xff) << 16 | ((argb >>> 8) & 0xff) << 8 | (argb & 0xff)).toString(16).slice(1)
+      }
+      const rgba = (fn, a) => {
+        const argb = fn(scheme)
+        const r = (argb >>> 16) & 0xff
+        const g = (argb >>> 8) & 0xff
+        const b = argb & 0xff
+        return `rgba(${r},${g},${b},${a})`
+      }
+      const accent = hexFrom(s => s.primary)
+      const accentHover = hexFrom(s => s.primary)
+      const accentGlow = rgba(s => s.primary, 0.15)
+
+      return {
+        '--bg-warm': isDark ? '#1E1C18' : '#F5F0E8',
+        '--bg-warm-alt': isDark ? '#2A2720' : '#EDE8E0',
+        '--card-bg': role(s => s.surfaceContainerLow),
+        '--text-primary': isDark ? '#E5DFD0' : '#1A1A1A',
+        '--text-secondary': isDark ? 'rgba(229,223,208,0.75)' : 'rgba(26,26,26,0.65)',
+        '--text-tertiary': isDark ? 'rgba(229,223,208,0.5)' : 'rgba(26,26,26,0.45)',
+        '--accent': accent,
+        '--accent-hover': accentHover,
+        '--accent-glow': accentGlow,
+        '--border': isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)',
+        '--border-strong': isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.15)',
+        '--shadow': isDark ? '0 4px 20px rgba(0,0,0,0.3)' : `0 4px 20px rgba(0,0,0,0.06)`,
+        '--shadow-hover': isDark ? '0 8px 30px rgba(0,0,0,0.4)' : `0 8px 30px rgba(0,0,0,0.1)`
+      }
+    } catch (e) {
+      console.warn('[MoonFog] generateCustomPalette failed:', e)
+      return null
+    }
+  }
+
+  /* =============================================
+     3. 状态
      ============================================= */
   const state = {
     tone: 'sand',
@@ -102,9 +157,16 @@
     console.log('[MoonFog] ThemeManager.apply() called, imageBg:', state.imageBg, 'imagePalette:', !!state.imagePalette, 'patch:', patch ? Object.keys(patch) : 'none')
 
     // --- 4a. 主题色板 ---
-    const tone = THEMES[state.tone] ? state.tone : 'sand'
     const isDark = state.mode === 'dark'
-    const palette = (THEMES[tone] && THEMES[tone][isDark ? 'dark' : 'light']) || THEMES.sand.light
+    let palette
+    if (state.tone === 'custom') {
+      const customColor = localStorage.getItem(CUSTOM_TONE_KEY)
+      palette = customColor ? generateCustomPalette(customColor, isDark) : null
+      palette = palette || THEMES.sand[isDark ? 'dark' : 'light']
+    } else {
+      const tone = THEMES[state.tone] ? state.tone : 'sand'
+      palette = (THEMES[tone] && THEMES[tone][isDark ? 'dark' : 'light']) || THEMES.sand.light
+    }
 
     // 图片/流光模式：跳过基础色板，避免无 !important 的值先写入后被覆盖
     if (!(state.imageBg && state.imagePalette) && !(state.grainActive && state.grainPalette)) {

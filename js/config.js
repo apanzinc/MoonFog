@@ -333,7 +333,7 @@ function saveModePref(pref) {
 
 function resolveToneKey(tone) {
   const t = String(tone || '');
-  if (t === 'custom') return DEFAULT_TONE;
+  if (t === 'custom') return 'custom';
   const ok = { sand: 1, cream: 1, rose: 1, sage: 1, sky: 1, lavender: 1, slate: 1 };
   if (ok[t]) return t;
   return DEFAULT_TONE;
