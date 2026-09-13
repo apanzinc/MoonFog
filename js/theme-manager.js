@@ -126,10 +126,11 @@
       // 图片模式：面板主色全部跟随壁纸种子色（important 覆盖静态主题）
       root.style.setProperty('--bg-warm', ip.surface || 'rgba(255,255,255,0.80)', imp)
       root.style.setProperty('--bg-warm-alt', ip.surfaceHover || 'rgba(255,255,255,0.88)', imp)
+      // 面板文字颜色固定跟 isDarkUi（ip.text 跟壁纸场景亮度，不跟用户模式）
       root.style.setProperty('--card-bg', ip.isDarkUi ? 'rgba(40,42,50,0.85)' : 'rgba(255,255,255,0.82)', imp)
-      root.style.setProperty('--text-primary', ip.isDarkUi ? (ip.text || '#E5DFD0') : '#1A1A1A', imp)
-      root.style.setProperty('--text-secondary', ip.isDarkUi ? (ip.textSecondary || 'rgba(229,223,208,0.75)') : 'rgba(26,26,26,0.65)', imp)
-      root.style.setProperty('--text-tertiary', ip.isDarkUi ? (ip.textMuted || 'rgba(229,223,208,0.5)') : 'rgba(26,26,26,0.45)', imp)
+      root.style.setProperty('--text-primary', ip.isDarkUi ? '#E5DFD0' : '#1A1A1A', imp)
+      root.style.setProperty('--text-secondary', ip.isDarkUi ? 'rgba(229,223,208,0.75)' : 'rgba(26,26,26,0.65)', imp)
+      root.style.setProperty('--text-tertiary', ip.isDarkUi ? 'rgba(229,223,208,0.5)' : 'rgba(26,26,26,0.45)', imp)
       root.style.setProperty('--border', ip.border || 'rgba(255,255,255,0.2)', imp)
       root.style.setProperty('--border-strong', ip.border || 'rgba(255,255,255,0.3)', imp)
       root.style.setProperty('--shadow', ip.shadow || '0 4px 20px rgba(0,0,0,0.3)', imp)
