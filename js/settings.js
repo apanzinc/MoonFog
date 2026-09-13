@@ -1497,37 +1497,27 @@ function bindThemeSetting() {
 
   const customBtn = document.getElementById('toneCustomBtn');
   const customPreview = document.getElementById('toneCustomPreview');
-  if (customBtn) {
+  const colorPicker = document.getElementById('toneColorPicker');
+  if (customBtn && colorPicker) {
     const savedColor = localStorage.getItem('moonfog_custom_color');
     if (savedColor && customPreview) {
       customPreview.style.backgroundColor = savedColor;
     }
-    customBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      const picker = document.createElement('input');
-      picker.type = 'color';
-      picker.value = localStorage.getItem('moonfog_custom_color') || '#D4A855';
-      picker.style.cssText = 'position:fixed;top:50%;left:50%;width:0;height:0;opacity:0;pointer-events:none;';
-      document.body.appendChild(picker);
-      picker.addEventListener('input', (ev) => {
-        const hex = ev.target.value;
-        localStorage.setItem('moonfog_custom_color', hex);
-        if (customPreview) customPreview.style.backgroundColor = hex;
-        localStorage.setItem('moonfog_tone', 'custom');
-        document.querySelectorAll('#themeGrid .theme-swatch').forEach(s => {
-          s.classList.remove('active');
-          s.setAttribute('aria-checked', 'false');
-        });
-        customBtn.classList.add('active');
-        customBtn.setAttribute('aria-checked', 'true');
-        const pref = typeof loadModePref === 'function'
-          ? loadModePref()
-          : (document.documentElement.getAttribute('data-mode-pref') || localStorage.getItem('moonfog_mode') || DEFAULT_MODE);
-        applyTheme('custom', pref, { animate: true });
+    colorPicker.addEventListener('input', (e) => {
+      const hex = e.target.value;
+      localStorage.setItem('moonfog_custom_color', hex);
+      if (customPreview) customPreview.style.backgroundColor = hex;
+      localStorage.setItem('moonfog_tone', 'custom');
+      document.querySelectorAll('#themeGrid .theme-swatch').forEach(s => {
+        s.classList.remove('active');
+        s.setAttribute('aria-checked', 'false');
       });
-      picker.addEventListener('change', () => { picker.remove(); });
-      picker.showPicker();
+      customBtn.classList.add('active');
+      customBtn.setAttribute('aria-checked', 'true');
+      const pref = typeof loadModePref === 'function'
+        ? loadModePref()
+        : (document.documentElement.getAttribute('data-mode-pref') || localStorage.getItem('moonfog_mode') || DEFAULT_MODE);
+      applyTheme('custom', pref, { animate: true });
     });
   }
 
