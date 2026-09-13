@@ -387,9 +387,7 @@ function applyTheme(tone, mode, options = {}) {
 
   // 同步 ThemeManager：统一 surface tokens
   if (window.__MOONFOG_THEME_MANAGER__) {
-    var _tm = window.__MOONFOG_THEME_MANAGER__;
-    console.log('[MoonFog] applyTheme → ThemeManager.apply: imageBg:', _tm.state.imageBg, 'imagePalette:', !!_tm.state.imagePalette, 'tone:', nextTone, 'mode:', nextMode)
-    _tm.apply({
+    window.__MOONFOG_THEME_MANAGER__.apply({
       tone: nextTone,
       mode: nextMode,
       modePref: nextPref
