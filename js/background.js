@@ -2366,6 +2366,15 @@ function applyImagePalette(palette) {
     return;
   }
   ensureImageContrastStyle();
+  // 修复：async取色完成后模式可能已变，确保 isDarkUi 匹配当前模式
+  if (palette && palette.isDarkUi !== undefined && lastDominant && typeof getUiMode === 'function') {
+    const currentDark = getUiMode() === 'dark';
+    if (palette.isDarkUi !== currentDark) {
+      console.log('[MoonFog] applyImagePalette: mode changed during extraction, rebuilding palette for', currentDark ? 'dark' : 'light');
+      palette = buildPaletteFromDominant(lastDominant, currentDark ? 'dark' : 'light');
+      lastPalette = palette;
+    }
+  }
   console.log('[MoonFog] applyImagePalette called, palette:', palette ? { surface: !!palette.surface, accent: !!palette.accent, seedHex: palette.seedHex } : 'null');
   // 同步 ThemeManager
   if (window.__MOONFOG_THEME_MANAGER__) {
