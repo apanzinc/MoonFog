@@ -1271,6 +1271,10 @@ function clearImagePalette() {
   if (patch) patch.remove();
   const overlay = document.getElementById('pageBgOverlay');
   if (overlay) overlay.style.removeProperty('background');
+  // 同步 ThemeManager：清除图片状态，防止纯色模式下 imageBg 残留为 true
+  if (window.__MOONFOG_THEME_MANAGER__) {
+    window.__MOONFOG_THEME_MANAGER__.clearImagePalette();
+  }
   // 恢复用户模糊色调（纯色模式遮罩透明）
   if (typeof applyBgWash === 'function') {
     applyBgWash(
