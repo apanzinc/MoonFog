@@ -259,19 +259,12 @@ function getWallpaperSceneDarkHint() {
  */
 function resolveModeFromPref(pref, options = {}) {
   const p = typeof normalizeModePref === 'function' ? normalizeModePref(pref) : pref;
-  const sceneHint =
-    typeof options.sceneDark === 'boolean'
-      ? options.sceneDark
-      : getWallpaperSceneDarkHint();
   if (typeof resolveEffectiveMode === 'function') {
-    return resolveEffectiveMode(p, { sceneDark: sceneHint });
+    return resolveEffectiveMode(p);
   }
   if (p === 'dark' || p === 'light') return p;
   if (p === 'system' && typeof getSystemColorScheme === 'function') {
     return getSystemColorScheme();
-  }
-  if (p === 'wallpaper' && typeof sceneHint === 'boolean') {
-    return sceneHint ? 'dark' : 'light';
   }
   return 'light';
 }
@@ -305,7 +298,7 @@ function applyTheme(tone, mode, options = {}) {
 
   // 解析偏好：显式传> 当前偏好 > 存储
   let nextPref;
-  if (mode === 'light' || mode === 'dark' || mode === 'system' || mode === 'wallpaper') {
+  if (mode === 'light' || mode === 'dark' || mode === 'system') {
     nextPref = mode;
   } else if (options.pref) {
     nextPref = normalizeModePref(options.pref);
@@ -398,23 +391,10 @@ function applyTheme(tone, mode, options = {}) {
 }
 
 /**
- * 壁纸场景变化时：若偏好为 wallpaper 则重解析明暗
+ * 壁纸模式已移除，此函数保留为空操作
  */
-function syncModeWithWallpaperScene(sceneDark, options = {}) {
-  if (getModePref() !== 'wallpaper') return null;
-  if (typeof sceneDark !== 'boolean') return null;
-  const want = sceneDark ? 'dark' : 'light';
-  const cur = document.documentElement.getAttribute('data-mode');
-  if (cur === want) {
-    return { pref: 'wallpaper', mode: want, skipped: true };
-  }
-  return applyTheme(null, 'wallpaper', {
-    animate: options.animate !== false,
-    sceneDark,
-    fromWallpaper: true,
-    // 跟随壁纸场景时：OOBE 内不写盘（applyTheme 会看 oobe-active）
-    persist: options.persist
-  });
+function syncModeWithWallpaperScene() {
+  return null;
 }
 
 /**
@@ -449,37 +429,12 @@ function updateModeToggleUI(pref, resolved) {
 
   const tip = document.getElementById('modeSettingTip');
   if (tip) {
-    const unsupportedBg =
-      (typeof isImageBackgroundActive === 'function' && !isImageBackgroundActive());
     const tips = {
       light: '固定浅色界面',
       dark: '固定深色界面',
-      system: '跟随系统浅深',
-      wallpaper: unsupportedBg
-        ? '当前背景无壁纸场景，请先选图片背景'
-        : '跟随壁纸深浅'
+      system: '跟随系统浅深'
     };
     tip.textContent = tips[nextPref] || tips.light;
-  }
-
-  // 当前背景没有可取样场景时隐藏「壁纸」选项（正式设置与欢迎一致）
-  if (segment) {
-    const unsupportedBg =
-      (typeof isImageBackgroundActive === 'function' && !isImageBackgroundActive());
-    const wallBtn = segment.querySelector('[data-mode="wallpaper"]');
-    if (wallBtn) {
-      wallBtn.hidden = !!unsupportedBg;
-      wallBtn.disabled = !!unsupportedBg;
-      wallBtn.classList.toggle('is-disabled', !!unsupportedBg);
-      wallBtn.setAttribute('aria-disabled', unsupportedBg ? 'true' : 'false');
-      wallBtn.title = unsupportedBg ? '当前背景不可用，请先选图片背景' : '跟随壁纸深浅';
-      if (unsupportedBg) {
-        wallBtn.classList.remove('active');
-        wallBtn.setAttribute('aria-checked', 'false');
-      }
-    }
-    segment.classList.toggle('mode-segment--3', !!unsupportedBg);
-    segment.classList.toggle('mode-segment--4', !unsupportedBg);
   }
 }
 

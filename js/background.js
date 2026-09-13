@@ -2423,11 +2423,6 @@ function applyImagePalette(palette) {
   document.body.classList.add('img-scene-dark');
   document.body.classList.remove('img-scene-light');
 
-  // 偏好「跟随壁纸」：场景极性变化时重解析浅深
-  if (typeof syncModeWithWallpaperScene === 'function') {
-    syncModeWithWallpaperScene(true, { animate: false });
-  }
-
   const uiDark = getUiMode() === 'dark';
   document.body.classList.toggle('img-ui-dark', uiDark);
   document.body.classList.toggle('img-ui-light', !uiDark);
@@ -2533,12 +2528,7 @@ async function applyBackgroundMode(mode, options = {}) {
         typeof getModePref === 'function'
           ? getModePref()
           : document.documentElement.getAttribute('data-mode-pref');
-      if (pref === 'wallpaper' && typeof applyTheme === 'function') {
-        applyTheme(null, 'system', {
-          animate: options.silent ? false : true,
-          persist
-        });
-      } else if (typeof updateModeToggleUI === 'function') {
+      if (typeof updateModeToggleUI === 'function') {
         updateModeToggleUI(
           pref,
           document.documentElement.getAttribute('data-mode')

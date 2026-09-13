@@ -74,19 +74,12 @@
   }
   const validTones = { sand:1, cream:1, rose:1, sage:1, sky:1, lavender:1, slate:1 };
   if (!validTones[tone]) tone = 'sand';
-  if (modePref !== 'dark' && modePref !== 'light' && modePref !== 'system' && modePref !== 'wallpaper') {
+  if (modePref !== 'dark' && modePref !== 'light' && modePref !== 'system') {
     modePref = (mode === 'dark' || mode === 'light') ? mode : 'system';
   }
   if (modePref === 'dark' || modePref === 'light') { mode = modePref; }
   else if (modePref === 'system') {
     try { mode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'; } catch (e) { mode = 'light'; }
-  } else if (modePref === 'wallpaper') {
-    try {
-      let palBoot = JSON.parse(get('moonfog_bg_palette') || 'null');
-      if (palBoot && typeof palBoot.sceneDark === 'boolean') { mode = palBoot.sceneDark ? 'dark' : 'light'; }
-      else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) { mode = 'dark'; }
-      else { mode = 'light'; }
-    } catch (e) { mode = 'light'; }
   } else { mode = 'light'; }
   if (mode !== 'dark' && mode !== 'light') mode = 'light';
 

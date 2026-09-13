@@ -1522,18 +1522,10 @@ function bindThemeSetting() {
     let pref = typeof normalizeModePref === 'function'
       ? normalizeModePref(newMode)
       : (newMode || 'light');
-    // 当前背景没有可取样场景时，「壁纸」模式改为系统
-    const unsupportedBg =
-      (typeof isImageBackgroundActive === 'function' && !isImageBackgroundActive());
-    if (pref === 'wallpaper' && unsupportedBg) {
-      pref = 'system';
-      const tip = document.getElementById('modeSettingTip');
-      if (tip) tip.textContent = '当前背景无壁纸场景，已改为跟随系统主题';
-    }
     applyTheme(tone, pref, { animate: true });
   };
 
-  // 分段明暗：浅�/ 深色 / 系统 / 壁纸
+  // 分段明暗：浅色 / 深色 / 系统
   const modeSegment = document.getElementById('modeSegment');
   if (modeSegment) {
     modeSegment.querySelectorAll('.mode-segment-btn').forEach((btn) => {

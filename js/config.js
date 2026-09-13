@@ -274,21 +274,20 @@ const SEARCH_ENGINES = {
 const DEFAULT_ENGINE = 'bing';
 const DEFAULT_TONE = 'sand';
 const DEFAULT_MODE = 'light';
-// 用户明暗偏好：light | dark | system | wallpaper
+// 用户明暗偏好：light | dark | system
 const MODE_PREF_KEY = 'moonfog_mode_pref';
 const DEFAULT_MODE_PREF = 'light';
 const MODE_PREFS = {
   light: 'light',
   dark: 'dark',
-  system: 'system',
-  wallpaper: 'wallpaper'
+  system: 'system'
 };
 
 function normalizeModePref(pref) {
   const p = String(pref || '');
-  if (p === 'dark' || p === 'system' || p === 'wallpaper' || p === 'light') return p;
+  if (p === 'dark' || p === 'system' || p === 'light') return p;
   // 兼容旧版只存 light/dark 到 moonfog_mode
-  if (p === 'auto') return 'system';
+  if (p === 'auto' || p === 'wallpaper') return 'system';
   return DEFAULT_MODE_PREF;
 }
 
@@ -310,21 +309,6 @@ function resolveEffectiveMode(pref, ctx) {
   const p = normalizeModePref(pref);
   if (p === 'dark' || p === 'light') return p;
   if (p === 'system') return getSystemColorScheme();
-  // wallpaper：图片背景跟场景；纯色回退系统
-  if (p === 'wallpaper') {
-    if (ctx && typeof ctx.sceneDark === 'boolean') {
-      return ctx.sceneDark ? 'dark' : 'light';
-    }
-    try {
-      if (document.body && document.body.classList.contains('img-scene-dark')) return 'dark';
-      if (document.body && document.body.classList.contains('img-scene-light')) return 'light';
-      if (document.body && document.body.classList.contains('has-image-bg')) {
-        // 有图但尚未标记极性：默认按系统
-        return getSystemColorScheme();
-      }
-    } catch (_) {}
-    return getSystemColorScheme();
-  }
   return DEFAULT_MODE;
 }
 
