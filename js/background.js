@@ -1703,6 +1703,7 @@ async function extractPaletteFromImage(url, mode) {
       sceneMeta: polarity.sceneMeta
     };
     const palette = buildPaletteFromDominant(lastDominant, uiMode);
+    console.log('[MoonFog] extractPalette OK, seedHct:', !!seedHct, 'palette keys:', palette ? Object.keys(palette).slice(0,8) : 'null');
     lastPaletteUrl = url;
     lastPalette = palette;
     return palette;
@@ -2365,6 +2366,7 @@ function applyImagePalette(palette) {
     return;
   }
   ensureImageContrastStyle();
+  console.log('[MoonFog] applyImagePalette called, palette:', palette ? { surface: !!palette.surface, accent: !!palette.accent, seedHex: palette.seedHex } : 'null');
   // 同步 ThemeManager
   if (window.__MOONFOG_THEME_MANAGER__) {
     window.__MOONFOG_THEME_MANAGER__.setImagePalette(palette);
@@ -2461,6 +2463,7 @@ async function applyPaletteForUrl(url) {
     document.body.classList.remove('img-ui-dark', 'img-ui-light', 'img-scene-dark', 'img-scene-light');
     return;
   }
+  console.log('[MoonFog] applyPaletteForUrl:', url.substring(0, 60), 'lastDominant:', !!lastDominant, 'lastPalette:', !!lastPalette);
   // 同图已取色：只按当前明暗重算，避免进场中再跑 canvas
   if (
     lastDominant &&

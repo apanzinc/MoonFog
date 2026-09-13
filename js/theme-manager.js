@@ -119,6 +119,7 @@
 
     // --- 4c. 图片壁纸 surface tokens ---
     if (state.imageBg && state.imagePalette) {
+      console.log('[MoonFog] ThemeManager.apply: writing image palette CSS vars')
       var ip = state.imagePalette
       var imp = 'important'
       // 图片模式：面板主色全部跟随壁纸种子色（important 覆盖静态主题）
@@ -153,6 +154,7 @@
       root.style.setProperty('--surface-chip', 'transparent')
     } else {
       // 纯色模式：surface-text 跟随主题文字色
+      if (state.imageBg !== false) console.log('[MoonFog] ThemeManager.apply: fell into solid branch, imageBg:', state.imageBg, 'imagePalette:', !!state.imagePalette)
       root.style.setProperty('--surface-text-primary', palette['--text-primary'] || '#1A1A1A')
       root.style.setProperty('--surface-text-secondary', palette['--text-secondary'] || '#6B6B6B')
       root.style.setProperty('--surface-text-muted', palette['--text-tertiary'] || '#9A9A9A')
@@ -204,6 +206,7 @@
   function setImagePalette (palette) {
     state.imagePalette = palette
     state.imageBg = !!palette
+    console.log('[MoonFog] ThemeManager.setImagePalette, imageBg:', state.imageBg, 'palette:', !!palette)
     apply()
   }
 
