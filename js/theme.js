@@ -50,6 +50,7 @@ function applyGrainPalette() {
 
   if (typeof currentBgMode === 'undefined' || currentBgMode !== 'grain') {
     // 非流光模式：清除自定义变量，回退tokens.css
+    console.log('[MoonFog] applyGrainPalette: removing vars, currentBgMode:', currentBgMode, '| before: --bg-warm=', root.style.getPropertyValue('--bg-warm'), '| --text-primary=', root.style.getPropertyValue('--text-primary'))
     root.style.removeProperty('--bg-warm');
     root.style.removeProperty('--bg-warm-alt');
     root.style.removeProperty('--card-bg');
@@ -69,6 +70,7 @@ function applyGrainPalette() {
     let subEl = document.getElementById('greetingSub');
     if (greetingEl) greetingEl.style.removeProperty('color');
     if (subEl) subEl.style.removeProperty('color');
+    console.log('[MoonFog] applyGrainPalette: AFTER removal — --bg-warm=', root.style.getPropertyValue('--bg-warm') || '(empty)', '| --text-primary=', root.style.getPropertyValue('--text-primary') || '(empty)')
     return;
   }
 
@@ -385,7 +387,9 @@ function applyTheme(tone, mode, options = {}) {
 
   // 同步 ThemeManager：统一 surface tokens
   if (window.__MOONFOG_THEME_MANAGER__) {
-    window.__MOONFOG_THEME_MANAGER__.apply({
+    var _tm = window.__MOONFOG_THEME_MANAGER__;
+    console.log('[MoonFog] applyTheme → ThemeManager.apply: imageBg:', _tm.state.imageBg, 'imagePalette:', !!_tm.state.imagePalette, 'tone:', nextTone, 'mode:', nextMode)
+    _tm.apply({
       tone: nextTone,
       mode: nextMode,
       modePref: nextPref

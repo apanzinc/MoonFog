@@ -145,6 +145,7 @@
       root.style.setProperty('--surface-bg-hover', 'rgba(255,255,255,0.88)', imp)
       root.style.setProperty('--surface-border', 'rgba(255,255,255,0.2)', imp)
       root.style.setProperty('--surface-chip', ip.chip || 'transparent', imp)
+      console.log('[MoonFog] ThemeManager.apply: VERIFIED after write —', '--bg-warm:', root.style.getPropertyValue('--bg-warm'), '| --text-primary:', root.style.getPropertyValue('--text-primary'), '| --accent:', root.style.getPropertyValue('--accent'), '| --card-bg:', root.style.getPropertyValue('--card-bg'))
     } else if (state.grainActive && state.grainPalette) {
       // 流光模式：surface-text 跟随主题文字色（白色）
       root.style.setProperty('--surface-text-primary', '#FFFFFF')
