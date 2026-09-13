@@ -287,12 +287,11 @@ function ensureSystemSchemeListener() {
 }
 
 /**
- * 应用主题（色调 + 明暗偏好） * - mode 参数可为 light|dark|system|wallpaper（偏好）
+ * 应用主题（色调 + 明暗偏好） * - mode 参数可为 light|dark|system（偏好）
  * - data-mode 始终写解析后light|dark（供 CSS token * - data-mode-pref 写用户偏 */
 function applyTheme(tone, mode, options = {}) {
   const el = document.documentElement;
   let rawTone = tone || el.getAttribute('data-tone') || DEFAULT_TONE;
-  if (rawTone === 'custom') rawTone = DEFAULT_TONE || 'sand';
   const nextTone =
     typeof resolveToneKey === 'function' ? resolveToneKey(rawTone) : rawTone;
 
@@ -380,10 +379,12 @@ function applyTheme(tone, mode, options = {}) {
 
   // 同步 ThemeManager：统一 surface tokens
   if (window.__MOONFOG_THEME_MANAGER__) {
+    const isGrainActive = typeof currentBgMode !== 'undefined' && currentBgMode === 'grain';
     window.__MOONFOG_THEME_MANAGER__.apply({
       tone: nextTone,
       mode: nextMode,
-      modePref: nextPref
+      modePref: nextPref,
+      grainActive: isGrainActive
     });
   }
 

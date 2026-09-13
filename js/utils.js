@@ -62,7 +62,7 @@ function initCardSelection(gridId, storageKey, defaultValue) {
   const grid = document.getElementById(gridId);
   if (!grid) return;
   let savedValue = localStorage.getItem(storageKey) || defaultValue;
-  // 色调：custom 已下线，未知 key 回退默认
+  // 色调：验证并规范化
   if (storageKey === 'moonfog_tone' && typeof resolveToneKey === 'function') {
     savedValue = resolveToneKey(savedValue);
   }
