@@ -106,8 +106,8 @@
     const isDark = state.mode === 'dark'
     const palette = (THEMES[tone] && THEMES[tone][isDark ? 'dark' : 'light']) || THEMES.sand.light
 
-    // 图片模式：跳过基础色板，避免无 !important 的值先写入后被覆盖
-    if (!(state.imageBg && state.imagePalette)) {
+    // 图片/流光模式：跳过基础色板，避免无 !important 的值先写入后被覆盖
+    if (!(state.imageBg && state.imagePalette) && !(state.grainActive && state.grainPalette)) {
       Object.keys(palette).forEach(function (k) {
         root.style.setProperty(k, palette[k])
       })
@@ -123,14 +123,15 @@
     if (state.imageBg && state.imagePalette) {
       var ip = state.imagePalette
       var imp = 'important'
-      // 图片模式：面板主色全部跟随壁纸种子色（important 覆盖静态主题）
-      root.style.setProperty('--bg-warm', ip.surface || 'rgba(255,255,255,0.80)', imp)
-      root.style.setProperty('--bg-warm-alt', ip.surfaceHover || 'rgba(255,255,255,0.88)', imp)
+      // 取舍原则：--bg-warm / --card-bg / --text-* 用中性色保证对比度；--accent / --border / --shadow 可提取种子色
+      root.style.setProperty('--bg-warm', ip.isDarkUi ? '#1E1C18' : '#F5F0E8', imp)
+      root.style.setProperty('--bg-warm-alt', ip.isDarkUi ? '#252320' : '#F8F4ED', imp)
       // 面板文字颜色固定跟 isDarkUi（ip.text 跟壁纸场景亮度，不跟用户模式）
       root.style.setProperty('--card-bg', ip.isDarkUi ? 'rgba(40,42,50,0.85)' : 'rgba(255,255,255,0.82)', imp)
       root.style.setProperty('--text-primary', ip.isDarkUi ? '#E5DFD0' : '#1A1A1A', imp)
       root.style.setProperty('--text-secondary', ip.isDarkUi ? 'rgba(229,223,208,0.75)' : 'rgba(26,26,26,0.65)', imp)
       root.style.setProperty('--text-tertiary', ip.isDarkUi ? 'rgba(229,223,208,0.5)' : 'rgba(26,26,26,0.45)', imp)
+      // 种子色只用于装饰元素（accent/border/shadow），不影响可读性
       root.style.setProperty('--border', ip.border || 'rgba(255,255,255,0.2)', imp)
       root.style.setProperty('--border-strong', ip.border || 'rgba(255,255,255,0.3)', imp)
       root.style.setProperty('--shadow', ip.shadow || '0 4px 20px rgba(0,0,0,0.3)', imp)
