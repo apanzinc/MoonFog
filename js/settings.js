@@ -1061,7 +1061,7 @@ function openMfColorPicker(slot, anchor) {
 
 function ensureGrainSwatches() {
   const list = document.getElementById('grainColorList');
-  if (!list) return;
+  if (!list) { console.warn('[MoonFog] grainColorList not found'); return; }
   const count = Math.min(Math.max(Number(grainColorState.colorCount) || 4, 2), 7);
   list.dataset.ready = '1';
   const slots = [{ slot: 'back', label: '背景' }];
@@ -1100,6 +1100,7 @@ function bindMfColorPicker() {
   const hexInput = document.getElementById('mfColorHex');
   const presets = document.getElementById('mfColorPresets');
   const list = document.getElementById('grainColorList');
+  console.log('[MoonFog] bindMfColorPicker:', { pop: !!pop, list: !!list, sv: !!sv });
   if (!pop) return;
 
   ensureMfColorPresets();
@@ -1488,7 +1489,6 @@ function bindThemeSetting() {
   } catch (_) {}
 
   initCardClick('themeGrid', 'moonfog_tone', (value) => {
-    if (value === 'custom') return;
     const pref = typeof loadModePref === 'function'
       ? loadModePref()
       : (document.documentElement.getAttribute('data-mode-pref') || localStorage.getItem('moonfog_mode') || DEFAULT_MODE);
