@@ -1497,27 +1497,60 @@ function bindThemeSetting() {
 
   const customBtn = document.getElementById('toneCustomBtn');
   const customPreview = document.getElementById('toneCustomPreview');
-  const colorPicker = document.getElementById('toneColorPicker');
-  if (customBtn && colorPicker) {
-    const savedColor = localStorage.getItem('moonfog_custom_color');
-    if (savedColor && customPreview) {
+  if (customBtn) {
+    const savedColor = localStorage.getItem('moonfog_custom_color') || '#D4A855';
+    if (customPreview) {
       customPreview.style.backgroundColor = savedColor;
     }
-    colorPicker.addEventListener('input', (e) => {
-      const hex = e.target.value;
-      localStorage.setItem('moonfog_custom_color', hex);
-      if (customPreview) customPreview.style.backgroundColor = hex;
-      localStorage.setItem('moonfog_tone', 'custom');
-      document.querySelectorAll('#themeGrid .theme-swatch').forEach(s => {
-        s.classList.remove('active');
-        s.setAttribute('aria-checked', 'false');
-      });
-      customBtn.classList.add('active');
-      customBtn.setAttribute('aria-checked', 'true');
-      const pref = typeof loadModePref === 'function'
-        ? loadModePref()
-        : (document.documentElement.getAttribute('data-mode-pref') || localStorage.getItem('moonfog_mode') || DEFAULT_MODE);
-      applyTheme('custom', pref, { animate: true });
+    customBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const tip = document.getElementById('toneSettingTip');
+      if (!tip) return;
+      if (tip.querySelector('.mf-hex-input')) return;
+      tip.innerHTML = '';
+      const wrap = document.createElement('span');
+      wrap.className = 'mf-hex-input';
+      wrap.style.cssText = 'display:inline-flex;align-items:center;gap:6px;';
+      const preview = document.createElement('span');
+      preview.style.cssText = 'display:inline-block;width:16px;height:16px;border-radius:4px;border:1px solid rgba(0,0,0,0.15);flex-shrink:0;background:' + savedColor;
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.value = savedColor;
+      input.maxLength = 7;
+      input.style.cssText = 'width:80px;padding:2px 6px;border:1px solid var(--border);border-radius:4px;background:var(--card-bg);color:var(--text-primary);font-size:12px;font-family:monospace;';
+      input.setAttribute('aria-label', '主题色 HEX');
+      const applyBtn = document.createElement('button');
+      applyBtn.type = 'button';
+      applyBtn.textContent = '应用';
+      applyBtn.style.cssText = 'padding:2px 8px;border:1px solid var(--border);border-radius:4px;background:var(--accent);color:#fff;font-size:12px;cursor:pointer;';
+      function applyColor(hex) {
+        if (!/^#[0-9a-fA-F]{6}$/.test(hex)) return;
+        localStorage.setItem('moonfog_custom_color', hex);
+        if (customPreview) customPreview.style.backgroundColor = hex;
+        preview.style.backgroundColor = hex;
+        localStorage.setItem('moonfog_tone', 'custom');
+        document.querySelectorAll('#themeGrid .theme-swatch').forEach(s => {
+          s.classList.remove('active');
+          s.setAttribute('aria-checked', 'false');
+        });
+        customBtn.classList.add('active');
+        customBtn.setAttribute('aria-checked', 'true');
+        const pref = typeof loadModePref === 'function'
+          ? loadModePref()
+          : (document.documentElement.getAttribute('data-mode-pref') || localStorage.getItem('moonfog_mode') || DEFAULT_MODE);
+        applyTheme('custom', pref, { animate: true });
+      }
+      input.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') applyColor(input.value); });
+      input.addEventListener('input', () => { preview.style.backgroundColor = input.value; });
+      applyBtn.addEventListener('click', () => applyColor(input.value));
+      wrap.appendChild(preview);
+      wrap.appendChild(input);
+      wrap.appendChild(applyBtn);
+      tip.appendChild(wrap);
+      tip.classList.add('is-notice');
+      input.focus();
+      input.select();
     });
   }
 
