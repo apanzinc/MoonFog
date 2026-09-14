@@ -1499,36 +1499,80 @@ function bindThemeSetting() {
   const customPreview = document.getElementById('toneCustomPreview');
   if (customBtn) {
     const savedColor = localStorage.getItem('moonfog_custom_color') || '#D4A855';
-    if (customPreview) {
-      customPreview.style.backgroundColor = savedColor;
-    }
-    customBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
+    if (customPreview) customPreview.style.backgroundColor = savedColor;
+
+    let pickerPanel = null;
+
+    function createPickerPanel() {
+      if (pickerPanel) { pickerPanel.remove(); pickerPanel = null; return; }
       const tip = document.getElementById('toneSettingTip');
       if (!tip) return;
-      if (tip.querySelector('.mf-hex-input')) return;
-      tip.innerHTML = '';
-      const wrap = document.createElement('span');
-      wrap.className = 'mf-hex-input';
-      wrap.style.cssText = 'display:inline-flex;align-items:center;gap:6px;';
-      const preview = document.createElement('span');
-      preview.style.cssText = 'display:inline-block;width:16px;height:16px;border-radius:4px;border:1px solid rgba(0,0,0,0.15);flex-shrink:0;background:' + savedColor;
-      const input = document.createElement('input');
-      input.type = 'text';
-      input.value = savedColor;
-      input.maxLength = 7;
-      input.style.cssText = 'width:80px;padding:2px 6px;border:1px solid var(--border);border-radius:4px;background:var(--card-bg);color:var(--text-primary);font-size:12px;font-family:monospace;';
-      input.setAttribute('aria-label', '主题色 HEX');
-      const applyBtn = document.createElement('button');
-      applyBtn.type = 'button';
-      applyBtn.textContent = '应用';
-      applyBtn.style.cssText = 'padding:2px 8px;border:1px solid var(--border);border-radius:4px;background:var(--accent);color:#fff;font-size:12px;cursor:pointer;';
-      function applyColor(hex) {
-        if (!/^#[0-9a-fA-F]{6}$/.test(hex)) return;
+      pickerPanel = document.createElement('div');
+      pickerPanel.className = 'mf-color-picker';
+      pickerPanel.innerHTML = '<canvas class="mf-cp-sv" width="220" height="140"></canvas>'
+        + '<div class="mf-cp-hue-bar"><canvas class="mf-cp-hue" width="220" height="16"></canvas></div>'
+        + '<div class="mf-cp-row"><span class="mf-cp-hex-preview"></span>'
+        + '<input class="mf-cp-hex" type="text" maxlength="7" spellcheck="false" aria-label="HEX"></div>';
+      tip.parentNode.insertBefore(pickerPanel, tip);
+      const svCanvas = pickerPanel.querySelector('.mf-cp-sv');
+      const hueCanvas = pickerPanel.querySelector('.mf-cp-hue');
+      const hexInput = pickerPanel.querySelector('.mf-cp-hex');
+      const hexPreview = pickerPanel.querySelector('.mf-cp-hex-preview');
+      let currentHue = 40, currentSat = 80, currentVal = 85;
+
+      function hsvToHex(h, s, v) {
+        s /= 100; v /= 100;
+        const f = (n) => { const k = (n + h / 60) % 6; return v - v * s * Math.max(Math.min(k, 4 - k, 1), 0); };
+        const r = Math.round(f(0) * 255), g = Math.round(f(8) * 255), b = Math.round(f(4) * 255);
+        return '#' + [r, g, b].map(x => x.toString(16).padStart(2, '0')).join('');
+      }
+
+      function hexToHsv(hex) {
+        const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+        if (!m) return null;
+        const r = parseInt(m[1], 16) / 255, g = parseInt(m[2], 16) / 255, b = parseInt(m[3], 16) / 255;
+        const max = Math.max(r, g, b), min = Math.min(r, g, b), d = max - min;
+        let h = 0, s = max === 0 ? 0 : d / max, v = max;
+        if (d !== 0) {
+          if (max === r) h = ((g - b) / d + (g < b ? 6 : 0)) * 60;
+          else if (max === g) h = ((b - r) / d + 2) * 60;
+          else h = ((r - g) / d + 4) * 60;
+        }
+        return { h, s: s * 100, v: v * 100 };
+      }
+
+      function paintSV() {
+        const ctx = svCanvas.getContext('2d');
+        const w = svCanvas.width, h = svCanvas.height;
+        for (let y = 0; y < h; y++) {
+          for (let x = 0; x < w; x++) {
+            ctx.fillStyle = hsvToHex(currentHue, (x / w) * 100, (1 - y / h) * 100);
+            ctx.fillRect(x, y, 1, 1);
+          }
+        }
+        const cx = (currentSat / 100) * w, cy = (1 - currentVal / 100) * h;
+        ctx.strokeStyle = currentVal > 50 ? '#000' : '#fff';
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(cx, cy, 6, 0, Math.PI * 2); ctx.stroke();
+      }
+
+      function paintHue() {
+        const ctx = hueCanvas.getContext('2d');
+        const w = hueCanvas.width;
+        for (let x = 0; x < w; x++) {
+          ctx.fillStyle = hsvToHex((x / w) * 360, 100, 100);
+          ctx.fillRect(x, 0, 1, hueCanvas.height);
+        }
+        const hx = (currentHue / 360) * w;
+        ctx.strokeStyle = '#fff'; ctx.lineWidth = 2;
+        ctx.strokeRect(hx - 2, 0, 4, hueCanvas.height);
+      }
+
+      function update(hex) {
+        hexInput.value = hex;
+        hexPreview.style.backgroundColor = hex;
         localStorage.setItem('moonfog_custom_color', hex);
         if (customPreview) customPreview.style.backgroundColor = hex;
-        preview.style.backgroundColor = hex;
         localStorage.setItem('moonfog_tone', 'custom');
         document.querySelectorAll('#themeGrid .theme-swatch').forEach(s => {
           s.classList.remove('active');
@@ -1541,16 +1585,53 @@ function bindThemeSetting() {
           : (document.documentElement.getAttribute('data-mode-pref') || localStorage.getItem('moonfog_mode') || DEFAULT_MODE);
         applyTheme('custom', pref, { animate: true });
       }
-      input.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') applyColor(input.value); });
-      input.addEventListener('input', () => { preview.style.backgroundColor = input.value; });
-      applyBtn.addEventListener('click', () => applyColor(input.value));
-      wrap.appendChild(preview);
-      wrap.appendChild(input);
-      wrap.appendChild(applyBtn);
-      tip.appendChild(wrap);
-      tip.classList.add('is-notice');
-      input.focus();
-      input.select();
+
+      svCanvas.addEventListener('pointerdown', (e) => {
+        const rect = svCanvas.getBoundingClientRect();
+        function pick(ev) {
+          const x = Math.max(0, Math.min(1, (ev.clientX - rect.left) / rect.width));
+          const y = Math.max(0, Math.min(1, (ev.clientY - rect.top) / rect.height));
+          currentSat = x * 100;
+          currentVal = (1 - y) * 100;
+          paintSV();
+          update(hsvToHex(currentHue, currentSat, currentVal));
+        }
+        pick(e);
+        const onMove = (ev) => pick(ev);
+        const onUp = () => { window.removeEventListener('pointermove', onMove); window.removeEventListener('pointerup', onUp); };
+        window.addEventListener('pointermove', onMove);
+        window.addEventListener('pointerup', onUp);
+      });
+
+      hueCanvas.addEventListener('pointerdown', (e) => {
+        const rect = hueCanvas.getBoundingClientRect();
+        function pick(ev) {
+          currentHue = Math.max(0, Math.min(1, (ev.clientX - rect.left) / rect.width)) * 360;
+          paintHue(); paintSV();
+          update(hsvToHex(currentHue, currentSat, currentVal));
+        }
+        pick(e);
+        const onMove = (ev) => pick(ev);
+        const onUp = () => { window.removeEventListener('pointermove', onMove); window.removeEventListener('pointerup', onUp); };
+        window.addEventListener('pointermove', onMove);
+        window.addEventListener('pointerup', onUp);
+      });
+
+      hexInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { const h = hexInput.value.trim(); if (/^#[0-9a-fA-F]{6}$/.test(h)) update(h); }});
+      hexInput.addEventListener('change', () => { const h = hexInput.value.trim(); if (/^#[0-9a-fA-F]{6}$/.test(h)) update(h); });
+
+      const hsv = hexToHsv(savedColor);
+      if (hsv) { currentHue = hsv.h; currentSat = hsv.s; currentVal = hsv.v; }
+      paintHue();
+      paintSV();
+      hexInput.value = savedColor;
+      hexPreview.style.backgroundColor = savedColor;
+    }
+
+    customBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      createPickerPanel();
     });
   }
 
