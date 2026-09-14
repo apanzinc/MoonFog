@@ -2383,10 +2383,10 @@ function applyImagePalette(palette) {
   const root = document.documentElement;
   const isDark = root.getAttribute('data-mode') === 'dark';
 
-  // 图片壁纸：始终使用白色文存
-  root.style.setProperty('--img-text', '#FFFFFF');
-  root.style.setProperty('--img-text-secondary', 'rgba(255,255,255,0.75)');
-  root.style.setProperty('--img-text-muted', 'rgba(255,255,255,0.5)');
+  // 图片壁纸：文字色跟壁纸场景明暗
+  root.style.setProperty('--img-text', palette.text || '#FFFFFF');
+  root.style.setProperty('--img-text-secondary', palette.textSecondary || 'rgba(255,255,255,0.75)');
+  root.style.setProperty('--img-text-muted', palette.textMuted || 'rgba(255,255,255,0.5)');
   root.style.setProperty('--img-text-accent', palette.textAccent || palette.accent || '#FFFFFF');
   root.style.setProperty('--img-text-shadow', 'none');
   root.style.setProperty('--img-text-shadow-soft', 'none');
@@ -2419,9 +2419,10 @@ function applyImagePalette(palette) {
   root.style.setProperty('--img-focus-ring', palette.focusRing || palette.accentSoft || 'transparent');
   if (palette.seedHex) root.style.setProperty('--img-seed', palette.seedHex);
 
-  // 场景极性：壁纸文字始终白色
-  document.body.classList.add('img-scene-dark');
-  document.body.classList.remove('img-scene-light');
+  // 场景极性：跟壁纸实际明暗
+  const sceneIsDark = palette.sceneDark !== false;
+  document.body.classList.toggle('img-scene-dark', sceneIsDark);
+  document.body.classList.toggle('img-scene-light', !sceneIsDark);
 
   const uiDark = getUiMode() === 'dark';
   document.body.classList.toggle('img-ui-dark', uiDark);
