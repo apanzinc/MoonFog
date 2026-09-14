@@ -955,8 +955,8 @@ function paintMfColorPickerUI() {
       'hsl(' + Math.round(mfColorPicker.h) + ' 100% 50%)';
   }
   if (cursor) {
-    cursor.style.left = clamp01(mfColorPicker.s / 100) * 100 + '%';
-    cursor.style.top = (1 - clamp01(mfColorPicker.v / 100)) * 100 + '%';
+    cursor.style.left = Math.max(0, Math.min(1, mfColorPicker.s / 100)) * 100 + '%';
+    cursor.style.top = (1 - Math.max(0, Math.min(1, mfColorPicker.v / 100))) * 100 + '%';
     cursor.style.backgroundColor = hex;
   }
   if (hue && document.activeElement !== hue) {
@@ -1028,17 +1028,16 @@ function setMfColorFromSvEvent(event) {
   if (!sv) return;
   const rect = sv.getBoundingClientRect();
   if (!rect.width || !rect.height) return;
-  const x = clamp01((event.clientX - rect.left) / rect.width);
-  const y = clamp01((event.clientY - rect.top) / rect.height);
+  const x = Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width));
+  const y = Math.max(0, Math.min(1, (event.clientY - rect.top) / rect.height));
   mfColorPicker.s = x * 100;
   mfColorPicker.v = (1 - y) * 100;
   applyMfColorLive();
 }
 
 function openMfColorPicker(slot, anchor) {
-  console.log('[MoonFog] openMfColorPicker', { slot, anchor: !!anchor });
   const pop = document.getElementById('mfColorPopover');
-  if (!pop || !anchor) { console.warn('[MoonFog] openMfColorPicker early return', { pop: !!pop, anchor: !!anchor }); return; }
+  if (!pop || !anchor) return;
   ensureMfColorPresets();
   if (mfColorPicker.open && mfColorPicker.slot === slot) {
     closeMfColorPicker();
@@ -1106,10 +1105,8 @@ function bindMfColorPicker() {
   ensureMfColorPresets();
 
   if (list) {
-    console.log('[MoonFog] grainColorList children:', list.children.length);
     list.addEventListener('click', (event) => {
       const btn = event.target.closest('.grain-swatch[data-grain-slot]');
-      console.log('[MoonFog] grainColorList click', { target: event.target.tagName, btn: !!btn });
       if (!btn || !list.contains(btn)) return;
       event.preventDefault();
       openMfColorPicker(btn.getAttribute('data-grain-slot'), btn);
