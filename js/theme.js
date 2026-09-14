@@ -74,8 +74,7 @@ function applyGrainPalette() {
     return;
   }
 
-  // 流光模式：立即强制问候白字（不依GrainBackground，模块加载可能尚未就绪）
-  root.style.setProperty('--img-text', '#FFFFFF');
+  // 流光模式：根据背景色明暗决定问候文字颜色
   root.classList.add('has-grain-ui');
   if (document.body) document.body.classList.add('has-grain-ui');
   ensureGrainGreetingStyle();
@@ -92,6 +91,16 @@ function applyGrainPalette() {
 
   const back = hexToRgb(palette.colorBack);
   if (!back) return;
+
+  // 根据背景色明暗决定问候文字颜色
+  const backLuma = (0.2126 * back.r + 0.7152 * back.g + 0.0722 * back.b) / 255;
+  const grainTextIsLight = backLuma < 0.45;
+  const grainTextColor = grainTextIsLight ? '#FFFFFF' : '#1A1814';
+  const grainTextSecondary = grainTextIsLight ? 'rgba(255,255,255,0.80)' : 'rgba(26,24,20,0.80)';
+  root.style.setProperty('--img-text', grainTextColor);
+  root.style.setProperty('--img-text-secondary', grainTextSecondary);
+  // 存储供 grainColorGuard 使用
+  window.__moonfogGrainTextColor = grainTextColor;
 
   // 从调色板第一个颜色提取强调色
   const accentRgb = (palette.colors && palette.colors[0]) ? hexToRgb(palette.colors[0]) : null;
@@ -146,7 +155,7 @@ function ensureGrainGreetingStyle() {
     'html.boot-has-grain .greeting-title,' +
     'html body.has-grain-ui .greeting-sub,' +
     'html.boot-has-grain .greeting-sub{' +
-      'color:#FFF!important;' +
+      'color:var(--img-text, #FFF)!important;' +
       '-webkit-text-fill-color:currentColor!important;' +
       'text-shadow:none!important;' +
       'background:none!important;' +
@@ -159,14 +168,14 @@ function ensureGrainGreetingStyle() {
 
 /** 流光模式：强制问候白字（含延迟重试，应对元素尚未渲染*/
 function applyGrainGreetingColor() {
+  const color = window.__moonfogGrainTextColor || '#FFFFFF';
   function paint() {
     let el = document.getElementById('greeting');
     let sub = document.getElementById('greetingSub');
-    if (el) el.style.color = '#FFFFFF';
-    if (sub) sub.style.color = '#FFFFFF';
+    if (el) el.style.color = color;
+    if (sub) sub.style.color = color;
   }
   paint();
-  // 元素可能DOM 尚未就绪时不存在，延迟重试
   setTimeout(paint, 0);
   setTimeout(paint, 200);
 }
@@ -175,10 +184,11 @@ function applyGrainGreetingColor() {
 (function grainColorGuard() {
   setInterval(function () {
     if (typeof currentBgMode === 'undefined' || currentBgMode !== 'grain') return;
+    const color = window.__moonfogGrainTextColor || '#FFFFFF';
     let el = document.getElementById('greeting');
     let sub = document.getElementById('greetingSub');
-    if (el) el.style.color = '#FFFFFF';
-    if (sub) sub.style.color = '#FFFFFF';
+    if (el) el.style.color = color;
+    if (sub) sub.style.color = color;
   }, 100);
 })();
 

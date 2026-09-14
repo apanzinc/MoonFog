@@ -813,7 +813,7 @@ html.boot-has-image .greeting-section {
  */
 body.has-grain-ui .greeting-title,
 html.boot-has-grain .greeting-title {
-  color: var(--img-text, #FFFFFF) !important;
+  color: var(--img-text, #1A1814) !important;
   -webkit-text-fill-color: currentColor;
   text-shadow: none;
   background: none;
@@ -825,7 +825,7 @@ html.boot-has-grain .greeting-title {
 }
 body.has-grain-ui .greeting-sub,
 html.boot-has-grain .greeting-sub {
-  color: var(--img-text, #FFFFFF) !important;
+  color: var(--img-text, #1A1814) !important;
   -webkit-text-fill-color: currentColor;
   text-shadow: none;
   background: none;
