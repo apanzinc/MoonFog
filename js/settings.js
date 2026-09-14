@@ -1061,7 +1061,7 @@ function openMfColorPicker(slot, anchor) {
 
 function ensureGrainSwatches() {
   const list = document.getElementById('grainColorList');
-  if (!list) { console.warn('[MoonFog] grainColorList not found'); return; }
+  if (!list) return;
   const count = Math.min(Math.max(Number(grainColorState.colorCount) || 4, 2), 7);
   list.dataset.ready = '1';
   const slots = [{ slot: 'back', label: '背景' }];
@@ -1100,7 +1100,6 @@ function bindMfColorPicker() {
   const hexInput = document.getElementById('mfColorHex');
   const presets = document.getElementById('mfColorPresets');
   const list = document.getElementById('grainColorList');
-  console.log('[MoonFog] bindMfColorPicker:', { pop: !!pop, list: !!list, sv: !!sv });
   if (!pop) return;
 
   ensureMfColorPresets();

@@ -77,8 +77,6 @@ function bootResolveEffectiveMode(pref, sceneDark) {
   if (p === 'system') return bootGetSystemColorScheme();
   return 'light';
 }
-  return 'light';
-}
 
 /**
  * 解析字体�? */
