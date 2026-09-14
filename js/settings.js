@@ -1036,8 +1036,9 @@ function setMfColorFromSvEvent(event) {
 }
 
 function openMfColorPicker(slot, anchor) {
+  console.log('[MoonFog] openMfColorPicker', { slot, anchor: !!anchor });
   const pop = document.getElementById('mfColorPopover');
-  if (!pop || !anchor) return;
+  if (!pop || !anchor) { console.warn('[MoonFog] openMfColorPicker early return', { pop: !!pop, anchor: !!anchor }); return; }
   ensureMfColorPresets();
   if (mfColorPicker.open && mfColorPicker.slot === slot) {
     closeMfColorPicker();
@@ -1105,8 +1106,10 @@ function bindMfColorPicker() {
   ensureMfColorPresets();
 
   if (list) {
+    console.log('[MoonFog] grainColorList children:', list.children.length);
     list.addEventListener('click', (event) => {
       const btn = event.target.closest('.grain-swatch[data-grain-slot]');
+      console.log('[MoonFog] grainColorList click', { target: event.target.tagName, btn: !!btn });
       if (!btn || !list.contains(btn)) return;
       event.preventDefault();
       openMfColorPicker(btn.getAttribute('data-grain-slot'), btn);
