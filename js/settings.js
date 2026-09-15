@@ -1480,12 +1480,7 @@ function bindDisplaySetting() {
 
 /** 自定义色调暂未开放：占位色块 + 提示 */
 function bindThemeSetting() {
-  // 若仍停留在已下线�custom，回退默认色调
-  try {
-    if (localStorage.getItem('moonfog_tone') === 'custom') {
-      localStorage.setItem('moonfog_tone', DEFAULT_TONE || 'sand');
-    }
-  } catch (_) {}
+  // 自定义主题色保留，不再强制回退
 
   initCardClick('themeGrid', 'moonfog_tone', (value) => {
     const pref = typeof loadModePref === 'function'
