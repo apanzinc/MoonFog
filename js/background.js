@@ -1569,6 +1569,9 @@ function detectScenePolarity(data, sw, sh) {
   // 取样分辨率下 blur≈px 对应页面 12px 模糊的大致效果
   const blurred = boxBlurLuma(luma, sw, sh, 2);
 
+  // 模拟 rgba(0,0,0,0.4) 遮罩效果，让检测结果与实际显示一致
+  const OVERLAY_FACTOR = 0.6; // 1 - 0.4
+
   let sum = 0;
   let n = 0;
   let darkVotes = 0;
@@ -1576,7 +1579,7 @@ function detectScenePolarity(data, sw, sh) {
   const samples = [];
   for (let y = y0; y <= y1; y++) {
     for (let x = x0; x <= x1; x++) {
-      const L = blurred[y * sw + x];
+      const L = blurred[y * sw + x] * OVERLAY_FACTOR;
       sum += L;
       n++;
       samples.push(L);
@@ -1594,7 +1597,7 @@ function detectScenePolarity(data, sw, sh) {
     lightVotes = 0;
     samples.length = 0;
     for (let p = 0; p < sw * sh; p++) {
-      const L = blurred[p];
+      const L = blurred[p] * OVERLAY_FACTOR;
       sum += L;
       n++;
       samples.push(L);
