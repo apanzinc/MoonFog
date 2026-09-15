@@ -236,7 +236,9 @@
       sceneL,
       themeStyle: 'TONAL_SPOT',
       seedHex: roles.seedHex,
-      text: rgba(r.onBackground || (sceneDark ? 0xFFFFFFFF : 0xFF1A1814), 0.92),
+      text: rgba(sceneDark
+        ? ColorUtils.argbFromRgb(255, 255, 255)
+        : ColorUtils.argbFromRgb(26, 24, 20), 0.92),
       textSecondary: rgba(sceneDark
         ? ColorUtils.argbFromRgb(230, 228, 220)
         : ColorUtils.argbFromRgb(60, 56, 48), 0.84),
