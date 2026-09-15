@@ -2382,6 +2382,7 @@ function applyImagePalette(palette) {
   }
   const root = document.documentElement;
   const isDark = root.getAttribute('data-mode') === 'dark';
+  const uiDark = getUiMode() === 'dark';
 
   // 图片壁纸：文字色跟壁纸场景明暗
   root.style.setProperty('--img-text', palette.text || '#FFFFFF');
@@ -2392,19 +2393,20 @@ function applyImagePalette(palette) {
   root.style.setProperty('--img-text-shadow-soft', 'none');
   root.style.setProperty('--img-text-glow', 'transparent');
 
-  // 控件字色：白色
-  root.style.setProperty('--img-chrome-text', '#FFFFFF');
-  root.style.setProperty('--img-chrome-text-secondary', 'rgba(255,255,255,0.75)');
-  root.style.setProperty('--img-chrome-text-muted', 'rgba(255,255,255,0.5)');
+  // 控件字色：跟 UI 模式
+  const chromeTextLight = uiDark;
+  root.style.setProperty('--img-chrome-text', chromeTextLight ? '#FFFFFF' : '#1A1A1A');
+  root.style.setProperty('--img-chrome-text-secondary', chromeTextLight ? 'rgba(255,255,255,0.75)' : 'rgba(26,26,26,0.65)');
+  root.style.setProperty('--img-chrome-text-muted', chromeTextLight ? 'rgba(255,255,255,0.5)' : 'rgba(26,26,26,0.45)');
 
-  // 控件表面：白色毛玻璃 80% 不透明
-  root.style.setProperty('--img-surface', 'rgba(255,255,255,0.80)');
-  root.style.setProperty('--img-surface-hover', 'rgba(255,255,255,0.88)');
+  // 控件表面：跟 UI 模式
+  root.style.setProperty('--img-surface', chromeTextLight ? 'rgba(255,255,255,0.80)' : 'rgba(255,255,255,0.85)');
+  root.style.setProperty('--img-surface-hover', chromeTextLight ? 'rgba(255,255,255,0.88)' : 'rgba(255,255,255,0.90)');
   root.style.setProperty('--img-chip', palette.chip || 'transparent');
-  root.style.setProperty('--img-border', 'rgba(255,255,255,0.2)');
-  root.style.setProperty('--img-shadow', '0 4px 20px rgba(0,0,0,0.3)');
-  root.style.setProperty('--img-credit-bg', 'rgba(0,0,0,0.45)');
-  root.style.setProperty('--img-credit-text', 'rgba(255,255,255,0.7)');
+  root.style.setProperty('--img-border', chromeTextLight ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.12)');
+  root.style.setProperty('--img-shadow', chromeTextLight ? '0 4px 20px rgba(0,0,0,0.3)' : '0 4px 20px rgba(0,0,0,0.08)');
+  root.style.setProperty('--img-credit-bg', chromeTextLight ? 'rgba(0,0,0,0.45)' : 'rgba(0,0,0,0.35)');
+  root.style.setProperty('--img-credit-text', chromeTextLight ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.8)');
 
   // 全屏遮罩：统一 40% 压暗，不随浅深模式变化
   const overlay = document.getElementById('pageBgOverlay');
@@ -2424,7 +2426,6 @@ function applyImagePalette(palette) {
   document.body.classList.toggle('img-scene-dark', sceneIsDark);
   document.body.classList.toggle('img-scene-light', !sceneIsDark);
 
-  const uiDark = getUiMode() === 'dark';
   document.body.classList.toggle('img-ui-dark', uiDark);
   document.body.classList.toggle('img-ui-light', !uiDark);
   palette.isDarkUi = uiDark;
