@@ -2370,12 +2370,10 @@ function applyImagePalette(palette) {
   if (palette && palette.isDarkUi !== undefined && lastDominant && typeof getUiMode === 'function') {
     const currentDark = getUiMode() === 'dark';
     if (palette.isDarkUi !== currentDark) {
-      console.log('[MoonFog] applyImagePalette: mode changed during extraction, rebuilding palette for', currentDark ? 'dark' : 'light');
       palette = buildPaletteFromDominant(lastDominant, currentDark ? 'dark' : 'light');
       lastPalette = palette;
     }
   }
-  console.log('[MoonFog] applyImagePalette called, palette:', palette ? { surface: !!palette.surface, accent: !!palette.accent, seedHex: palette.seedHex } : 'null');
   // 同步 ThemeManager
   if (window.__MOONFOG_THEME_MANAGER__) {
     window.__MOONFOG_THEME_MANAGER__.setImagePalette(palette);
