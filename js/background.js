@@ -2385,10 +2385,10 @@ function applyImagePalette(palette) {
   const isDark = root.getAttribute('data-mode') === 'dark';
   const uiDark = getUiMode() === 'dark';
 
-  // 图片壁纸：文字色跟壁纸场景明暗
-  root.style.setProperty('--img-text', palette.text || '#FFFFFF');
-  root.style.setProperty('--img-text-secondary', palette.textSecondary || 'rgba(255,255,255,0.75)');
-  root.style.setProperty('--img-text-muted', palette.textMuted || 'rgba(255,255,255,0.5)');
+  // 图片壁纸有40%压暗遮罩，问候文字固定白色
+  root.style.setProperty('--img-text', '#FFFFFF');
+  root.style.setProperty('--img-text-secondary', 'rgba(255,255,255,0.75)');
+  root.style.setProperty('--img-text-muted', 'rgba(255,255,255,0.5)');
   root.style.setProperty('--img-text-accent', palette.textAccent || palette.accent || '#FFFFFF');
   root.style.setProperty('--img-text-shadow', 'none');
   root.style.setProperty('--img-text-shadow-soft', 'none');
