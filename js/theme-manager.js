@@ -206,7 +206,7 @@
       root.style.setProperty('--surface-bg-hover', ip.isDarkUi ? 'rgba(55,57,65,0.88)' : 'rgba(255,255,255,0.88)', imp)
       root.style.setProperty('--surface-border', 'rgba(255,255,255,0.2)', imp)
       root.style.setProperty('--surface-chip', ip.chip || 'transparent', imp)
-    } else if (state.grainActive && state.grainPalette) {
+    } else if (state.grainActive) {
       // 流光模式：surface-text 跟随主题文字色（白色）
       root.style.setProperty('--surface-text-primary', '#FFFFFF')
       root.style.setProperty('--surface-text-secondary', 'rgba(255,255,255,0.75)')
