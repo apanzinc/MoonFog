@@ -214,6 +214,9 @@
       root.style.setProperty('--surface-bg-hover', ip.isDarkUi ? 'rgba(55,57,65,0.88)' : 'rgba(255,255,255,0.88)', imp)
       root.style.setProperty('--surface-border', 'rgba(255,255,255,0.2)', imp)
       root.style.setProperty('--surface-chip', ip.chip || 'transparent', imp)
+      // [DIAG] 验证写入后读回
+      var _cs = getComputedStyle(root);
+      console.log('[MoonFog:DIAG] VERIFY computed --accent:', _cs.getPropertyValue('--accent'), '--bg-warm:', _cs.getPropertyValue('--bg-warm'), '--card-bg:', _cs.getPropertyValue('--card-bg'));
     } else if (state.grainActive) {
       // 流光模式：surface-text 跟随主题文字色（白色）
       root.style.setProperty('--surface-text-primary', '#FFFFFF')
