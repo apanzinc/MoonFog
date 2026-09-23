@@ -1781,6 +1781,9 @@ function normalizeSeedInput(input, sceneLArg) {
     const secondary = ensureColorHsl(input.secondary || primary);
     const accent = ensureColorHsl(input.accent || secondary || primary);
     const out = {
+      r: primary.r,
+      g: primary.g,
+      b: primary.b,
       primary,
       secondary,
       accent,
@@ -1790,6 +1793,7 @@ function normalizeSeedInput(input, sceneLArg) {
     return out;
   }
   return {
+    r: 103, g: 80, b: 164,
     primary: { r: 103, g: 80, b: 164, ...rgbToHsl(103, 80, 164) },
     secondary: { r: 98, g: 91, b: 113, ...rgbToHsl(98, 91, 113) },
     accent: { r: 125, g: 82, b: 96, ...rgbToHsl(125, 82, 96) },
@@ -2082,9 +2086,9 @@ function hydrateImagePaletteSeed() {
         accent: s.accent || s.tertiary
       });
       // 重建 MCU seedHct（序列化时保存了 {h, c, t}）
-      if (cached.seedHct && lastDominant && window.MoonFogColor && window.MoonFogColor.hctFromRgb) {
+      if (cached.seedHct && lastDominant && window.MoonFogColor && window.MoonFogColor.Hct) {
         try {
-          lastDominant.seedHct = window.MoonFogColor.hctFromRgb(lastDominant.r, lastDominant.g, lastDominant.b);
+          lastDominant.seedHct = window.MoonFogColor.Hct.from(cached.seedHct.h, cached.seedHct.c, cached.seedHct.t);
         } catch (_) {}
       }
       if (cached.v < IMAGE_PALETTE_VERSION) {
