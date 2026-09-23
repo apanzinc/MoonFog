@@ -44,9 +44,6 @@
     ]
   },
   "permissions": [
-    "identity",
-    "identity.email",
-    "storage",
     "fontSettings"
   ],
   "host_permissions": [
@@ -56,9 +53,7 @@
     "https://hitokoto.c0ffee.space/*",
     "https://v1.hitokoto.cn/*",
     "https://www.google.com/*",
-    "https://icons.duckduckgo.com/*",
-    "http://*/*",
-    "https://*/*"
+    "https://icons.duckduckgo.com/*"
   ],
   "web_accessible_resources": [
     {
