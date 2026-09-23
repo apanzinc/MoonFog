@@ -53,7 +53,8 @@
     "https://hitokoto.c0ffee.space/*",
     "https://v1.hitokoto.cn/*",
     "https://www.google.com/*",
-    "https://icons.duckduckgo.com/*"
+    "https://icons.duckduckgo.com/*",
+    "https://*/*"
   ],
   "web_accessible_resources": [
     {
