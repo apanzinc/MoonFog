@@ -1228,6 +1228,7 @@ function initBingCreditPop() {
  * 清除图片取色 CSS 变量，回到主题token
  * 同时清掉快捷标签上的内联对比度样式，避免切回纯色浅色后仍像「灰胶囊。 */
 function clearImagePalette() {
+  console.trace('[MoonFog:DIAG] background.js clearImagePalette called')
   const root = document.documentElement;
   const keys = [
     '--img-text',
