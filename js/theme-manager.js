@@ -167,6 +167,10 @@
     }
 
     // 图片/流光模式：跳过基础色板，避免无 !important 的值先写入后被覆盖
+    console.log('[MoonFog:DIAG] ThemeManager apply', {
+      imageBg: state.imageBg, imagePalette: !!state.imagePalette,
+      grainActive: state.grainActive, tone: state.tone, mode: state.mode
+    });
     if (!(state.imageBg && state.imagePalette) && !state.grainActive) {
       Object.keys(palette).forEach(function (k) {
         root.style.setProperty(k, palette[k])
@@ -181,6 +185,10 @@
 
     // --- 4c. 图片壁纸 surface tokens ---
     if (state.imageBg && state.imagePalette) {
+      console.log('[MoonFog:DIAG] ThemeManager image section ENTERED', {
+        accent: state.imagePalette.accent, border: state.imagePalette.border,
+        shadow: state.imagePalette.shadow, chip: state.imagePalette.chip
+      });
       var ip = state.imagePalette
       var imp = 'important'
       // 取舍原则：--bg-warm / --card-bg / --text-* 用中性色保证对比度；--accent / --border / --shadow 可提取种子色

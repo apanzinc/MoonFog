@@ -1903,6 +1903,7 @@ function buildPaletteFromDominant(input, modeOrScene, maybeMode) {
 
   // Material You: 有 HCT 种子时走 MCU 配色路径
   if (input && input.seedHct && window.MoonFogColor) {
+    console.log('[MoonFog:DIAG] buildPaletteFromDominant MCU path, seedHct type:', typeof input.seedHct, 'hue:', input.seedHct?.hue, 'chroma:', input.seedHct?.chroma, 'tone:', input.seedHct?.tone);
     try {
       return window.MoonFogColor.buildPaletteNew(
         input.seedHct, userDark, sceneDark, scene
@@ -1911,6 +1912,7 @@ function buildPaletteFromDominant(input, modeOrScene, maybeMode) {
       console.warn('[MoonFog] MCU buildPaletteNew failed, fallback to HSL buildMonetRoles:', err);
     }
   }
+  console.log('[MoonFog:DIAG] buildPaletteFromDominant HSL fallback, seedHct:', !!input?.seedHct, 'MoonFogColor:', !!window.MoonFogColor);
 
   // 职责分离（
   // - 裸露问候字 / 全屏 wash →跟壁纸场景
@@ -2356,6 +2358,12 @@ function applyShortcutContrastInline(palette) {
 /**
  * 把取色结果写则CSS 变量（Monet roles →UI tokens（ * 图片壁纸：始终压暐+ 白色文字；深色模式仅捧UI 底色为黑色 */
 function applyImagePalette(palette) {
+  // [DIAG] 诊断日志 — 确认 palette 值
+  console.log('[MoonFog:DIAG] applyImagePalette called', {
+    accent: palette?.accent, border: palette?.border, shadow: palette?.shadow,
+    chip: palette?.chip, isDarkUi: palette?.isDarkUi, themeStyle: palette?.themeStyle,
+    seedHex: palette?.seedHex, hasSeedHct: !!palette?.seedHct
+  });
   // 防呆：防止 applyImagePalette → syncModeWithWallpaperScene → applyTheme → refreshImagePaletteForMode → applyImagePalette 无限递归
   if (applyImagePalette._running) return;
   applyImagePalette._running = true;
