@@ -41,7 +41,7 @@ function initSearch() {
  * 执行搜索
  */
 function performSearch(query) {
-  // URL 检浅  const urlPattern = /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([/\w .-]*)*\/?$/i;
+  const urlPattern = /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([/\w .-]*)*\/?$/i;
   if (urlPattern.test(query)) {
     let url = query;
     if (!url.startsWith('http://') && !url.startsWith('https://')) {
@@ -137,7 +137,7 @@ function createCustomEngineEl(key, name, url) {
 
   row.querySelector('.engine-delete').addEventListener('click', (e) => {
     e.stopPropagation();
-    if (!window.confirm(`确定删除搜索引擎。{name}」？`)) return;
+    if (!window.confirm(`确定删除「${name}」？`)) return;
 
     const engines = getCustomEngines();
     delete engines[key];
@@ -155,7 +155,7 @@ function createCustomEngineEl(key, name, url) {
 }
 
 /**
- * 渲染所有自定义引擎到列�? */
+ * 渲染所有自定义引擎到列�? */
 function renderCustomEngines() {
   const grid = document.getElementById('engineGrid');
   if (!grid) return;
@@ -168,7 +168,7 @@ function renderCustomEngines() {
   }
 }
 
-/** 打开「添加自定义搜索引擎」弹�?*/
+/** 打开「添加自定义搜索引擎」弹�?*/
 function openEngineModal() {
   const engineModal = document.getElementById('engineModal');
   const modalNameInput = document.getElementById('customEngineName');
