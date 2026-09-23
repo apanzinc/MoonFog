@@ -283,6 +283,7 @@
   }
 
   function clearImagePalette () {
+    console.trace('[MoonFog:DIAG] clearImagePalette called')
     state.imagePalette = null
     state.imageBg = false
     var dm = document.documentElement.getAttribute('data-mode')
