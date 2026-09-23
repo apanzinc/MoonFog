@@ -268,7 +268,9 @@
       accent: rgba(r.primary, 0.95),
       accentSoft: rgba(r.primary, userDark ? 0.18 : 0.12),
       accent2: rgba(r.secondary, 0.9),
-      focusRing: rgba(r.primary, userDark ? 0.4 : 0.3)
+      focusRing: rgba(r.primary, userDark ? 0.4 : 0.3),
+      bgWarm: rgba(ColorUtils.argbFromRgb(surface.r, surface.g, surface.b), userDark ? 0.88 : 0.92),
+      cardBg: rgba(ColorUtils.argbFromRgb(surfaceHover.r, surfaceHover.g, surfaceHover.b), userDark ? 0.85 : 0.88)
     }
   }
 

@@ -1228,7 +1228,6 @@ function initBingCreditPop() {
  * 清除图片取色 CSS 变量，回到主题token
  * 同时清掉快捷标签上的内联对比度样式，避免切回纯色浅色后仍像「灰胶囊。 */
 function clearImagePalette() {
-  console.trace('[MoonFog:DIAG] background.js clearImagePalette called')
   const root = document.documentElement;
   const keys = [
     '--img-text',
@@ -1904,7 +1903,6 @@ function buildPaletteFromDominant(input, modeOrScene, maybeMode) {
 
   // Material You: 有 HCT 种子时走 MCU 配色路径
   if (input && input.seedHct && window.MoonFogColor) {
-    console.log('[MoonFog:DIAG] buildPaletteFromDominant MCU path, seedHct type:', typeof input.seedHct, 'hue:', input.seedHct?.hue, 'chroma:', input.seedHct?.chroma, 'tone:', input.seedHct?.tone);
     try {
       return window.MoonFogColor.buildPaletteNew(
         input.seedHct, userDark, sceneDark, scene
@@ -1913,7 +1911,6 @@ function buildPaletteFromDominant(input, modeOrScene, maybeMode) {
       console.warn('[MoonFog] MCU buildPaletteNew failed, fallback to HSL buildMonetRoles:', err);
     }
   }
-  console.log('[MoonFog:DIAG] buildPaletteFromDominant HSL fallback, seedHct:', !!input?.seedHct, 'MoonFogColor:', !!window.MoonFogColor);
 
   // 职责分离（
   // - 裸露问候字 / 全屏 wash →跟壁纸场景
@@ -1996,7 +1993,9 @@ function buildPaletteFromDominant(input, modeOrScene, maybeMode) {
     accent: rgba(roles.accent1.r, roles.accent1.g, roles.accent1.b, 0.95),
     accentSoft: rgba(roles.accent1.r, roles.accent1.g, roles.accent1.b, userDark ? 0.18 : 0.12),
     accent2: rgba(roles.accent2.r, roles.accent2.g, roles.accent2.b, 0.9),
-    focusRing: rgba(roles.accent1.r, roles.accent1.g, roles.accent1.b, userDark ? 0.4 : 0.3)
+    focusRing: rgba(roles.accent1.r, roles.accent1.g, roles.accent1.b, userDark ? 0.4 : 0.3),
+    bgWarm: rgba(surface.r, surface.g, surface.b, userDark ? 0.88 : 0.92),
+    cardBg: rgba(surfaceHover.r, surfaceHover.g, surfaceHover.b, userDark ? 0.85 : 0.88)
   };
 }
 
@@ -2005,7 +2004,7 @@ function buildPaletteFromDominant(input, modeOrScene, maybeMode) {
  * seed 用于明暗切换时无 lastDominant 也能立刻重算
  */
 // v30：控件设置跟用户浅深；问候字跟壁纸场景
-const IMAGE_PALETTE_VERSION = 31;
+const IMAGE_PALETTE_VERSION = 32;
 
 function persistImagePalette(palette, seed) {
   try {
@@ -2041,6 +2040,8 @@ function persistImagePalette(palette, seed) {
       accentSoft: palette.accentSoft,
       accent2: palette.accent2,
       focusRing: palette.focusRing,
+      bgWarm: palette.bgWarm,
+      cardBg: palette.cardBg,
       isDarkUi: !!palette.isDarkUi,
       sceneDark: !!palette.sceneDark,
       sceneL: palette.sceneL,
@@ -2359,12 +2360,6 @@ function applyShortcutContrastInline(palette) {
 /**
  * 把取色结果写则CSS 变量（Monet roles →UI tokens（ * 图片壁纸：始终压暐+ 白色文字；深色模式仅捧UI 底色为黑色 */
 function applyImagePalette(palette) {
-  // [DIAG] 诊断日志 — 确认 palette 值
-  console.log('[MoonFog:DIAG] applyImagePalette called', {
-    accent: palette?.accent, border: palette?.border, shadow: palette?.shadow,
-    chip: palette?.chip, isDarkUi: palette?.isDarkUi, themeStyle: palette?.themeStyle,
-    seedHex: palette?.seedHex, hasSeedHct: !!palette?.seedHct
-  });
   // 防呆：防止 applyImagePalette → syncModeWithWallpaperScene → applyTheme → refreshImagePaletteForMode → applyImagePalette 无限递归
   if (applyImagePalette._running) return;
   applyImagePalette._running = true;

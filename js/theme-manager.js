@@ -167,10 +167,6 @@
     }
 
     // 图片/流光模式：跳过基础色板，避免无 !important 的值先写入后被覆盖
-    console.log('[MoonFog:DIAG] ThemeManager apply', {
-      imageBg: state.imageBg, imagePalette: !!state.imagePalette,
-      grainActive: state.grainActive, tone: state.tone, mode: state.mode
-    });
     if (!(state.imageBg && state.imagePalette) && !state.grainActive) {
       Object.keys(palette).forEach(function (k) {
         root.style.setProperty(k, palette[k])
@@ -185,20 +181,16 @@
 
     // --- 4c. 图片壁纸 surface tokens ---
     if (state.imageBg && state.imagePalette) {
-      console.log('[MoonFog:DIAG] ThemeManager image section ENTERED', {
-        accent: state.imagePalette.accent, border: state.imagePalette.border,
-        shadow: state.imagePalette.shadow, chip: state.imagePalette.chip
-      });
       var ip = state.imagePalette
       var imp = 'important'
-      // 取舍原则：--bg-warm / --card-bg / --text-* 用中性色保证对比度；--accent / --border / --shadow 可提取种子色
-      root.style.setProperty('--bg-warm', ip.isDarkUi ? '#1E1C18' : '#F5F0E8', imp)
-      root.style.setProperty('--bg-warm-alt', ip.isDarkUi ? '#252320' : '#F8F4ED', imp)
+      // 取舍原则：--bg-warm / --card-bg / --text-* 用壁纸 surface 色调色（带透明度保证对比度）
+      root.style.setProperty('--bg-warm', ip.bgWarm || (ip.isDarkUi ? '#1E1C18' : '#F5F0E8'), imp)
+      root.style.setProperty('--bg-warm-alt', ip.surfaceHover || ip.bgWarm || (ip.isDarkUi ? '#252320' : '#F8F4ED'), imp)
       // 面板文字颜色固定跟 isDarkUi（ip.text 跟壁纸场景亮度，不跟用户模式）
-      root.style.setProperty('--card-bg', ip.isDarkUi ? 'rgba(40,42,50,0.85)' : 'rgba(255,255,255,0.82)', imp)
-      root.style.setProperty('--text-primary', ip.isDarkUi ? '#E5DFD0' : '#1A1A1A', imp)
-      root.style.setProperty('--text-secondary', ip.isDarkUi ? 'rgba(229,223,208,0.75)' : 'rgba(26,26,26,0.65)', imp)
-      root.style.setProperty('--text-tertiary', ip.isDarkUi ? 'rgba(229,223,208,0.5)' : 'rgba(26,26,26,0.45)', imp)
+      root.style.setProperty('--card-bg', ip.cardBg || (ip.isDarkUi ? 'rgba(40,42,50,0.85)' : 'rgba(255,255,255,0.82)'), imp)
+      root.style.setProperty('--text-primary', ip.chromeText || (ip.isDarkUi ? '#E5DFD0' : '#1A1A1A'), imp)
+      root.style.setProperty('--text-secondary', ip.chromeTextSecondary || (ip.isDarkUi ? 'rgba(229,223,208,0.75)' : 'rgba(26,26,26,0.65)'), imp)
+      root.style.setProperty('--text-tertiary', ip.chromeTextMuted || (ip.isDarkUi ? 'rgba(229,223,208,0.5)' : 'rgba(26,26,26,0.45)'), imp)
       // 种子色只用于装饰元素（accent/border/shadow），不影响可读性
       root.style.setProperty('--border', ip.border || 'rgba(255,255,255,0.2)', imp)
       root.style.setProperty('--border-strong', ip.border || 'rgba(255,255,255,0.3)', imp)
@@ -207,16 +199,13 @@
       if (ip.accent) root.style.setProperty('--accent', ip.accent, imp)
       if (ip.accentSoft) root.style.setProperty('--accent-glow', ip.accentSoft, imp)
       if (ip.accent2) root.style.setProperty('--accent-hover', ip.accent2, imp)
-      root.style.setProperty('--surface-text-primary', ip.isDarkUi ? '#E5DFD0' : '#1A1A1A', imp)
-      root.style.setProperty('--surface-text-secondary', ip.isDarkUi ? 'rgba(229,223,208,0.75)' : 'rgba(26,26,26,0.65)', imp)
-      root.style.setProperty('--surface-text-muted', ip.isDarkUi ? 'rgba(229,223,208,0.5)' : 'rgba(26,26,26,0.45)', imp)
-      root.style.setProperty('--surface-bg', ip.isDarkUi ? 'rgba(40,42,50,0.85)' : 'rgba(255,255,255,0.80)', imp)
-      root.style.setProperty('--surface-bg-hover', ip.isDarkUi ? 'rgba(55,57,65,0.88)' : 'rgba(255,255,255,0.88)', imp)
+      root.style.setProperty('--surface-text-primary', ip.chromeText || (ip.isDarkUi ? '#E5DFD0' : '#1A1A1A'), imp)
+      root.style.setProperty('--surface-text-secondary', ip.chromeTextSecondary || (ip.isDarkUi ? 'rgba(229,223,208,0.75)' : 'rgba(26,26,26,0.65)'), imp)
+      root.style.setProperty('--surface-text-muted', ip.chromeTextMuted || (ip.isDarkUi ? 'rgba(229,223,208,0.5)' : 'rgba(26,26,26,0.45)'), imp)
+      root.style.setProperty('--surface-bg', ip.surface || (ip.isDarkUi ? 'rgba(40,42,50,0.85)' : 'rgba(255,255,255,0.80)'), imp)
+      root.style.setProperty('--surface-bg-hover', ip.surfaceHover || (ip.isDarkUi ? 'rgba(55,57,65,0.88)' : 'rgba(255,255,255,0.88)'), imp)
       root.style.setProperty('--surface-border', 'rgba(255,255,255,0.2)', imp)
       root.style.setProperty('--surface-chip', ip.chip || 'transparent', imp)
-      // [DIAG] 验证写入后读回
-      var _cs = getComputedStyle(root);
-      console.log('[MoonFog:DIAG] VERIFY computed --accent:', _cs.getPropertyValue('--accent'), '--bg-warm:', _cs.getPropertyValue('--bg-warm'), '--card-bg:', _cs.getPropertyValue('--card-bg'));
     } else if (state.grainActive) {
       // 流光模式：surface-text 跟随主题文字色（白色）
       root.style.setProperty('--surface-text-primary', '#FFFFFF')
@@ -286,7 +275,6 @@
   }
 
   function clearImagePalette () {
-    console.trace('[MoonFog:DIAG] clearImagePalette called')
     state.imagePalette = null
     state.imageBg = false
     var dm = document.documentElement.getAttribute('data-mode')
