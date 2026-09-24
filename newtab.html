@@ -467,19 +467,41 @@
               </div>
               <div class="setting-item grain-color-setting">
                 <div class="bg-extra-head">
-                  <span class="bg-extra-title">当前配色</span>
+                  <span class="bg-extra-title">主题色</span>
                   <span class="bg-extra-meta" id="grainPaletteMode">浅色模式</span>
                 </div>
-                <div class="grain-color-list" id="grainColorList" role="group" aria-label="流光渐变颜色"></div>
-                <div class="grain-color-count-row">
-                  <span class="grain-color-count-label">颜色数量</span>
-                  <div class="grain-color-count-seg" id="grainColorCountSegment" role="radiogroup" aria-label="渐变颜色数量">
-                    <button class="grain-color-count-btn" type="button" data-color-count="2" role="radio" aria-checked="false">2</button>
-                    <button class="grain-color-count-btn" type="button" data-color-count="3" role="radio" aria-checked="false">3</button>
-                    <button class="grain-color-count-btn" type="button" data-color-count="4" role="radio" aria-checked="true">4</button>
-                    <button class="grain-color-count-btn" type="button" data-color-count="5" role="radio" aria-checked="false">5</button>
-                    <button class="grain-color-count-btn" type="button" data-color-count="6" role="radio" aria-checked="false">6</button>
-                    <button class="grain-color-count-btn" type="button" data-color-count="7" role="radio" aria-checked="false">7</button>
+                <div class="grain-theme-color-row">
+                  <button type="button" class="grain-theme-swatch" id="grainThemeColorBtn" aria-label="选择主题色" aria-expanded="false">
+                    <span class="grain-theme-swatch-fill" id="grainThemeColorFill"></span>
+                    <span class="grain-theme-swatch-label">点击选色</span>
+                  </button>
+                  <div class="grain-theme-presets" id="grainThemePresets" role="radiogroup" aria-label="预设主题色">
+                    <button type="button" class="grain-preset-btn" data-theme-color="#d8b569" aria-label="金色" style="background:#d8b569"></button>
+                    <button type="button" class="grain-preset-btn" data-theme-color="#c45c4a" aria-label="红色" style="background:#c45c4a"></button>
+                    <button type="button" class="grain-preset-btn" data-theme-color="#4a7c6f" aria-label="绿色" style="background:#4a7c6f"></button>
+                    <button type="button" class="grain-preset-btn" data-theme-color="#5b6b8c" aria-label="蓝色" style="background:#5b6b8c"></button>
+                    <button type="button" class="grain-preset-btn" data-theme-color="#8c5b7a" aria-label="紫色" style="background:#8c5b7a"></button>
+                    <button type="button" class="grain-preset-btn" data-theme-color="#c9a227" aria-label="琥珀" style="background:#c9a227"></button>
+                  </div>
+                </div>
+                <div class="grain-auto-palette-preview" id="grainAutoPreview" role="group" aria-label="自动生成配色"></div>
+                <button type="button" class="grain-advanced-toggle" id="grainAdvancedToggle" aria-expanded="false">
+                  <span class="mgc_settings_3_line" aria-hidden="true"></span>
+                  <span>自定义高级设置</span>
+                  <span class="grain-advanced-arrow" aria-hidden="true"></span>
+                </button>
+                <div class="grain-advanced-panel" id="grainAdvancedPanel" hidden>
+                  <div class="grain-color-list" id="grainColorList" role="group" aria-label="流光渐变颜色"></div>
+                  <div class="grain-color-count-row">
+                    <span class="grain-color-count-label">颜色数量</span>
+                    <div class="grain-color-count-seg" id="grainColorCountSegment" role="radiogroup" aria-label="渐变颜色数量">
+                      <button class="grain-color-count-btn" type="button" data-color-count="2" role="radio" aria-checked="false">2</button>
+                      <button class="grain-color-count-btn" type="button" data-color-count="3" role="radio" aria-checked="false">3</button>
+                      <button class="grain-color-count-btn" type="button" data-color-count="4" role="radio" aria-checked="true">4</button>
+                      <button class="grain-color-count-btn" type="button" data-color-count="5" role="radio" aria-checked="false">5</button>
+                      <button class="grain-color-count-btn" type="button" data-color-count="6" role="radio" aria-checked="false">6</button>
+                      <button class="grain-color-count-btn" type="button" data-color-count="7" role="radio" aria-checked="false">7</button>
+                    </div>
                   </div>
                 </div>
               </div>

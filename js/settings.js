@@ -855,10 +855,46 @@ const GRAIN_COLOR_PRESETS = [
   '#e8e9ec', '#c45c4a', '#4a7c6f', '#5b6b8c'
 ];
 
+/**
+ * 根据主题色自动生成流光配色方案
+ * @param {string} seedHex - 主题色 #rrggbb
+ * @param {boolean} isDark - 当前是否暗色模式
+ * @returns {{ back: string, colors: string[] }}
+ */
+function generateGrainPalette(seedHex, isDark) {
+  const rgb = hexToRgb(seedHex);
+  if (!rgb) return null;
+  const hsl = rgbToHsl(rgb.r, rgb.g, rgb.b);
+  const h = hsl.h, s = hsl.s, l = hsl.l;
+
+  function hslHex(hh, ss, ll) {
+    const c = hslToRgb(hh % 360, Math.min(100, Math.max(0, ss)), Math.min(100, Math.max(0, ll)));
+    return rgbToHex(c.r, c.g, c.b);
+  }
+
+  // 背景色：极浅/极深
+  const back = isDark ? hslHex(h, Math.min(s, 25), 8) : hslHex(h, Math.min(s, 20), 95);
+
+  // 5 个渐变色槽位
+  const colors = [
+    seedHex,                                              // 0: 主题色本身
+    hslHex(h + 15, Math.min(s + 5, 100), l + 12),       // 1: 暖偏亮
+    hslHex(h - 10, Math.min(s - 8, 100), l - 10),       // 2: 冷偏深
+    hslHex(h + 35, Math.min(s - 15, 100), l + 5),       // 3: 类似色
+    hslHex(h + 180, Math.min(s - 5, 100), l),            // 4: 互补色
+    hslHex(h + 60, Math.min(s - 20, 100), l + 15),      // 5: 扩展
+    hslHex(h - 30, Math.min(s - 10, 100), l - 5)        // 6: 扩展
+  ];
+
+  return { back, colors };
+}
+
 const grainColorState = {
   back: '#f6f1ea',
   colors: ['#f4e6be', '#e8cf92', '#d8b569', '#f4e6be', '#a47b39', '#e8cf92', '#d8b569'],
-  colorCount: 4
+  colorCount: 4,
+  themeColor: '#d8b569',
+  autoMode: true
 };
 
 const mfColorPicker = {
@@ -877,6 +913,7 @@ function getGrainPaletteMode() {
 }
 
 function getGrainSlotColor(slot) {
+  if (slot === 'theme') return grainColorState.themeColor;
   if (slot === 'back') return grainColorState.back;
   const index = Number(slot);
   if (Number.isInteger(index) && grainColorState.colors[index]) {
@@ -887,7 +924,10 @@ function getGrainSlotColor(slot) {
 
 function setGrainSlotColor(slot, hex) {
   const color = normalizeHexColor(hex, getGrainSlotColor(slot));
-  if (slot === 'back') {
+  if (slot === 'theme') {
+    grainColorState.themeColor = color;
+    if (grainColorState.autoMode) applyAutoPalette();
+  } else if (slot === 'back') {
     grainColorState.back = color;
   } else {
     const index = Number(slot);
@@ -1046,9 +1086,11 @@ function openMfColorPicker(slot, anchor) {
   mfColorPicker.open = true;
   mfColorPicker.slot = slot;
   mfColorPicker.anchor = anchor;
-  setMfColorFromHex(getGrainSlotColor(slot), { commit: false });
+  const initColor = slot === 'theme' ? grainColorState.themeColor : getGrainSlotColor(slot);
+  setMfColorFromHex(initColor, { commit: false });
   pop.hidden = false;
   paintGrainSwatches();
+  ensureGrainSwatches();
   positionMfColorPopover(anchor);
   paintMfColorPickerUI();
   const hexInput = document.getElementById('mfColorHex');
@@ -1086,6 +1128,53 @@ function ensureGrainSwatches() {
     btn.appendChild(text);
     list.appendChild(btn);
   });
+
+  // 同步主题色按钮
+  const themeBtn = document.getElementById('grainThemeColorBtn');
+  const themeFill = document.getElementById('grainThemeColorFill');
+  if (themeFill) themeFill.style.backgroundColor = grainColorState.themeColor;
+  if (themeBtn) themeBtn.classList.toggle('is-open', mfColorPicker.open && mfColorPicker.slot === 'theme');
+
+  // 同步预设按钮 active 态
+  document.querySelectorAll('.grain-preset-btn').forEach((btn) => {
+    const c = btn.getAttribute('data-theme-color');
+    btn.classList.toggle('is-active', c && c.toLowerCase() === grainColorState.themeColor.toLowerCase());
+  });
+
+  // 同步自动生成预览
+  paintAutoPreview();
+}
+
+function paintAutoPreview() {
+  const preview = document.getElementById('grainAutoPreview');
+  if (!preview) return;
+  const isDark = document.documentElement.getAttribute('data-mode') === 'dark';
+  const palette = generateGrainPalette(grainColorState.themeColor, isDark);
+  if (!palette) return;
+  preview.innerHTML = '';
+  const count = grainColorState.colorCount;
+  // 背景色 + 有效渐变色
+  const swatches = [palette.back].concat(palette.colors.slice(0, count));
+  swatches.forEach((hex) => {
+    const el = document.createElement('span');
+    el.className = 'grain-auto-preview-swatch';
+    el.style.backgroundColor = hex;
+    preview.appendChild(el);
+  });
+}
+
+function applyAutoPalette() {
+  const isDark = document.documentElement.getAttribute('data-mode') === 'dark';
+  const palette = generateGrainPalette(grainColorState.themeColor, isDark);
+  if (!palette) return;
+  grainColorState.back = palette.back;
+  const count = grainColorState.colorCount;
+  for (let i = 0; i < 7; i++) {
+    grainColorState.colors[i] = palette.colors[i] || grainColorState.colors[i];
+  }
+  paintGrainSwatches();
+  paintAutoPreview();
+  commitGrainPalette();
 }
 
 function bindMfColorPicker() {
@@ -1234,6 +1323,10 @@ function syncGrainSettingsUI(settings) {
       grainColorState.colors[index]
     )
   );
+  // 重置时从色板首色恢复主题色
+  if (grainColorState.autoMode && grainColorState.colors[0]) {
+    grainColorState.themeColor = grainColorState.colors[0];
+  }
   const newCount = Math.min(Math.max(Number(config.colorCount) || 4, 2), 7);
   if (newCount !== grainColorState.colorCount) {
     grainColorState.colorCount = newCount;
@@ -1241,8 +1334,10 @@ function syncGrainSettingsUI(settings) {
     syncGrainColorCountSegment();
   }
   paintGrainSwatches();
+  ensureGrainSwatches();
   if (mfColorPicker.open && mfColorPicker.slot != null) {
-    setMfColorFromHex(getGrainSlotColor(mfColorPicker.slot), { commit: false });
+    const pickerColor = mfColorPicker.slot === 'theme' ? grainColorState.themeColor : getGrainSlotColor(mfColorPicker.slot);
+    setMfColorFromHex(pickerColor, { commit: false });
   }
 
   if (modeLabel) modeLabel.textContent = mode === 'dark' ? '深色模式' : '浅色模式';
@@ -1294,6 +1389,7 @@ function setGrainColorCount(count) {
   const next = Math.min(Math.max(Number(count) || 4, 2), 7);
   if (next === grainColorState.colorCount) return;
   grainColorState.colorCount = next;
+  if (grainColorState.autoMode) applyAutoPalette();
   ensureGrainSwatches();
   syncGrainColorCountSegment();
   paintGrainSwatches();
@@ -1327,6 +1423,51 @@ function bindGrainSettings() {
 
   bindMfColorPicker();
   syncGrainColorCountSegment();
+
+  // 主题色选择按钮
+  const themeBtn = document.getElementById('grainThemeColorBtn');
+  if (themeBtn && themeBtn.dataset.boundGrain !== '1') {
+    themeBtn.dataset.boundGrain = '1';
+    themeBtn.addEventListener('click', () => {
+      if (mfColorPicker.open && mfColorPicker.slot === 'theme') {
+        closeMfColorPicker();
+      } else {
+        openMfColorPicker('theme', themeBtn);
+      }
+      ensureGrainSwatches();
+    });
+  }
+
+  // 预设主题色按钮
+  const themePresets = document.getElementById('grainThemePresets');
+  if (themePresets && themePresets.dataset.boundGrain !== '1') {
+    themePresets.dataset.boundGrain = '1';
+    themePresets.addEventListener('click', (event) => {
+      const btn = event.target.closest('[data-theme-color]');
+      if (!btn || !themePresets.contains(btn)) return;
+      const hex = btn.getAttribute('data-theme-color');
+      if (!hex) return;
+      grainColorState.themeColor = hex;
+      if (grainColorState.autoMode) applyAutoPalette();
+      ensureGrainSwatches();
+    });
+  }
+
+  // 高级设置折叠
+  const advToggle = document.getElementById('grainAdvancedToggle');
+  const advPanel = document.getElementById('grainAdvancedPanel');
+  if (advToggle && advPanel && advToggle.dataset.boundGrain !== '1') {
+    advToggle.dataset.boundGrain = '1';
+    advToggle.addEventListener('click', () => {
+      const expanded = advToggle.getAttribute('aria-expanded') === 'true';
+      advToggle.setAttribute('aria-expanded', expanded ? 'false' : 'true');
+      if (expanded) {
+        advPanel.setAttribute('hidden', '');
+      } else {
+        advPanel.removeAttribute('hidden');
+      }
+    });
+  }
 
   if (colorCountSeg && colorCountSeg.dataset.boundGrain !== '1') {
     colorCountSeg.dataset.boundGrain = '1';
@@ -1368,6 +1509,12 @@ function bindGrainSettings() {
     window.__moonfogGrainSettingsBound = true;
     window.addEventListener('grain-settings-change', (event) => {
       syncGrainSettingsUI(event.detail);
+    });
+    window.addEventListener('mode-change', () => {
+      if (grainColorState.autoMode) {
+        applyAutoPalette();
+        ensureGrainSwatches();
+      }
     });
   }
   syncGrainSettingsUI();
