@@ -831,7 +831,7 @@ function bindQuoteOptionsSetting() {
       if (typeof updateQuoteMaxLenUI === 'function') {
         // 仅更新标签预览
         const label = document.getElementById('quoteMaxLenValue');
-        if (label) label.textContent = String(slider.value) + ' �';
+        if (label) label.textContent = String(slider.value) + ' 字';
       }
     });
     slider.addEventListener('change', apply);
@@ -1066,7 +1066,7 @@ function ensureGrainSwatches() {
   list.dataset.ready = '1';
   const slots = [{ slot: 'back', label: '背景' }];
   for (let i = 0; i < count; i++) {
-    slots.push({ slot: String(i), label: `�${i + 1}` });
+    slots.push({ slot: String(i), label: `色${i + 1}` });
   }
   list.innerHTML = '';
   slots.forEach(({ slot, label }) => {
@@ -1396,10 +1396,10 @@ function bindBackgroundSetting() {
         return;
       }
       try {
-        if (bgLocalTip) bgLocalTip.textContent = '正在处理图片�';
+        if (bgLocalTip) bgLocalTip.textContent = '正在处理图片…';
         const dataUrl = await compressImageFile(file);
         saveLocalBackground(dataUrl);
-        if (bgLocalTip) bgLocalTip.textContent = '已应用本地图片（仅保存在本机�';
+        if (bgLocalTip) bgLocalTip.textContent = '已应用本地图片（仅保存在本机）';
         await applyBackgroundMode('local');
         initCardSelection('bgModeGrid', BG_MODE_KEY, DEFAULT_BG_MODE);
       } catch (err) {
@@ -1413,7 +1413,7 @@ function bindBackgroundSetting() {
       // 破坏性操作：先确认
       if (!window.confirm('确定要清除已上传的本地背景图片吗？此操作不可撤销')) return;
       clearLocalBackground();
-      if (bgLocalTip) bgLocalTip.textContent = '已清除本地图�';
+      if (bgLocalTip) bgLocalTip.textContent = '已清除本地图片';
       await applyBackgroundMode('local');
     });
   }
@@ -1762,7 +1762,7 @@ function exportMoonFogData() {
     window.setTimeout(() => URL.revokeObjectURL(url), 2000);
     if (tip) {
       tip.hidden = false;
-      tip.textContent = '已导出备份文�';
+      tip.textContent = '已导出备份文件';
     }
     return true;
   } catch (err) {
@@ -1796,7 +1796,7 @@ function importMoonFogData(file) {
         if (!bag || typeof bag !== 'object') {
           if (tip) {
             tip.hidden = false;
-            tip.textContent = '文件格式不正�';
+            tip.textContent = '文件格式不正确';
           }
           resolve(false);
           return;
@@ -1858,10 +1858,10 @@ function resetAllSettingsToDefaults() {
       );
     } catch (_) {}
   } catch (err) {
-    if (tip) tip.textContent = '清除失败，请手动刷新后重�';
+    if (tip) tip.textContent = '清除失败，请手动刷新后重试';
     return false;
   }
-  if (tip) tip.textContent = '已重置，正在刷新�';
+  if (tip) tip.textContent = '已重置，正在刷新…';
   window.setTimeout(() => {
     try {
       window.location.reload();
@@ -1914,8 +1914,8 @@ function bindDataSettings() {
   btn.addEventListener('click', () => {
     if (!btn.classList.contains('is-confirm')) {
       btn.classList.add('is-confirm');
-      if (label) label.textContent = '再点一次确�';
-      btn.setAttribute('aria-label', '再点一次确认重�');
+      if (label) label.textContent = '再点一次确认';
+      btn.setAttribute('aria-label', '再点一次确认重置');
       if (tip) tip.textContent = '再点一次将清空偏好并刷新，进入欢迎引导';
       confirmTimer = window.setTimeout(resetConfirmState, 4000);
       return;
