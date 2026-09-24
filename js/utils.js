@@ -1153,7 +1153,7 @@ function formatNumber(num) {
 /**
  * 截断字符串（支持中英文混排）
  */
-function truncate(str, maxLen, suffix = '�') {
+function truncate(str, maxLen, suffix = '…') {
   const s = String(str);
   if (s.length <= maxLen) return s;
   return s.slice(0, maxLen - suffix.length) + suffix;
