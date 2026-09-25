@@ -1140,27 +1140,6 @@ function ensureGrainSwatches() {
     const c = btn.getAttribute('data-theme-color');
     btn.classList.toggle('is-active', c && c.toLowerCase() === grainColorState.themeColor.toLowerCase());
   });
-
-  // 同步自动生成预览
-  paintAutoPreview();
-}
-
-function paintAutoPreview() {
-  const preview = document.getElementById('grainAutoPreview');
-  if (!preview) return;
-  const isDark = document.documentElement.getAttribute('data-mode') === 'dark';
-  const palette = generateGrainPalette(grainColorState.themeColor, isDark);
-  if (!palette) return;
-  preview.innerHTML = '';
-  const count = grainColorState.colorCount;
-  // 背景色 + 有效渐变色
-  const swatches = [palette.back].concat(palette.colors.slice(0, count));
-  swatches.forEach((hex) => {
-    const el = document.createElement('span');
-    el.className = 'grain-auto-preview-swatch';
-    el.style.backgroundColor = hex;
-    preview.appendChild(el);
-  });
 }
 
 function applyAutoPalette() {
@@ -1173,7 +1152,6 @@ function applyAutoPalette() {
     grainColorState.colors[i] = palette.colors[i] || grainColorState.colors[i];
   }
   paintGrainSwatches();
-  paintAutoPreview();
   commitGrainPalette();
 }
 

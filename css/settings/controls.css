@@ -874,83 +874,61 @@
 .grain-theme-color-row {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   width: 100%;
 }
 .grain-theme-swatch {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 6px 12px 6px 6px;
-  border: 1px solid color-mix(in srgb, var(--text-primary) 12%, transparent);
-  border-radius: 10px;
-  background: color-mix(in srgb, var(--text-primary) 4%, transparent);
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  padding: 0;
+  border: 2px solid color-mix(in srgb, var(--text-primary) 12%, transparent);
+  border-radius: 14px;
+  background: transparent;
   cursor: pointer;
-  font: inherit;
-  color: var(--text-secondary);
-  transition: border-color 0.18s var(--ease), box-shadow 0.18s var(--ease);
+  flex-shrink: 0;
+  transition: border-color 0.2s var(--ease), box-shadow 0.2s var(--ease), transform 0.16s var(--ease);
 }
-.grain-theme-swatch:hover {
-  border-color: color-mix(in srgb, var(--text-primary) 24%, transparent);
+.grain-theme-swatch:active {
+  transform: scale(0.95);
 }
 .grain-theme-swatch.is-open,
 .grain-theme-swatch[aria-expanded="true"] {
   border-color: var(--accent, #c9a227);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent, #c9a227) 16%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent, #c9a227) 18%, transparent);
 }
 .grain-theme-swatch-fill {
-  width: 28px;
-  height: 28px;
-  border-radius: 8px;
-  border: 1px solid color-mix(in srgb, #000 10%, transparent);
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
   background: #d8b569;
-  flex-shrink: 0;
   transition: background 0.2s var(--ease);
-}
-.grain-theme-swatch-label {
-  font-size: 0.75rem;
-  font-weight: 550;
 }
 .grain-theme-presets {
   display: flex;
-  gap: 6px;
+  gap: 8px;
   flex-wrap: wrap;
 }
 .grain-preset-btn {
-  width: 26px;
-  height: 26px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   border: 2px solid transparent;
   cursor: pointer;
   padding: 0;
-  transition: border-color 0.18s var(--ease), transform 0.18s var(--ease);
+  transition: border-color 0.16s var(--ease), transform 0.16s var(--ease);
 }
 .grain-preset-btn:hover {
-  transform: scale(1.12);
+  transform: scale(1.1);
+}
+.grain-preset-btn:active {
+  transform: scale(0.95);
 }
 .grain-preset-btn.is-active {
   border-color: var(--text-primary);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--text-primary) 12%, transparent);
-}
-
-/* 自动生成配色预览 */
-.grain-auto-palette-preview {
-  display: flex;
-  gap: 4px;
-  width: 100%;
-  padding: 8px 0 2px;
-}
-.grain-auto-preview-swatch {
-  flex: 1;
-  height: 20px;
-  border-radius: 6px;
-  border: 1px solid color-mix(in srgb, #000 8%, transparent);
-}
-.grain-auto-preview-swatch:first-child {
-  border-radius: 6px 3px 3px 6px;
-}
-.grain-auto-preview-swatch:last-child {
-  border-radius: 3px 6px 6px 3px;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--text-primary) 10%, transparent);
 }
 
 /* 高级设置折叠按钮 */
