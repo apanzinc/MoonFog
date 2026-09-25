@@ -190,6 +190,70 @@
   // 流光模式：问候文字强制白色（内联 style 优先级最高，确保第一帧就是白字）
   if (bgMode === 'grain') {
     cssParts.push('html.boot-has-grain .greeting-title,html.boot-has-grain .greeting-sub{color:#FFF!important;-webkit-text-fill-color:currentColor!important;text-shadow:none!important;background:none!important;}');
+
+    // 首帧注入流光配色 CSS 变量（防止闪烁默认色）
+    try {
+      var grainThemeRaw = JSON.parse(get('moonfog_grain_theme') || 'null');
+      var grainSettingsRaw = JSON.parse(get('moonfog_grain_settings') || 'null');
+      var seedHex = (grainThemeRaw && /^#[0-9a-f]{6}$/i.test(grainThemeRaw.themeColor)) ? grainThemeRaw.themeColor : '#d8b569';
+      // 内联 HSL 生成（boot 阶段无 utils.js）
+      var _rgb = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(seedHex);
+      if (_rgb) {
+        var sr = parseInt(_rgb[1], 16) / 255, sg = parseInt(_rgb[2], 16) / 255, sb = parseInt(_rgb[3], 16) / 255;
+        var sMax = Math.max(sr, sg, sb), sMin = Math.min(sr, sg, sb), sL = (sMax + sMin) / 2;
+        var sH = 0, sS = 0;
+        if (sMax !== sMin) {
+          var sD = sMax - sMin;
+          sS = sL > 0.5 ? sD / (2 - sMax - sMin) : sD / (sMax + sMin);
+          if (sMax === sr) sH = ((sg - sb) / sD + (sg < sb ? 6 : 0)) / 6;
+          else if (sMax === sg) sH = ((sb - sr) / sD + 2) / 6;
+          else sH = ((sr - sg) / sD + 4) / 6;
+        }
+        sH = Math.round(sH * 360); sS = Math.round(sS * 100); sL = Math.round(sL * 100);
+        function _hsl2rgb(h, s, l) {
+          s /= 100; l /= 100;
+          var c = (1 - Math.abs(2 * l - 1)) * s;
+          var x = c * (1 - Math.abs((h / 60) % 2 - 1));
+          var m = l - c / 2; var r = 0, g = 0, b = 0;
+          if (h < 60) { r = c; g = x; } else if (h < 120) { r = x; g = c; }
+          else if (h < 180) { g = c; b = x; } else if (h < 240) { g = x; b = c; }
+          else if (h < 300) { r = x; b = c; } else { r = c; b = x; }
+          return [Math.round((r + m) * 255), Math.round((g + m) * 255), Math.round((b + m) * 255)];
+        }
+        function _rgb2hex(r, g, b) { return '#' + [r, g, b].map(function (v) { var h = v.toString(16); return h.length < 2 ? '0' + h : h; }).join(''); }
+        function _hslHex(h, s, l) { var rgb = _hsl2rgb(((h % 360) + 360) % 360, Math.min(100, Math.max(0, s)), Math.min(100, Math.max(0, l))); return _rgb2hex(rgb[0], rgb[1], rgb[2]); }
+        var isDark = mode === 'dark';
+        var back = isDark ? _hslHex(sH, Math.min(sS, 25), 8) : _hslHex(sH, Math.min(sS, 20), 95);
+        var autoColors = [
+          seedHex,
+          _hslHex(sH + 15, Math.min(sS + 5, 100), sL + 12),
+          _hslHex(sH - 10, Math.min(sS - 8, 100), sL - 10),
+          _hslHex(sH + 35, Math.min(sS - 15, 100), sL + 5),
+          _hslHex(sH + 180, Math.min(sS - 5, 100), sL),
+          _hslHex(sH + 60, Math.min(sS - 20, 100), sL + 15),
+          _hslHex(sH - 30, Math.min(sS - 10, 100), sL - 5)
+        ];
+        // 如果有保存的 grainSettings，用它的 colorBack（可能用户手动调过）
+        var savedBack = grainSettingsRaw && grainSettingsRaw[mode] && grainSettingsRaw[mode].colorBack;
+        if (/^#[0-9a-f]{6}$/i.test(savedBack)) back = savedBack;
+        var colorCount = (grainSettingsRaw && grainSettingsRaw.colorCount) || 4;
+        var accentRgb = _hsl2rgb(sH, Math.min(sS, 100), sL);
+        var accent = seedHex;
+        var accentGlow = 'rgba(' + accentRgb[0] + ',' + accentRgb[1] + ',' + accentRgb[2] + ',0.15)';
+        var backRgb = _hsl2rgb(sH, Math.min(sS, 25), isDark ? 8 : 95);
+        var bgWarmAlt = isDark
+          ? 'rgb(' + Math.min(255, backRgb[0] + 15) + ',' + Math.min(255, backRgb[1] + 12) + ',' + Math.min(255, backRgb[2] + 10) + ')'
+          : 'rgb(' + Math.max(0, backRgb[0] - 8) + ',' + Math.max(0, backRgb[1] - 8) + ',' + Math.max(0, backRgb[2] - 6) + ')';
+        var cardBg = isDark
+          ? 'rgba(' + Math.min(255, backRgb[0] + 25) + ',' + Math.min(255, backRgb[1] + 22) + ',' + Math.min(255, backRgb[2] + 18) + ',0.85)'
+          : 'rgba(255,255,255,0.85)';
+        cssParts.push('html{');
+        cssParts.push('--bg-warm:' + back + '!important;--bg-warm-alt:' + bgWarmAlt + '!important;--card-bg:' + cardBg + '!important;');
+        cssParts.push('--accent:' + accent + '!important;--accent-glow:' + accentGlow + '!important;');
+        cssParts.push('--border:rgba(255,255,255,0.12)!important;--border-strong:rgba(255,255,255,0.2)!important;');
+        cssParts.push('}');
+      }
+    } catch (e) {}
   }
 
   if (bgUrl && (bgMode === 'local' || bgMode === 'bing')) {
