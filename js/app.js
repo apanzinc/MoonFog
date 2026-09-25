@@ -205,11 +205,14 @@ function init() {
     startBootEnter();
   }
 
-  // 隐藏启动覆盖层（渐隐）
+  // 隐藏启动覆盖层（延迟等待 grain canvas 渲染，再渐隐）
   var bootCover = document.getElementById('bootCover');
   if (bootCover && bootCover.classList.contains('is-active')) {
-    bootCover.classList.add('is-leaving');
-    setTimeout(function () { bootCover.remove(); }, 500);
+    var coverDelay = (typeof currentBgMode !== 'undefined' && currentBgMode === 'grain') ? 300 : 0;
+    setTimeout(function () {
+      bootCover.classList.add('is-leaving');
+      setTimeout(function () { bootCover.remove(); }, 500);
+    }, coverDelay);
   }
 
   // 重活延后：先让进國/ OOBE paint
