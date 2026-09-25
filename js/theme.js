@@ -80,7 +80,41 @@ function applyGrainPalette() {
   ensureGrainGreetingStyle();
   applyGrainGreetingColor();
 
-  if (!window.GrainBackground || typeof window.GrainBackground.getSettings !== 'function') return;
+  // GrainBackground 未加载时：用保存的主题色生成配色（消除闪烁）
+  if (!window.GrainBackground || typeof window.GrainBackground.getSettings !== 'function') {
+    try {
+      var saved = JSON.parse(localStorage.getItem('moonfog_grain_theme') || 'null');
+      var seedHex = (saved && /^#[0-9a-f]{6}$/i.test(saved.themeColor)) ? saved.themeColor : '#d8b569';
+      var isDark = document.documentElement.getAttribute('data-mode') === 'dark';
+      var rgb = hexToRgb(seedHex);
+      if (rgb) {
+        var hsl = rgbToHsl(rgb.r, rgb.g, rgb.b);
+        var h = hsl.h, s = hsl.s, l = hsl.l;
+        function _h(hh, ss, ll) { var c = hslToRgb(((hh % 360) + 360) % 360, Math.min(100, Math.max(0, ss)), Math.min(100, Math.max(0, ll))); return rgbToHex(c.r, c.g, c.b); }
+        var back = isDark ? _h(h, Math.min(s, 25), 8) : _h(h, Math.min(s, 20), 95);
+        var backRgb = hexToRgb(back);
+        var accent = seedHex;
+        var accentRgb = hexToRgb(accent);
+        var bgWarmAlt = isDark ? blendColor(backRgb, [255,255,255], 0.08) : blendColor(backRgb, [0,0,0], 0.04);
+        var cardBg = isDark ? blendColor(backRgb, [255,255,255], 0.12) : blendColor(backRgb, [255,255,255], 0.85);
+        var border = isDark ? 'rgba(255,255,255,0.12)' : 'rgba(' + backRgb.r + ',' + backRgb.g + ',' + backRgb.b + ',0.15)';
+        var accentGlow = 'rgba(' + accentRgb.r + ',' + accentRgb.g + ',' + accentRgb.b + ',0.15)';
+        var imp = 'important';
+        root.style.setProperty('--bg-warm', back, imp);
+        root.style.setProperty('--bg-warm-alt', bgWarmAlt, imp);
+        root.style.setProperty('--card-bg', cardBg, imp);
+        root.style.setProperty('--accent', accent, imp);
+        root.style.setProperty('--accent-glow', accentGlow, imp);
+        root.style.setProperty('--border', border, imp);
+        root.style.setProperty('--border-strong', border, imp);
+        var backLuma = (0.2126 * backRgb.r + 0.7152 * backRgb.g + 0.0722 * backRgb.b) / 255;
+        var textColor = backLuma < 0.45 ? '#FFFFFF' : '#1A1814';
+        root.style.setProperty('--img-text', textColor, imp);
+        window.__moonfogGrainTextColor = textColor;
+      }
+    } catch (_) {}
+    return;
+  }
 
   const settings = window.GrainBackground.getSettings();
   if (!settings) return;
