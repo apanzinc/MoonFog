@@ -71,6 +71,7 @@ function applyGrainPalette() {
     }
     root.classList.remove('has-grain-ui');
     document.body.classList.remove('has-grain-ui');
+    root.classList.remove('boot-has-grain');
     return;
   }
 

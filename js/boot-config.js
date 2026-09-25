@@ -247,7 +247,7 @@
         var cardBg = isDark
           ? 'rgba(' + Math.min(255, backRgb[0] + 25) + ',' + Math.min(255, backRgb[1] + 22) + ',' + Math.min(255, backRgb[2] + 18) + ',0.85)'
           : 'rgba(255,255,255,0.85)';
-        cssParts.push('html{');
+        cssParts.push('html.boot-has-grain{');
         cssParts.push('--bg-warm:' + back + '!important;--bg-warm-alt:' + bgWarmAlt + '!important;--card-bg:' + cardBg + '!important;');
         cssParts.push('--accent:' + accent + '!important;--accent-glow:' + accentGlow + '!important;');
         cssParts.push('--border:rgba(255,255,255,0.12)!important;--border-strong:rgba(255,255,255,0.2)!important;');
