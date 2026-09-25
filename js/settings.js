@@ -1374,6 +1374,21 @@ function setGrainColorCount(count) {
   commitGrainPalette();
 }
 
+function syncGrainModeTabs() {
+  const modeTabs = document.getElementById('grainModeTabs');
+  const autoPanel = document.getElementById('grainAutoPanel');
+  const customPanel = document.getElementById('grainCustomPanel');
+  if (!modeTabs) return;
+  const mode = grainColorState.autoMode ? 'auto' : 'custom';
+  modeTabs.querySelectorAll('.grain-mode-tab').forEach((t) => {
+    const active = t.getAttribute('data-grain-mode') === mode;
+    t.classList.toggle('is-active', active);
+    t.setAttribute('aria-selected', active ? 'true' : 'false');
+  });
+  if (autoPanel) autoPanel.hidden = mode !== 'auto';
+  if (customPanel) customPanel.hidden = mode !== 'custom';
+}
+
 function bindGrainSettings() {
   const speedSlider = document.getElementById('grainSpeedSlider');
   const noiseSlider = document.getElementById('grainNoiseSlider');
@@ -1401,6 +1416,7 @@ function bindGrainSettings() {
 
   bindMfColorPicker();
   syncGrainColorCountSegment();
+  syncGrainModeTabs();
 
   // 主题色选择按钮
   const themeBtn = document.getElementById('grainThemeColorBtn');
@@ -1431,19 +1447,25 @@ function bindGrainSettings() {
     });
   }
 
-  // 高级设置折叠
-  const advToggle = document.getElementById('grainAdvancedToggle');
-  const advPanel = document.getElementById('grainAdvancedPanel');
-  if (advToggle && advPanel && advToggle.dataset.boundGrain !== '1') {
-    advToggle.dataset.boundGrain = '1';
-    advToggle.addEventListener('click', () => {
-      const expanded = advToggle.getAttribute('aria-expanded') === 'true';
-      advToggle.setAttribute('aria-expanded', expanded ? 'false' : 'true');
-      if (expanded) {
-        advPanel.setAttribute('hidden', '');
-      } else {
-        advPanel.removeAttribute('hidden');
-      }
+  // 配色模式 tab 切换
+  const modeTabs = document.getElementById('grainModeTabs');
+  const autoPanel = document.getElementById('grainAutoPanel');
+  const customPanel = document.getElementById('grainCustomPanel');
+  if (modeTabs && modeTabs.dataset.boundGrain !== '1') {
+    modeTabs.dataset.boundGrain = '1';
+    modeTabs.addEventListener('click', (event) => {
+      const tab = event.target.closest('[data-grain-mode]');
+      if (!tab || !modeTabs.contains(tab)) return;
+      const mode = tab.getAttribute('data-grain-mode');
+      grainColorState.autoMode = mode === 'auto';
+      modeTabs.querySelectorAll('.grain-mode-tab').forEach((t) => {
+        const active = t === tab;
+        t.classList.toggle('is-active', active);
+        t.setAttribute('aria-selected', active ? 'true' : 'false');
+      });
+      if (autoPanel) autoPanel.hidden = mode !== 'auto';
+      if (customPanel) customPanel.hidden = mode !== 'custom';
+      if (mode === 'custom') ensureGrainSwatches();
     });
   }
 

@@ -467,13 +467,19 @@
               </div>
               <div class="setting-item grain-color-setting">
                 <div class="bg-extra-head">
-                  <span class="bg-extra-title">主题色</span>
+                  <span class="bg-extra-title">配色</span>
                   <span class="bg-extra-meta" id="grainPaletteMode">浅色模式</span>
                 </div>
-                <div class="grain-theme-color-row">
-                  <button type="button" class="grain-theme-swatch" id="grainThemeColorBtn" aria-label="选择主题色" aria-expanded="false">
-                    <span class="grain-theme-swatch-fill" id="grainThemeColorFill"></span>
-                  </button>
+                <div class="grain-mode-tabs" id="grainModeTabs" role="tablist" aria-label="配色模式">
+                  <button type="button" class="grain-mode-tab is-active" role="tab" aria-selected="true" data-grain-mode="auto">自动生成</button>
+                  <button type="button" class="grain-mode-tab" role="tab" aria-selected="false" data-grain-mode="custom">自定义</button>
+                </div>
+                <div class="grain-mode-panel" id="grainAutoPanel" data-grain-panel="auto">
+                  <div class="grain-theme-color-row">
+                    <button type="button" class="grain-theme-swatch" id="grainThemeColorBtn" aria-label="选择主题色" aria-expanded="false">
+                      <span class="grain-theme-swatch-fill" id="grainThemeColorFill"></span>
+                    </button>
+                  </div>
                   <div class="grain-theme-presets" id="grainThemePresets" role="radiogroup" aria-label="预设主题色">
                     <button type="button" class="grain-preset-btn" data-theme-color="#d8b569" aria-label="金色" style="background:#d8b569"></button>
                     <button type="button" class="grain-preset-btn" data-theme-color="#c45c4a" aria-label="红色" style="background:#c45c4a"></button>
@@ -483,12 +489,7 @@
                     <button type="button" class="grain-preset-btn" data-theme-color="#c9a227" aria-label="琥珀" style="background:#c9a227"></button>
                   </div>
                 </div>
-                <button type="button" class="grain-advanced-toggle" id="grainAdvancedToggle" aria-expanded="false">
-                  <span class="mgc_settings_3_line" aria-hidden="true"></span>
-                  <span>自定义高级设置</span>
-                  <span class="grain-advanced-arrow" aria-hidden="true"></span>
-                </button>
-                <div class="grain-advanced-panel" id="grainAdvancedPanel" hidden>
+                <div class="grain-mode-panel" id="grainCustomPanel" data-grain-panel="custom" hidden>
                   <div class="grain-color-list" id="grainColorList" role="group" aria-label="流光渐变颜色"></div>
                   <div class="grain-color-count-row">
                     <span class="grain-color-count-label">颜色数量</span>
