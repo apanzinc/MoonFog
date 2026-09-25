@@ -187,10 +187,11 @@
   }
   if (bgMode === 'grain') root.classList.add('boot-has-grain');
 
-  // 激活覆盖层：防止流光/图片模式闪烁
+  // 激活覆盖层：防止流光/图片模式闪烁（延迟到 DOM 就绪）
   if (bgMode === 'grain' || bgUrl) {
-    var cover = document.getElementById('bootCover');
-    if (cover) {
+    function _showCover() {
+      var cover = document.getElementById('bootCover');
+      if (!cover) return;
       if (bgMode === 'grain') {
         var coverBg = (function() {
           try {
@@ -214,6 +215,11 @@
         if (coverBg) cover.style.background = coverBg;
       }
       cover.classList.add('is-active');
+    }
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', _showCover, { once: true });
+    } else {
+      _showCover();
     }
   }
 
