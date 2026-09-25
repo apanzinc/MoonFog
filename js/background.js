@@ -88,12 +88,17 @@ function applyBgWash(value, options) {
   const root = document.documentElement;
   root.style.setProperty('--bg-neutral-wash', css);
   root.style.setProperty('--img-wash', css);
-  // 直接内overlay（important 压过热补丁），保证滑块实时可触
   const overlay = document.getElementById('pageBgOverlay');
   if (overlay) {
     const activeMode = typeof isImageBackgroundActive === 'function' && isImageBackgroundActive();
-    if (activeMode) overlay.style.setProperty('background', css, 'important');
-    else overlay.style.removeProperty('background');
+    if (activeMode) {
+      // 图片模式下 wash=0 不清除 overlay inline style（由 applyImagePalette 统一管理）
+      if (css !== 'transparent') {
+        overlay.style.setProperty('background', css, 'important');
+      }
+    } else {
+      overlay.style.removeProperty('background');
+    }
   }
   updateBgWashUI();
   return currentBgWash;

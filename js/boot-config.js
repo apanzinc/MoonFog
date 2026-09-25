@@ -301,9 +301,9 @@
     cssParts.push('.greeting-title{font-family:var(--font-display)!important;font-weight:var(--boot-greeting-weight,700)!important;font-size:calc(clamp(1.75rem,4vw,2.25rem)*var(--size-greeting,1))!important;}');
   }
 
-  // 图片背景：首帧压暗遮罩（与 applyImagePalette 一致）
+  // 图片背景：首帧压暗遮罩（与 applyImagePalette 一致，用默认 40% 压暗）
   if (bgUrl && (bgMode === 'local' || bgMode === 'bing')) {
-    cssParts.push('html.boot-has-image .page-bg-overlay{background:linear-gradient(180deg,rgba(0,0,0,0.2) 0%,rgba(0,0,0,0.35) 100%)!important;}');
+    cssParts.push('html.boot-has-image .page-bg-overlay{background:rgba(0,0,0,0.4)!important;}');
   }
 
   cssParts.push('html,body{background-color:var(--bg-warm);color:var(--text-primary);}');
