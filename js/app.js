@@ -210,6 +210,8 @@ function init() {
   if (bootCover && bootCover.classList.contains('is-active')) {
     function _hideCover() {
       if (!bootCover || bootCover.classList.contains('is-leaving')) return;
+      // 去掉内联 opacity 让 CSS transition 接管
+      bootCover.style.removeProperty('opacity');
       bootCover.classList.add('is-leaving');
       setTimeout(function () { if (bootCover) bootCover.remove(); }, 500);
     }
