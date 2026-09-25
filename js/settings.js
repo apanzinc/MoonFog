@@ -1368,8 +1368,8 @@ function syncGrainSettingsUI(settings) {
     if (ox === 0 && oy === 0) offsetMeta.textContent = '居中';
     else {
       const parts = [];
-      if (ox) parts.push(ox > 0 ? `度{ox}` : `度{Math.abs(ox)}`);
-      if (oy) parts.push(oy > 0 ? `度{oy}` : `度{Math.abs(oy)}`);
+      if (ox) parts.push(ox > 0 ? `度${ox}` : `度${Math.abs(ox)}`);
+      if (oy) parts.push(oy > 0 ? `度${oy}` : `度${Math.abs(oy)}`);
       offsetMeta.textContent = parts.join(' · ');
     }
   }
