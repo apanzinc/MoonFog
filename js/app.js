@@ -215,9 +215,15 @@ function init() {
     }
     if (typeof currentBgMode !== 'undefined' && currentBgMode === 'grain') {
       // 流光模式：等 grain-settings-change 事件（canvas 渲染完毕）再渐隐
+      var grainReady = false;
       window.addEventListener('grain-settings-change', function () {
+        grainReady = true;
         setTimeout(_hideCover, 100);
       }, { once: true });
+      // 如果 grain 已就绪（oobe-grain.js 已加载），直接渐隐
+      if (window.GrainBackground && typeof window.GrainBackground.getSettings === 'function') {
+        setTimeout(_hideCover, 100);
+      }
       // 兜底：最多等 1 秒
       setTimeout(_hideCover, 1000);
     } else {
