@@ -889,12 +889,35 @@ function generateGrainPalette(seedHex, isDark) {
   return { back, colors };
 }
 
+const GRAIN_THEME_KEY = 'moonfog_grain_theme';
+function loadGrainTheme() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(GRAIN_THEME_KEY) || 'null');
+    if (raw && typeof raw === 'object') {
+      return {
+        themeColor: /^#[0-9a-f]{6}$/i.test(raw.themeColor) ? raw.themeColor : '#d8b569',
+        autoMode: raw.autoMode !== false
+      };
+    }
+  } catch (_) {}
+  return { themeColor: '#d8b569', autoMode: true };
+}
+function saveGrainTheme() {
+  try {
+    localStorage.setItem(GRAIN_THEME_KEY, JSON.stringify({
+      themeColor: grainColorState.themeColor,
+      autoMode: grainColorState.autoMode
+    }));
+  } catch (_) {}
+}
+
+const _savedGrainTheme = loadGrainTheme();
 const grainColorState = {
   back: '#f6f1ea',
   colors: ['#f4e6be', '#e8cf92', '#d8b569', '#f4e6be', '#a47b39', '#e8cf92', '#d8b569'],
   colorCount: 4,
-  themeColor: '#d8b569',
-  autoMode: true
+  themeColor: _savedGrainTheme.themeColor,
+  autoMode: _savedGrainTheme.autoMode
 };
 
 const mfColorPicker = {
@@ -926,6 +949,7 @@ function setGrainSlotColor(slot, hex) {
   const color = normalizeHexColor(hex, getGrainSlotColor(slot));
   if (slot === 'theme') {
     grainColorState.themeColor = color;
+    saveGrainTheme();
     if (grainColorState.autoMode) applyAutoPalette();
   } else if (slot === 'back') {
     grainColorState.back = color;
@@ -1304,6 +1328,7 @@ function syncGrainSettingsUI(settings) {
   // 重置时从色板首色恢复主题色
   if (grainColorState.autoMode && grainColorState.colors[0]) {
     grainColorState.themeColor = grainColorState.colors[0];
+    saveGrainTheme();
   }
   const newCount = Math.min(Math.max(Number(config.colorCount) || 4, 2), 7);
   if (newCount !== grainColorState.colorCount) {
@@ -1442,6 +1467,7 @@ function bindGrainSettings() {
       const hex = btn.getAttribute('data-theme-color');
       if (!hex) return;
       grainColorState.themeColor = hex;
+      saveGrainTheme();
       if (grainColorState.autoMode) applyAutoPalette();
       ensureGrainSwatches();
     });
@@ -1458,6 +1484,7 @@ function bindGrainSettings() {
       if (!tab || !modeTabs.contains(tab)) return;
       const mode = tab.getAttribute('data-grain-mode');
       grainColorState.autoMode = mode === 'auto';
+      saveGrainTheme();
       modeTabs.querySelectorAll('.grain-mode-tab').forEach((t) => {
         const active = t === tab;
         t.classList.toggle('is-active', active);
@@ -1518,6 +1545,10 @@ function bindGrainSettings() {
     });
   }
   syncGrainSettingsUI();
+  // 初始化：autoMode 下从保存的主题色生成配色
+  if (grainColorState.autoMode) {
+    applyAutoPalette();
+  }
 }
 
 function bindBackgroundSetting() {
