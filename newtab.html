@@ -17,8 +17,8 @@
   <link rel="stylesheet" href="icons/font/Mingcute.css">
 </head>
 <body>
-  <!-- 启动覆盖层：防止闪烁，默认隐藏，流光/图片模式下 JS 控制显示 -->
-  <div class="boot-cover" id="bootCover" aria-hidden="true"></div>
+  <!-- 启动覆盖层：纯 CSS 立即激活，JS 加载后移除 -->
+  <div class="boot-cover is-active" id="bootCover" aria-hidden="true"></div>
   <!-- 图片背景层：双层交叉淡入（换日/换图不闪黑） -->
   <div class="page-bg" id="pageBg" aria-hidden="true">
     <div class="page-bg-grain" id="pageBgGrain"></div>
