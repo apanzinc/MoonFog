@@ -1319,16 +1319,14 @@ function syncGrainSettingsUI(settings) {
   const oy = Number(config.offsetY) || 0;
 
   grainColorState.back = normalizeHexColor(palette.colorBack, grainColorState.back);
-  grainColorState.colors = [0, 1, 2, 3, 4, 5, 6].map((index) =>
-    normalizeHexColor(
-      Array.isArray(palette.colors) ? palette.colors[index] : null,
-      grainColorState.colors[index]
-    )
-  );
-  // 重置时从色板首色恢复主题色
-  if (grainColorState.autoMode && grainColorState.colors[0]) {
-    grainColorState.themeColor = grainColorState.colors[0];
-    saveGrainTheme();
+  // autoMode 下 themeColor 由 localStorage 管理，不从旧色板覆盖
+  if (!grainColorState.autoMode) {
+    grainColorState.colors = [0, 1, 2, 3, 4, 5, 6].map((index) =>
+      normalizeHexColor(
+        Array.isArray(palette.colors) ? palette.colors[index] : null,
+        grainColorState.colors[index]
+      )
+    );
   }
   const newCount = Math.min(Math.max(Number(config.colorCount) || 4, 2), 7);
   if (newCount !== grainColorState.colorCount) {
