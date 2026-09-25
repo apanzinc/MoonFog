@@ -205,34 +205,6 @@ function init() {
     startBootEnter();
   }
 
-  // 隐藏启动覆盖层
-  var bootCover = document.getElementById('bootCover');
-  if (bootCover && bootCover.classList.contains('is-active')) {
-    function _hideCover() {
-      if (!bootCover || bootCover.classList.contains('is-leaving')) return;
-      // 去掉内联 opacity 让 CSS transition 接管
-      bootCover.style.removeProperty('opacity');
-      bootCover.classList.add('is-leaving');
-      setTimeout(function () { if (bootCover) bootCover.remove(); }, 500);
-    }
-    if (typeof currentBgMode !== 'undefined' && currentBgMode === 'grain') {
-      // 流光模式：等 grain-settings-change 事件（canvas 渲染完毕）再渐隐
-      var grainReady = false;
-      window.addEventListener('grain-settings-change', function () {
-        grainReady = true;
-        setTimeout(_hideCover, 100);
-      }, { once: true });
-      // 如果 grain 已就绪（oobe-grain.js 已加载），直接渐隐
-      if (window.GrainBackground && typeof window.GrainBackground.getSettings === 'function') {
-        setTimeout(_hideCover, 100);
-      }
-      // 兜底：最多等 1 秒
-      setTimeout(_hideCover, 1000);
-    } else {
-      _hideCover();
-    }
-  }
-
   // 重活延后：先让进國/ OOBE paint
   const runDeferred = () => {
     try {

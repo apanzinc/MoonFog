@@ -2,25 +2,6 @@
  * MoonFog - Base Layout
  */
 
-/* 启动覆盖层 */
-.boot-cover {
-  position: fixed;
-  inset: 0;
-  z-index: 3;
-  background: var(--bg-warm, #F5F0E8);
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.4s ease;
-}
-.boot-cover.is-active {
-  opacity: 1;
-  pointer-events: none;
-}
-.boot-cover.is-leaving {
-  opacity: 0;
-  pointer-events: none;
-}
-
 *, *::before, *::after {
   margin: 0;
   padding: 0;
@@ -682,8 +663,11 @@ html[data-mode="dark"] .page-bg-grain {
   background: #17140f;
 }
 
-html.boot-has-grain .page-bg-grain,
-.page-bg.has-grain .page-bg-grain {
+/* 流光背景：grain-ready 后才显示（canvas 渲染完毕） */
+.page-bg-grain.grain-ready {
+  opacity: 1;
+}
+.page-bg.has-grain .page-bg-grain.grain-ready {
   opacity: 1;
 }
 

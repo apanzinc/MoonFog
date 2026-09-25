@@ -28,9 +28,9 @@ const DEFAULT_SETTINGS = {
   noise: 86,
   softness: 100,
   intensity: 100,
-  // 渐变色数量（不含背景色），范�?2�?
+  // 渐变色数量（不含背景色），范�?2�?
   colorCount: 4,
-  // Paper Shaders offset�?100�?00 �?u_offset ±1
+  // Paper Shaders offset�?100�?00 �?u_offset ±1
   offsetX: 0,
   offsetY: 0,
   light: DEFAULT_PALETTES.light,
@@ -101,7 +101,7 @@ function normalizeSettings(value) {
     if (!palette || typeof palette !== 'object') return;
     next[mode].colorBack = validHex(palette.colorBack, next[mode].colorBack);
     if (Array.isArray(palette.colors)) {
-      // 始终保留 7 个槽位，缺失时用循环默认值补�?      const source = palette.colors.slice(0, 7);
+      // 始终保留 7 个槽位，缺失时用循环默认值补�?      const source = palette.colors.slice(0, 7);
       const merged = [];
       for (let i = 0; i < 7; i++) {
         merged.push(validHex(source[i], next[mode].colors[i]));
@@ -197,7 +197,7 @@ function configurableUniforms() {
     u_softness: grainSettings.softness / 100,
     u_intensity: grainSettings.intensity / 100,
     u_shape: shapeUniform(),
-    // X：shader �?-u_offsetX，正值图形右�?    // Y：shader �?+u_offsetY 会下移，这里取反�?UI 正�?�?    u_offsetX: grainSettings.offsetX / 100,
+    // X：shader �?-u_offsetX，正值图形右�?    // Y：shader �?+u_offsetY 会下移，这里取反�?UI 正�?�?    u_offsetX: grainSettings.offsetX / 100,
     u_offsetY: -grainSettings.offsetY / 100
   };
 }
@@ -265,6 +265,9 @@ function ensureMount(target) {
           }
           return null;
         }
+        // canvas 渲染就绪，添加 grain-ready 让 CSS 显示背景
+        const el = document.getElementById(target.id);
+        if (el) el.classList.add('grain-ready');
         return instance;
       })
       .catch((error) => {
