@@ -187,6 +187,36 @@
   }
   if (bgMode === 'grain') root.classList.add('boot-has-grain');
 
+  // 激活覆盖层：防止流光/图片模式闪烁
+  if (bgMode === 'grain' || bgUrl) {
+    var cover = document.getElementById('bootCover');
+    if (cover) {
+      if (bgMode === 'grain') {
+        var coverBg = (function() {
+          try {
+            var t = JSON.parse(get('moonfog_grain_theme') || 'null');
+            var s = (t && /^#[0-9a-f]{6}$/i.test(t.themeColor)) ? t.themeColor : '#d8b569';
+            var m = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(s);
+            if (!m) return null;
+            var r = parseInt(m[1],16)/255, g = parseInt(m[2],16)/255, b = parseInt(m[3],16)/255;
+            var mx = Math.max(r,g,b), mn = Math.min(r,g,b), l = (mx+mn)/2;
+            var h = 0, ss = 0;
+            if (mx !== mn) { var d = mx-mn; ss = l > 0.5 ? d/(2-mx-mn) : d/(mx+mn);
+              if (mx===r) h=((g-b)/d+(g<b?6:0))/6; else if (mx===g) h=((b-r)/d+2)/6; else h=((r-g)/d+4)/6; }
+            h = Math.round(h*360); ss = Math.round(ss*100); l = Math.round(l*100);
+            function _c(hh,ss,ll) { ss/=100; ll/=100; var c=(1-Math.abs(2*ll-1))*ss, x=c*(1-Math.abs((hh/60)%2-1)), m=ll-c/2;
+              var R=0,G=0,B=0; if(hh<60){R=c;G=x}else if(hh<120){R=x;G=c}else if(hh<180){G=c;B=x}
+              else if(hh<240){G=x;B=c}else if(hh<300){R=x;B=c}else{R=c;B=x}
+              return 'rgb('+Math.round((R+m)*255)+','+Math.round((G+m)*255)+','+Math.round((B+m)*255)+')'; }
+            return mode === 'dark' ? _c(h, Math.min(ss,25), 8) : _c(h, Math.min(ss,20), 95);
+          } catch(e) { return null; }
+        })();
+        if (coverBg) cover.style.background = coverBg;
+      }
+      cover.classList.add('is-active');
+    }
+  }
+
   // 流光模式：问候文字强制白色（内联 style 优先级最高，确保第一帧就是白字）
   if (bgMode === 'grain') {
     cssParts.push('html.boot-has-grain .greeting-title,html.boot-has-grain .greeting-sub{color:#FFF!important;-webkit-text-fill-color:currentColor!important;text-shadow:none!important;background:none!important;}');

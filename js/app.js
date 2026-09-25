@@ -205,6 +205,13 @@ function init() {
     startBootEnter();
   }
 
+  // 隐藏启动覆盖层（渐隐）
+  var bootCover = document.getElementById('bootCover');
+  if (bootCover && bootCover.classList.contains('is-active')) {
+    bootCover.classList.add('is-leaving');
+    setTimeout(function () { bootCover.remove(); }, 500);
+  }
+
   // 重活延后：先让进國/ OOBE paint
   const runDeferred = () => {
     try {

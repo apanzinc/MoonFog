@@ -2,6 +2,25 @@
  * MoonFog - Base Layout
  */
 
+/* 启动覆盖层 */
+.boot-cover {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: var(--bg-warm, #F5F0E8);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.4s ease;
+}
+.boot-cover.is-active {
+  opacity: 1;
+  pointer-events: auto;
+}
+.boot-cover.is-leaving {
+  opacity: 0;
+  pointer-events: none;
+}
+
 *, *::before, *::after {
   margin: 0;
   padding: 0;
