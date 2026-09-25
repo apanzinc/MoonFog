@@ -205,14 +205,24 @@ function init() {
     startBootEnter();
   }
 
-  // 隐藏启动覆盖层（延迟等待 grain canvas 渲染，再渐隐）
+  // 隐藏启动覆盖层
   var bootCover = document.getElementById('bootCover');
   if (bootCover && bootCover.classList.contains('is-active')) {
-    var coverDelay = (typeof currentBgMode !== 'undefined' && currentBgMode === 'grain') ? 300 : 0;
-    setTimeout(function () {
+    function _hideCover() {
+      if (!bootCover || bootCover.classList.contains('is-leaving')) return;
       bootCover.classList.add('is-leaving');
-      setTimeout(function () { bootCover.remove(); }, 500);
-    }, coverDelay);
+      setTimeout(function () { if (bootCover) bootCover.remove(); }, 500);
+    }
+    if (typeof currentBgMode !== 'undefined' && currentBgMode === 'grain') {
+      // 流光模式：等 grain-settings-change 事件（canvas 渲染完毕）再渐隐
+      window.addEventListener('grain-settings-change', function () {
+        setTimeout(_hideCover, 100);
+      }, { once: true });
+      // 兜底：最多等 1 秒
+      setTimeout(_hideCover, 1000);
+    } else {
+      _hideCover();
+    }
   }
 
   // 重活延后：先让进國/ OOBE paint
