@@ -259,7 +259,7 @@
   if (bgUrl && (bgMode === 'local' || bgMode === 'bing')) {
     root.classList.add('boot-has-image');
     let safeUrl = String(bgUrl).replace(/\\/g, '\\\\').replace(/"/g, '\\"');
-    cssParts.push('html.boot-has-image .page-bg-image{background-image:url("' + safeUrl + '");opacity:1!important;transition:none!important;}');
+    cssParts.push('html.boot-has-image .page-bg-image{background-image:url("' + safeUrl + '");}');
     try {
       let palette = JSON.parse(get('moonfog_bg_palette') || 'null');
       if (palette && palette.text && palette.v >= 4 && palette.v <= 30) {
