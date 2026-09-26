@@ -650,13 +650,20 @@ html.boot-ready .shortcuts-section.boot-entered {
 }
 
 .page-bg-grain {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  opacity: 0;
-  pointer-events: none;
-  background: #f6f1ea;
-  transition: opacity 0.4s var(--ease);
+   position: absolute;
+   inset: 0;
+   z-index: 0;
+   opacity: 0;
+   pointer-events: none;
+   background: #f6f1ea;
+   transition: opacity 0.4s var(--ease);
+}
+
+/* 流光背景：grain-ready 后才显示（canvas 渲染完毕），延迟 1s 显示
+   淡出时不延迟 */
+.page-bg-grain.grain-ready {
+   opacity: 1;
+   transition: opacity 0.4s var(--ease);
 }
 
 html[data-mode="dark"] .page-bg-grain {
@@ -665,10 +672,12 @@ html[data-mode="dark"] .page-bg-grain {
 
 /* 流光背景：grain-ready 后才显示（canvas 渲染完毕） */
 .page-bg-grain.grain-ready {
-  opacity: 1;
+   opacity: 1;
+   transition: opacity 0.4s var(--ease);
 }
 .page-bg.has-grain .page-bg-grain.grain-ready {
-  opacity: 1;
+   opacity: 1;
+   transition: opacity 0.4s var(--ease) 1.5s;
 }
 
 /* 流光模式：不需要压暗叠层，WebGL 渲染自带视觉效果 */

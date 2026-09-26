@@ -6,3 +6,10 @@ Thumbs.db
 .vscode/
 .idea/
 node_modules/
+
+# 本地文档，不纳入版本控制
+/AGENTS.md
+/ARCHITECTURE.md
+/CHANGELOG.md
+/HANDOVER.md
+/SETTINGS-REDESIGN.md

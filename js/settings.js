@@ -11,12 +11,11 @@ const SETTINGS_PAGE_TITLES = {
   display: '显示与效果',
   data: '数据备份与导出',
   about: '关于',
-  personalization: '个性化',
-  preset: '套装',
-};
+   personalization: '个性化',
+ };
 
-// 三级导航：个性化子页面 → 详情页映射
-const PERSONALIZATION_CHILDREN = ['preset', 'appearance', 'greeting', 'type', 'display'];
+ // 三级导航：个性化子页面 → 详情页映射
+ const PERSONALIZATION_CHILDREN = ['appearance', 'greeting', 'type', 'display'];
 
 /** 当前设置页：'root' | pageId */
 let currentSettingsPage = 'root';
@@ -44,7 +43,7 @@ let lastSettingsPageId = '';
 
 function syncSettingsPageContent(pageView, isRoot, pageId) {
   if (!pageView) return;
-  // 返回一级时：动画中保留当前二级内容；结束后再清
+   // 返回二级时：动画中保留当前二级内容；结束后再清
   if (isRoot) return;
   lastSettingsPageId = pageId || '';
   pageView.querySelectorAll('.settings-page').forEach((page) => {

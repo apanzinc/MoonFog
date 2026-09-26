@@ -159,6 +159,10 @@ function syncActiveSpeeds() {
 function disposeMount(target) {
   const mount = target.mount;
   target.mount = null;
+  if (target.id) {
+    const el = document.getElementById(target.id);
+    if (el) el.classList.remove('grain-ready');
+  }
   if (!mount) return;
   try {
     mount.dispose();
