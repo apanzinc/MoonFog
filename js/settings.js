@@ -1556,6 +1556,8 @@ if (value === 'image') {
         if (subSelect) setSettingsReveal(subSelect, true);
         const grainGroup = document.getElementById('bgGrainGroup');
         if (grainGroup) setSettingsReveal(grainGroup, false);
+        applyBackgroundMode('local');
+        initBgModeGridSelection();
         return;
       }
      const subSelect = document.getElementById('bgImageSubSelect');
