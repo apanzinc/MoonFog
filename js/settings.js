@@ -1551,11 +1551,13 @@ function bindGrainSettings() {
 
 function bindBackgroundSetting() {
    initCardClick('bgModeGrid', BG_MODE_KEY, (value) => {
-     if (value === 'image') {
-       const subSelect = document.getElementById('bgImageSubSelect');
-       if (subSelect) setSettingsReveal(subSelect, true);
-       return;
-     }
+if (value === 'image') {
+        const subSelect = document.getElementById('bgImageSubSelect');
+        if (subSelect) setSettingsReveal(subSelect, true);
+        const grainGroup = document.getElementById('bgGrainGroup');
+        if (grainGroup) setSettingsReveal(grainGroup, false);
+        return;
+      }
      const subSelect = document.getElementById('bgImageSubSelect');
      if (subSelect) setSettingsReveal(subSelect, false);
      applyBackgroundMode(value);
