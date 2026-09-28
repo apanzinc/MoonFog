@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "MoonFog",
+  "name": "MoonFog 朔雾",
   "version": "1.0.0",
-  "description": "纯净极简的新标签页 - 时间、问候与搜索",
+  "description": "让新标签页安静一点",
   "author": "apanzinc",
   "chrome_url_overrides": {
     "newtab": "newtab.html"
