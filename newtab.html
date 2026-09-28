@@ -744,6 +744,7 @@
           <h4 class="settings-section-title" id="sec-search" hidden>搜索</h4>
 
           <section class="settings-group">
+            <h5 class="settings-group-title">搜索引擎</h5>
             <div class="settings-card">
               <div class="setting-item setting-item--flush">
                 <div class="setting-label visually-hidden" id="engineLabel">搜索引擎</div>
@@ -809,7 +810,7 @@
               <div class="setting-item" id="bookmarkImportActionSetting">
                 <div class="setting-label">导入浏览器收藏夹</div>
                 <p class="setting-tip">从 Chrome / Edge / Firefox / Safari 导出的 HTML 书签文件导入（追加到现有列表，支持多级文件夹嵌套）</p>
-                <div class="about-reset-row">
+                <div class="settings-action-row">
                   <input type="file" id="importBookmarksInputShortcuts" accept="text/html,.html,.htm" hidden>
                   <button class="bg-action-btn bg-action-btn-ghost" id="importBookmarksBtnShortcuts" type="button">
                     <span class="mgc_bookmarks_line" aria-hidden="true"></span>
@@ -819,15 +820,15 @@
                 <p class="setting-tip" id="importBookmarksTipShortcuts" hidden></p>
               </div>
               <div class="setting-item" id="bookmarkSyncPermissionSetting">
-                <div class="setting-label-row" style="display:flex;align-items:center;justify-content:space-between;gap:12px">
-                  <div class="setting-label" style="margin-bottom:0">直接同步浏览器书签</div>
+                <div class="setting-label-row">
+                  <div class="setting-label">直接同步浏览器书签</div>
                   <label class="switch">
                     <input type="checkbox" id="bookmarkSyncPermissionToggle">
                     <span class="switch-slider"></span>
                   </label>
                 </div>
                 <p class="setting-tip">
-                  <span class="mgc_warning_line" style="font-size:12px;vertical-align:middle;margin-right:4px;color:var(--text-secondary)" aria-hidden="true"></span>
+                  <span class="setting-tip-icon setting-tip-icon--muted mgc_warning_line" aria-hidden="true"></span>
                   此功能需读取浏览器内部书签数据，属于高度敏感权限。开启后扩展可直接访问您的浏览器书签。默认关闭，仅在您明确授权后生效。
                 </p>
                 <p class="setting-tip" id="bookmarkSyncStatus" hidden></p>
@@ -835,7 +836,7 @@
               <div class="setting-item">
                 <div class="setting-label">数据安全说明</div>
                 <p class="setting-tip">
-                  <span class="mgc_shield_line" style="font-size:12px;vertical-align:middle;margin-right:4px" aria-hidden="true"></span>
+                  <span class="setting-tip-icon mgc_shield_line" aria-hidden="true"></span>
                   所有书签数据仅存储在浏览器本地（localStorage），不涉及网络传输，不上云、不同步、不收集。导入操作完全在您的设备上完成。
                 </p>
               </div>
@@ -843,7 +844,7 @@
           </section>
         </section>
 
-        <!-- 关于 -->
+        <!-- 显示与效果 -->
         <section class="settings-page" data-page="display" hidden aria-labelledby="sec-display">
           <h4 class="settings-section-title" id="sec-display" hidden>显示与效果</h4>
 
@@ -913,7 +914,7 @@
           <section class="settings-group">
             <h5 class="settings-group-title">性能</h5>
             <div class="settings-card">
-              <div class="setting-item setting-item--flush" id="lowPerfSetting">
+              <div class="setting-item setting-item--flush mode-setting" id="lowPerfSetting">
                 <div class="setting-label" id="lowPerfLabel">效果与性能</div>
                 <div class="mode-segment mode-segment--3" id="lowPerfSegment" role="radiogroup" aria-labelledby="lowPerfLabel">
                   <button class="mode-segment-btn" type="button" data-perf="full" role="radio" aria-checked="true" title="全部效果">完全</button>
@@ -992,7 +993,7 @@
               <div class="setting-item" id="exportDataSetting">
                 <div class="setting-label">导出数据</div>
                 <p class="setting-tip">将主题、背景、问候、快捷导航等偏好保存为文件</p>
-                <div class="about-reset-row">
+                <div class="settings-action-row">
                   <button class="bg-action-btn" id="exportDataBtn" type="button">
                     <span class="mgc_file_export_line" aria-hidden="true"></span>
                     <span>导出</span>
@@ -1002,7 +1003,7 @@
               <div class="setting-item" id="importDataSetting">
                 <div class="setting-label">导入数据</div>
                 <p class="setting-tip">从备份文件恢复偏好（会覆盖当前设置）</p>
-                <div class="about-reset-row">
+                <div class="settings-action-row">
                   <input type="file" id="importDataInput" accept="application/json,.json" hidden>
                   <button class="bg-action-btn" id="importDataBtn" type="button">
                     <span class="mgc_file_import_line" aria-hidden="true"></span>
@@ -1014,7 +1015,7 @@
               <div class="setting-item" id="importBookmarksSetting">
                 <div class="setting-label">导入浏览器收藏夹</div>
                 <p class="setting-tip">从浏览器导出的 HTML 书签文件导入快捷导航（会追加到现有列表，支持多级文件夹嵌套）</p>
-                <div class="about-reset-row">
+                <div class="settings-action-row">
                   <input type="file" id="importBookmarksInput" accept="text/html,.html,.htm" hidden>
                   <button class="bg-action-btn bg-action-btn-ghost" id="importBookmarksBtn" type="button">
                     <span class="mgc_bookmarks_line" aria-hidden="true"></span>
@@ -1032,8 +1033,8 @@
               <div class="setting-item" id="resetDefaultsSetting">
                 <div class="setting-label">重置设置</div>
                 <p class="setting-tip">清空偏好后刷新，将重新进入欢迎引导；保留壁纸与一言缓存</p>
-                <div class="about-reset-row">
-                  <button class="bg-action-btn about-reset-btn" id="resetDefaultsBtn" type="button">
+                <div class="settings-action-row">
+                  <button class="bg-action-btn settings-reset-btn" id="resetDefaultsBtn" type="button">
                     <span class="mgc_refresh_2_line" aria-hidden="true"></span>
                     <span>重置设置</span>
                   </button>

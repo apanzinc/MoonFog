@@ -769,8 +769,7 @@ body.has-image-bg .mf-scrollbar.is-dragging .mf-scrollbar-thumb {
 }
 
 /* 二级卡片内设置块 */
-.settings-card > .setting-item,
-.settings-card > .type-role {
+.settings-card > .setting-item {
   margin: 0;
   padding: 10px 10px;
   border: none;
@@ -779,15 +778,13 @@ body.has-image-bg .mf-scrollbar.is-dragging .mf-scrollbar-thumb {
   box-sizing: border-box;
 }
 
-.settings-card > .setting-item + .setting-item,
-.settings-card > .type-role + .type-role {
+.settings-card > .setting-item + .setting-item {
   border-top: 1px solid var(--settings-divider);
 }
 
 /* 前一项隐藏时，去掉后一项顶部分割线，避免空缝
  * 背景条件字段（bg-extra-field）走折叠动画，分割线由 controls.css 单独接管 */
-.settings-card > .setting-item[hidden]:not(.bg-extra-field) + .setting-item,
-.settings-card > .type-role[hidden] + .type-role {
+.settings-card > .setting-item[hidden]:not(.bg-extra-field) + .setting-item {
   border-top: none;
 }
 
@@ -1164,6 +1161,29 @@ html.low-perf .greeting-title.is-quote-seeking-swap {
 .setting-row-between .mode-segment {
   flex: 0 0 auto;
   width: min(148px, 42%);
+}
+
+/* 标签与控件同排（如开关），提示文字另起一行 */
+.setting-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.setting-label-row .setting-label {
+  margin-bottom: 0;
+}
+
+/* setting-tip 前的行内图标 */
+.setting-tip-icon {
+  font-size: 0.75rem;
+  vertical-align: middle;
+  margin-right: 4px;
+}
+
+.setting-tip-icon--muted {
+  color: var(--text-secondary);
 }
 
 /* 时间选项等紧凑分段：不要被 42% 挤窄，避免「24时」换行 */

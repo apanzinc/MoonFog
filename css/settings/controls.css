@@ -92,14 +92,6 @@
   margin: 8px 2px 0;
 }
 
-#lowPerfSetting .mode-segment {
-  margin-top: 8px;
-}
-
-#lowPerfSetting .setting-tip {
-  margin: 8px 2px 0;
-}
-
 .mode-segment-btn {
   position: relative;
   display: inline-flex;
@@ -1811,7 +1803,7 @@
 .engine-name {
   flex: 1;
   font-size: 0.8125rem;
-  font-weight: 450;
+  font-weight: 500;
   color: var(--text-primary);
 }
 
@@ -1899,13 +1891,15 @@
   align-items: center;
   justify-content: space-between;
   font-size: 0.8125rem;
-  color: var(--text-secondary);
+  font-weight: 500;
+  color: var(--text-primary);
 }
 
 .type-weight-value,
 .type-size-value {
-  font-weight: 600;
-  color: var(--text-primary);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: var(--text-tertiary);
   font-variant-numeric: tabular-nums;
 }
 
@@ -2207,7 +2201,7 @@
 .about-author-avatar {
   width: 28px;
   height: 28px;
-  border-radius: 50%;
+  border-radius: 8px;
   flex-shrink: 0;
   object-fit: cover;
   background: var(--bg-warm);
@@ -2220,7 +2214,7 @@
   white-space: nowrap;
 }
 
-.about-reset-row {
+.settings-action-row {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
@@ -2231,34 +2225,24 @@
   margin-top: 8px;
 }
 
-.about-reset-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-height: 34px;
-  padding: 0 12px;
-  border-radius: 10px;
-  color: var(--text-primary);
-}
-
-.about-reset-btn .mgc_refresh_2_line {
-  font-size: 15px;
+.settings-reset-btn .mgc_refresh_2_line {
+  font-size: 14px;
   line-height: 1;
 }
 
-.about-reset-btn.is-confirm {
+.settings-reset-btn.is-confirm {
   border-color: color-mix(in srgb, #c45c4a 55%, var(--border));
   color: #c45c4a;
   background: color-mix(in srgb, #c45c4a 10%, transparent);
 }
 
-.about-reset-btn.is-confirm:hover {
+.settings-reset-btn.is-confirm:hover {
   border-color: #c45c4a;
   color: #c45c4a;
   background: color-mix(in srgb, #c45c4a 16%, transparent);
 }
 
-html[data-mode="dark"] .about-reset-btn.is-confirm {
+html[data-mode="dark"] .settings-reset-btn.is-confirm {
   color: #f0a090;
   border-color: color-mix(in srgb, #f0a090 45%, var(--border));
   background: color-mix(in srgb, #f0a090 12%, transparent);

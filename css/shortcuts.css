@@ -742,8 +742,8 @@ body.has-image-bg .shortcut-expanded-subfolder:not(.open) {
 
 .shortcut-list-name {
   flex: 1;
-  font-size: 0.875rem;
-  font-weight: 450;
+  font-size: 0.8125rem;
+  font-weight: 500;
   color: var(--text-primary);
   overflow: hidden;
   text-overflow: ellipsis;
