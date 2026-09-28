@@ -649,7 +649,43 @@
 }
 
 .bg-mode-setting > .setting-tip {
-  display: none;
+   display: none;
+}
+
+/* 图片二级选择 */
+.bg-image-sub-row {
+   display: flex;
+   gap: 4px;
+   padding: 4px;
+   border-radius: 8px;
+   background: color-mix(in srgb, var(--text-primary) 5%, var(--bg-warm));
+}
+
+.bg-sub-item {
+   flex: 1 1 auto;
+   min-height: 36px;
+   padding: 6px 12px;
+   border: none;
+   border-radius: 6px;
+   background: transparent;
+   color: var(--text-secondary);
+   cursor: pointer;
+   font: inherit;
+   font-size: 0.8rem;
+   font-weight: 550;
+   text-align: center;
+   transition: background 0.18s var(--ease), color 0.18s var(--ease);
+}
+
+.bg-sub-item:hover {
+   color: var(--text-primary);
+   background: color-mix(in srgb, var(--text-primary) 4%, transparent);
+}
+
+.bg-sub-item.active {
+   color: var(--text-primary);
+   background: var(--card-bg);
+   box-shadow: 0 1px 2px color-mix(in srgb, var(--text-primary) 8%, transparent);
 }
 
 /* 条件字段：本地操作 / 模糊，动画折叠 */

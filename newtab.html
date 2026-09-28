@@ -380,13 +380,9 @@
                     <span class="bg-mode-icon" aria-hidden="true"><span class="mgc_sparkles_fill"></span></span>
                     <span class="bg-mode-name">流光渐变</span>
                   </button>
-                  <button class="bg-mode-item" data-value="local" type="button" role="radio" aria-checked="false">
+                  <button class="bg-mode-item" data-value="image" type="button" role="radio" aria-checked="false">
                     <span class="bg-mode-icon" aria-hidden="true"><span class="mgc_pic_2_fill"></span></span>
-                    <span class="bg-mode-name">本地图片</span>
-                  </button>
-                  <button class="bg-mode-item" data-value="bing" type="button" role="radio" aria-checked="false">
-                    <span class="bg-mode-icon" aria-hidden="true"><span class="mgc_sun_fill"></span></span>
-                    <span class="bg-mode-name">必应每日</span>
+                    <span class="bg-mode-name">图片</span>
                   </button>
                 </div>
               </div>
@@ -404,6 +400,13 @@
                   </button>
                 </div>
                 <p class="setting-tip" id="bgLocalTip">图片仅保存在本机</p>
+              </div>
+
+              <div class="setting-item bg-extra-field settings-reveal" id="bgImageSubSelect" hidden>
+                <div class="bg-image-sub-row" role="radiogroup" aria-label="图片来源">
+                  <button class="bg-sub-item active" data-value="local" type="button" role="radio" aria-checked="true">本地图片</button>
+                  <button class="bg-sub-item" data-value="bing" type="button" role="radio" aria-checked="false">在线图片</button>
+                </div>
               </div>
             </div>
           </section>

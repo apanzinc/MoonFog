@@ -607,10 +607,11 @@ function syncSettingsPanel() {
     updateGreetingPreview();
   } } catch (_) {}
 
-  try { renderCustomEngines(); } catch (_) {}
-  initCardSelection('greetingModeGrid', 'moonfog_greeting_mode', DEFAULT_GREETING_MODE);
-  initCardSelection('bgModeGrid', BG_MODE_KEY, DEFAULT_BG_MODE);
-  try { if (typeof syncGrainSettingsUI === 'function') syncGrainSettingsUI(); } catch (_) {}
+try { renderCustomEngines(); } catch (_) {}
+   initCardSelection('greetingModeGrid', 'moonfog_greeting_mode', DEFAULT_GREETING_MODE);
+   // bgModeGrid 有 image 选项，当实际模式为 local/bing 时显示"图片"为激活
+   initBgModeGridSelection();
+   try { if (typeof syncGrainSettingsUI === 'function') syncGrainSettingsUI(); } catch (_) {}
   initCardSelection('themeGrid', 'moonfog_tone', DEFAULT_TONE);
   initCardSelection('engineGrid', 'moonfog_engine', DEFAULT_ENGINE);
 
@@ -1549,61 +1550,107 @@ function bindGrainSettings() {
 }
 
 function bindBackgroundSetting() {
-  initCardClick('bgModeGrid', BG_MODE_KEY, (value) => {
-    applyBackgroundMode(value);
-  });
+   initCardClick('bgModeGrid', BG_MODE_KEY, (value) => {
+     if (value === 'image') {
+       const subSelect = document.getElementById('bgImageSubSelect');
+       if (subSelect) setSettingsReveal(subSelect, true);
+       return;
+     }
+     const subSelect = document.getElementById('bgImageSubSelect');
+     if (subSelect) setSettingsReveal(subSelect, false);
+     applyBackgroundMode(value);
+   });
 
-  const bgLocalPick = document.getElementById('bgLocalPick');
-  const bgLocalInput = document.getElementById('bgLocalInput');
-  const bgLocalClear = document.getElementById('bgLocalClear');
-  const bgLocalTip = document.getElementById('bgLocalTip');
-  bindGrainSettings();
-  // 背景模糊滑块统一题bindDisplaySetting 绑定，避免双�input
+   const bgLocalPick = document.getElementById('bgLocalPick');
+   const bgLocalInput = document.getElementById('bgLocalInput');
+   const bgLocalClear = document.getElementById('bgLocalClear');
+   const bgLocalTip = document.getElementById('bgLocalTip');
+   const bgSubLocal = document.getElementById('bgImageSubSelect')?.querySelector('[data-value="local"]');
+   const bgSubBing = document.getElementById('bgImageSubSelect')?.querySelector('[data-value="bing"]');
+   bindGrainSettings();
 
-  if (bgLocalPick && bgLocalInput) {
-    bgLocalPick.addEventListener('click', () => bgLocalInput.click());
-    bgLocalInput.addEventListener('change', async () => {
-      const file = bgLocalInput.files && bgLocalInput.files[0];
-      bgLocalInput.value = '';
-      if (!file) return;
-      if (!file.type.startsWith('image/')) {
-        if (bgLocalTip) bgLocalTip.textContent = '请选择图片文件';
-        return;
-      }
-      try {
-        if (bgLocalTip) bgLocalTip.textContent = '正在处理图片…';
-        const dataUrl = await compressImageFile(file);
-        saveLocalBackground(dataUrl);
-        if (bgLocalTip) bgLocalTip.textContent = '已应用本地图片（仅保存在本机）';
-        await applyBackgroundMode('local');
-        initCardSelection('bgModeGrid', BG_MODE_KEY, DEFAULT_BG_MODE);
-      } catch (err) {
-        if (bgLocalTip) bgLocalTip.textContent = err.message || '图片处理失败';
-      }
-    });
-  }
+   if (bgSubLocal) {
+     bgSubLocal.addEventListener('click', () => {
+       const subSelect = document.getElementById('bgImageSubSelect');
+       if (subSelect) {
+         subSelect.querySelectorAll('.bg-sub-item').forEach((b) => b.classList.remove('active'));
+         bgSubLocal.classList.add('active');
+       }
+       applyBackgroundMode('local');
+     });
+   }
+   if (bgSubBing) {
+     bgSubBing.addEventListener('click', () => {
+       const subSelect = document.getElementById('bgImageSubSelect');
+       if (subSelect) {
+         subSelect.querySelectorAll('.bg-sub-item').forEach((b) => b.classList.remove('active'));
+         bgSubBing.classList.add('active');
+       }
+       applyBackgroundMode('bing');
+       initBgModeGridSelection();
+     });
+   }
 
-  if (bgLocalClear) {
-    bgLocalClear.addEventListener('click', async () => {
-      // 破坏性操作：先确认
-      if (!window.confirm('确定要清除已上传的本地背景图片吗？此操作不可撤销')) return;
-      clearLocalBackground();
-      if (bgLocalTip) bgLocalTip.textContent = '已清除本地图片';
-      await applyBackgroundMode('local');
-    });
-  }
+   if (bgLocalPick && bgLocalInput) {
+     bgLocalPick.addEventListener('click', () => bgLocalInput.click());
+     bgLocalInput.addEventListener('change', async () => {
+       const file = bgLocalInput.files && bgLocalInput.files[0];
+       bgLocalInput.value = '';
+       if (!file) return;
+       if (!file.type.startsWith('image/')) {
+         if (bgLocalTip) bgLocalTip.textContent = '请选择图片文件';
+         return;
+       }
+       try {
+         if (bgLocalTip) bgLocalTip.textContent = '正在处理图片…';
+         const dataUrl = await compressImageFile(file);
+         saveLocalBackground(dataUrl);
+         if (bgLocalTip) bgLocalTip.textContent = '已应用本地图片（仅保存在本机）';
+         await applyBackgroundMode('local');
+         initBgModeGridSelection();
+       } catch (err) {
+         if (bgLocalTip) bgLocalTip.textContent = err.message || '图片处理失败';
+       }
+     });
+   }
 
-  const bgBingShuffle = document.getElementById('bgBingShuffle');
-  if (bgBingShuffle && !bgBingShuffle.dataset.bound) {
-    bgBingShuffle.dataset.bound = '1';
-    bgBingShuffle.addEventListener('click', async () => {
-      if (typeof shuffleBingWallpaper === 'function') {
-        await shuffleBingWallpaper();
-      }
-    });
-  }
+   if (bgLocalClear) {
+     bgLocalClear.addEventListener('click', async () => {
+       if (!window.confirm('确定要清除已上传的本地背景图片吗？此操作不可撤销')) return;
+       clearLocalBackground();
+       if (bgLocalTip) bgLocalTip.textContent = '已清除本地图片';
+       await applyBackgroundMode('local');
+       initBgModeGridSelection();
+     });
+   }
+
+   const bgBingShuffle = document.getElementById('bgBingShuffle');
+   if (bgBingShuffle && !bgBingShuffle.dataset.bound) {
+     bgBingShuffle.dataset.bound = '1';
+     bgBingShuffle.addEventListener('click', async () => {
+       if (typeof shuffleBingWallpaper === 'function') {
+         await shuffleBingWallpaper();
+       }
+     });
+   }
 }
 
+function initBgModeGridSelection() {
+  const grid = document.getElementById('bgModeGrid');
+  if (!grid) return;
+  const savedValue = localStorage.getItem(BG_MODE_KEY) || DEFAULT_BG_MODE;
+  const isImageMode = savedValue === 'local' || savedValue === 'bing';
+  grid.querySelectorAll('[data-value]').forEach((item) => {
+    item.classList.toggle('active', item.dataset.value === (isImageMode ? 'image' : savedValue));
+  });
+  syncRadioSelection(grid);
+  const subSelect = document.getElementById('bgImageSubSelect');
+  if (subSelect) {
+    setSettingsReveal(subSelect, isImageMode);
+    const subItems = subSelect.querySelectorAll('.bg-sub-item');
+    subItems.forEach((b) => b.classList.toggle('active', b.dataset.value === savedValue));
+  }
+}
 
 function bindDisplaySetting() {
   const bgSlider = document.getElementById('bgBlurSlider');
