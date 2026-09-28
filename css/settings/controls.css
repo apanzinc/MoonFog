@@ -2117,22 +2117,27 @@
 }
 
 .about-brand {
-  display: flex;
-  align-items: center;
-  gap: 12px;
+   display: flex;
+   align-items: center;
+   gap: 12px;
+   margin-bottom: 16px;
 }
 
 .about-logo {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  flex-shrink: 0;
-  background: var(--card-bg);
-  border: 1px solid var(--border);
+   width: 32px;
+   height: 32px;
+   border-radius: 8px;
+   flex-shrink: 0;
+   background: var(--card-bg);
+   border: 1px solid var(--border);
+   object-fit: cover;
 }
 
 .about-brand-text {
-  min-width: 0;
+   min-width: 0;
+   display: flex;
+   flex-direction: column;
+   gap: 2px;
 }
 
 .about-text {
@@ -2149,17 +2154,17 @@
 }
 
 .about-intro {
-  margin-top: 12px;
-  font-size: 0.8125rem;
-  line-height: 1.55;
-  color: var(--text-secondary);
+   margin-top: 0;
+   font-size: 0.8125rem;
+   line-height: 1.55;
+   color: var(--text-secondary);
 }
 
 .about-meta {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  margin-top: 14px;
+   display: grid;
+   grid-template-columns: 1fr 1fr;
+   gap: 8px;
+   margin-top: 16px;
 }
 
 .about-meta-item {
@@ -2185,12 +2190,12 @@
 }
 
 .about-features {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-top: 14px;
-  padding-top: 12px;
-  border-top: 1px solid var(--border);
+   display: flex;
+   flex-direction: column;
+   gap: 8px;
+   margin-top: 16px;
+   padding-top: 12px;
+   border-top: 1px solid var(--border);
 }
 
 .about-feature {
@@ -2265,11 +2270,11 @@ html[data-mode="dark"] .about-reset-btn.is-confirm {
    ============================================ */
 
 .about-banner {
-  position: relative;
-  margin: 0 0 12px;
-  border-radius: 12px;
-  overflow: hidden;
-  aspect-ratio: 16 / 9;
+   position: relative;
+   margin: 0 0 6px;
+   border-radius: 12px;
+   overflow: hidden;
+   aspect-ratio: 16 / 9;
 }
 
 .about-banner-image {
