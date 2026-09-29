@@ -133,8 +133,8 @@ const DEFAULT_SHORTCUTS = [
   { name: 'Bilibili', url: 'https://bilibili.com' }
 ];
 
-/** 空文件夹占位模板（暂无内容+ 添加按钮）*/
-const EMPTY_FOLDER_HTML = '<p>暂无内容</p><button class="shortcut-expanded-add" type="button" aria-label="添加快捷方式" title="添加快捷方式"><span class="mgc_add_line" aria-hidden="true"></span></button>';
+/** 空文件夹占位模板（虚线图标 + 暂无内容 + 添加胶囊按钮）*/
+const EMPTY_FOLDER_HTML = '<div class="empty-folder-icon" aria-hidden="true"><span class="mgc_folder_2_line"></span></div><p>暂无内容</p><button class="shortcut-expanded-add" type="button" aria-label="添加快捷方式" title="添加快捷方式"><span class="mgc_add_line" aria-hidden="true"></span><span>添加</span></button>';
 
 let editingShortcutIndex = -1;
 let editingShortcutChild = -1; // 文件夹内子项索引（-1 表示非子项）
