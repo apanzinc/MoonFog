@@ -790,6 +790,11 @@ function renderShortcuts() {
         document.querySelectorAll('.shortcut-expanded-subfolder.open').forEach((sf) => {
           sf.classList.remove('open');
         });
+        if (willOpen) {
+          // 缩放锚点 = 触发器胶囊中心（面板 top 在胶囊下方 8px），面板从胶囊里长出/缩回
+          expanded.style.transformOrigin =
+            `${(folder.offsetWidth / 2).toFixed(1)}px ${(-(folder.offsetHeight / 2 + 8)).toFixed(1)}px`;
+        }
         folder.classList.toggle('open', willOpen);
         trigger.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
         // 切换 body.folder-open 以控制问候语显隐

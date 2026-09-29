@@ -358,7 +358,8 @@ body.has-image-bg .shortcut-expanded-subfolder:not(.open) {
   position: absolute;
   top: calc(100% + 8px);
   left: 0;
-  transform: translateY(-6px) scale(0.98);
+  /* 默认锚点在自身左上角，点击展开前 JS 会换成触发器胶囊中心 */
+  transform: scale(0.6);
   transform-origin: top left;
   min-width: 168px;
   max-width: min(72vw, 360px);
@@ -377,10 +378,11 @@ body.has-image-bg .shortcut-expanded-subfolder:not(.open) {
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
+  /* 收起：加速缩回胶囊（visibility 延迟与 transform 同时长） */
   transition:
-    opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1),
-    visibility 0s linear 0.2s,
-    transform 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+    opacity 0.18s cubic-bezier(0.4, 0, 1, 1),
+    visibility 0s linear 0.18s,
+    transform 0.18s cubic-bezier(0.4, 0, 1, 1);
   z-index: 120;
   backdrop-filter: blur(var(--chrome-blur, 14px)) saturate(var(--glass-saturate, 1.12));
   -webkit-backdrop-filter: blur(var(--chrome-blur, 14px)) saturate(var(--glass-saturate, 1.12));
@@ -411,11 +413,12 @@ body.has-image-bg .shortcut-expanded-subfolder:not(.open) {
   opacity: 1;
   visibility: visible;
   pointer-events: auto;
-  transform: translateY(0) scale(1);
+  transform: scale(1);
+  /* 展开：从胶囊里弹出，起步即动后减速落位 */
   transition:
-    opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1) 0s,
+    opacity 0.18s cubic-bezier(0.25, 1, 0.5, 1) 0s,
     visibility 0s 0s,
-    transform 0.22s cubic-bezier(0.4, 0, 0.2, 1) 0s;
+    transform 0.22s cubic-bezier(0.25, 1, 0.5, 1) 0s;
 }
 
 /* 热区桥：防止鼠标移动时丢失弹窗 */
