@@ -207,12 +207,21 @@ html.theme-animating .settings-wrapper {
   left: 0;
   top: 0;
   /* 不用 transform 让位：transform 会切断搜索框/标签的 backdrop-filter */
-  transition: left 0.3s var(--ease), top 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: left 0.3s var(--ease), top 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* 文件夹展开时：用负 top 整体上移内容，可以突破视口顶部（问候区也能推出屏幕） */
 body.folder-open .content {
   top: calc(var(--folder-shift, 0px) * -1);
+}
+
+/*
+ * 跟随模式：子文件夹展开/收回时面板高度在做 0.3s 过渡，
+ * 若 top 也用自己的过渡去追一个每帧变化的目标会永远慢半拍。
+ * 该窗口内关掉过渡，让 JS 逐帧直驱，上移量与面板同帧同步。
+ */
+body.folder-open.folder-following .content {
+  transition: none;
 }
 
 /*

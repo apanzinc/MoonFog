@@ -595,17 +595,34 @@ function updateFolderShift() {
 }
 
 let folderShiftRaf = 0;
+
 /**
- * 子文件夹展开/收回有 0.3s 的 max-height 过渡，面板高度是渐变的
- * 在过渡期间逐帧重算，上移量始终跟住面板实际高度
+ * 结束逐帧跟算，恢复正常过渡
  */
-function scheduleFolderShift() {
+function stopFolderShiftFollow() {
   cancelAnimationFrame(folderShiftRaf);
+  folderShiftRaf = 0;
+  document.body.classList.remove('folder-following');
+}
+
+/**
+ * 逐帧重算上移距离
+ * @param {boolean} follow - 面板高度正在做 max-height 过渡时传 true：
+ *   关掉 .content 的 top 过渡，让位移由本循环逐帧直驱，与面板同帧同步，
+ *   否则 top 过渡去追每帧变化的目标会永远慢半拍（表现为面板动完页面才跟上）
+ */
+function scheduleFolderShift(follow) {
+  stopFolderShiftFollow();
+  if (follow) {
+    document.body.classList.add('folder-following');
+  }
   const start = performance.now();
   const step = () => {
     updateFolderShift();
     if (performance.now() - start < 400) {
       folderShiftRaf = requestAnimationFrame(step);
+    } else {
+      stopFolderShiftFollow();
     }
   };
   folderShiftRaf = requestAnimationFrame(step);
@@ -652,12 +669,12 @@ function renderFolderChildrenExpanded(container, children, folderIndex, path) {
         if (willOpen) {
           // 更新祖先文件夹的透明度距离
           updateAncestorDistance(subEl);
-          scheduleFolderShift();
+          scheduleFolderShift(true);
         } else {
           // 收回时清除自身及子级的距离标记
           clearDistanceRecursive(subEl);
           updateAncestorDistance(subEl);
-          scheduleFolderShift();
+          scheduleFolderShift(true);
         }
       });
       subEl.appendChild(subTrigger);
@@ -778,6 +795,7 @@ function renderShortcuts() {
         if (willOpen) {
           scheduleFolderShift();
         } else {
+          stopFolderShiftFollow();
           document.documentElement.style.setProperty('--folder-shift', '0px');
         }
       });
@@ -1314,6 +1332,7 @@ function initShortcutSettings() {
         sf.classList.remove('open');
       });
       document.body.classList.remove('folder-open');
+      stopFolderShiftFollow();
       document.documentElement.style.setProperty('--folder-shift', '0px');
     }
   });
