@@ -185,9 +185,9 @@ body.has-image-bg .shortcut-folder.open .shortcut-folder-trigger {
   color: var(--img-chrome-text, var(--img-text, var(--text-primary))) !important;
 }
 
-/* 图片模式：展开面板和子文件夹容器去掉阴影，与主标签一致 */
+/* 图片模式：展开面板和子面板去掉阴影，与主标签一致 */
 body.has-image-bg .shortcut-expanded,
-body.has-image-bg .shortcut-expanded-subfolder,
+body.has-image-bg .shortcut-expanded-subfolder-children,
 body.has-image-bg .shortcut-folder.open .shortcut-folder-trigger {
   box-shadow: none !important;
 }
@@ -196,23 +196,6 @@ body.has-image-bg .shortcut-folder.open .shortcut-folder-trigger {
    选择器需盖过注入样式的 html body.has-image-bg .shortcut-btn 与 low-perf 版本 */
 html body.has-image-bg .shortcut-folder .shortcut-expanded .shortcut-btn {
   box-shadow: none !important;
-}
-
-/* 图片模式：子文件夹容器使用统一毛玻璃配方，与主标签/设置页一致 */
-body.has-image-bg .shortcut-expanded-subfolder.open,
-body.has-image-bg .shortcut-expanded-subfolder:not(.open) {
-  background: color-mix(
-    in srgb,
-    var(--img-surface, var(--card-bg)) var(--glass-fill, 42%),
-    transparent
-  ) !important;
-  border-color: color-mix(
-    in srgb,
-    var(--img-chrome-text, #fff) var(--glass-border, 28%),
-    transparent
-  ) !important;
-  backdrop-filter: blur(var(--search-blur, 16px)) saturate(var(--glass-saturate, 1.35)) !important;
-  -webkit-backdrop-filter: blur(var(--search-blur, 16px)) saturate(var(--glass-saturate, 1.35)) !important;
 }
 
 .shortcut-btn .shortcut-icon,
@@ -300,7 +283,8 @@ body.has-image-bg .shortcut-expanded-subfolder:not(.open) {
 }
 
 .shortcut-btn:hover .shortcut-label,
-.shortcut-folder.open .shortcut-folder-trigger .shortcut-label {
+.shortcut-folder.open .shortcut-folder-trigger .shortcut-label,
+.shortcut-expanded-subfolder.open > .shortcut-expanded-subfolder-trigger .shortcut-label {
   opacity: 1;
 }
 
@@ -506,55 +490,26 @@ body.has-image-bg .shortcut-expanded-subfolder:not(.open) {
   box-sizing: border-box;
 }
 
-/* 深层子文件夹的背景色完全由 JS 的 updateAncestorDistance 动态控制 */
-/* 默认基础样式 */
-.shortcut-expanded-subfolder.open {
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  background: color-mix(in srgb, var(--bg-warm-alt) 50%, transparent);
-  padding: 2px;
-  /* 与相邻标签的间距交给面板 gap(6px)，不再额外加 margin */
-  margin: 0;
-}
-
-/* 未展开的子文件夹：胶囊形，跟标签一致 */
-/* 关闭时圆角延迟到子项收完(0.3s)再过渡：盒子还高时 999px 会被裁成
-   min(宽,高)/2，瞬间切换会先变成圆形；此时高度已只剩触发条，过渡几乎不可见 */
-.shortcut-expanded-subfolder:not(.open) {
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--bg-warm-alt) 30%, transparent);
-  padding: 0;
-  margin: 0;
-  transition: border-radius 0.15s ease-out 0.3s;
-}
-
-/* 展开状态下：标题按钮去掉描边，背景与容器一致 */
+/* 展开状态：trigger 保持胶囊并像主页一样常驻 hover 底色 */
 .shortcut-expanded-subfolder.open > .shortcut-expanded-subfolder-trigger {
-  /* 标题与下方图标间距 = 面板统一的 6px */
-  margin: 0 0 6px;
-  border: none !important;
-  background: transparent !important;
-  box-shadow: none !important;
+  background: color-mix(in srgb, var(--bg-warm-alt) 88%, var(--card-bg));
+  box-shadow: none;
 }
-
-/* 未展开状态下：标题按钮也去掉描边，由容器提供 */
-.shortcut-expanded-subfolder:not(.open) > .shortcut-expanded-subfolder-trigger {
-  margin: 0;
-  border: none !important;
-  background: transparent !important;
-  box-shadow: none !important;
-}
-
-/* 背景色由 JS 的 updateAncestorDistance 动态控制，CSS 只提供基础默认值 */
 
 .shortcut-expanded-subfolder-trigger {
   cursor: pointer;
   max-width: 100%;
 }
 
+/* children = 主页面板的复刻：独立圆角面板（14px + 玻璃 + 阴影），
+   占位展开，closed 态 border-width:0 避免 max-height:0 后残留 2px 边框 */
 .shortcut-expanded-subfolder-children {
-  width: 100%;
+  position: relative;
+  box-sizing: border-box;
+  align-self: flex-start;
+  width: auto;
+  min-width: 168px;
+  max-width: 100%;
   max-height: 0;
   overflow: hidden;
   opacity: 0;
@@ -563,16 +518,32 @@ body.has-image-bg .shortcut-expanded-subfolder:not(.open) {
   align-items: flex-start;
   gap: 6px;
   padding: 0;
+  margin-top: 0;
+  border: 1px solid var(--border);
+  border-width: 0;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--card-bg) 92%, transparent);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(var(--chrome-blur, 14px)) saturate(var(--glass-saturate, 1.12));
+  -webkit-backdrop-filter: blur(var(--chrome-blur, 14px)) saturate(var(--glass-saturate, 1.12));
   transition:
     max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1),
     opacity 0.2s ease-out,
-    padding 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    padding 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    margin-top 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    border-width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .shortcut-expanded-subfolder.open > .shortcut-expanded-subfolder-children {
   max-height: 1000px;
   opacity: 1;
-  padding: 0;
+  padding: 8px;
+  margin-top: 8px;
+  border-width: 1px;
+}
+
+.shortcut-expanded-subfolder-children.is-empty {
+  min-width: 140px;
 }
 
 /* 子文件夹与普通链接之间的分隔线已移除（内联模式下不需要） */

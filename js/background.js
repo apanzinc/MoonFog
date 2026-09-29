@@ -2224,11 +2224,13 @@ html.low-perf.boot-has-image .search-box,
 html.low-perf body.has-image-bg .shortcut-btn,
 html.low-perf body.has-image-bg .shortcut-folder-trigger,
 html.low-perf body.has-image-bg .shortcut-expanded,
+html.low-perf body.has-image-bg .shortcut-expanded-subfolder-children,
 html.low-perf body.has-image-bg .settings-btn,
 html.low-perf body.has-image-bg .settings-panel,
 html.perf-low body.has-image-bg .search-box,
 html.perf-low body.has-image-bg .shortcut-btn,
 html.perf-low body.has-image-bg .shortcut-folder-trigger,
+html.perf-low body.has-image-bg .shortcut-expanded-subfolder-children,
 html.perf-low body.has-image-bg .settings-btn,
 html.perf-low body.has-image-bg .settings-panel {
   backdrop-filter: none !important;

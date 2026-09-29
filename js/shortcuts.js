@@ -520,40 +520,6 @@ function fetchFavicon(url, forceRefresh) {
  */
 
 /**
- * 更新祖先文件夹的透明度距离（离当前打开的越近，透明度越低）
- * 每级增加10%透明度，最多80%
- */
-function updateAncestorDistance(el) {
-  let distance = 1;
-  let current = el.parentElement;
-  while (current && current.classList) {
-    if (current.classList.contains('shortcut-expanded-subfolder')) {
-      // 透明度= min(10 * distance, 80)，背景不透明底= 100 - 透明底
-      const opacity = Math.min(10 * distance, 80);
-      const bgPercent = 100 - opacity;
-      if (current.classList.contains('open')) {
-        current.style.background = `color-mix(in srgb, var(--bg-warm-alt) ${bgPercent}%, transparent)`;
-      } else {
-        current.style.background = `color-mix(in srgb, var(--bg-warm-alt) ${Math.max(bgPercent - 20, 10)}%, transparent)`;
-      }
-      distance++;
-    }
-    current = current.parentElement;
-  }
-}
-
-/**
- * 递归清除子级文件夹的距离标记
- */
-function clearDistanceRecursive(el) {
-  el.style.removeProperty('background');
-  const subChildren = el.querySelector(':scope > .shortcut-expanded-subfolder-children');
-  if (subChildren) {
-    subChildren.querySelectorAll('.shortcut-expanded-subfolder').forEach(clearDistanceRecursive);
-  }
-}
-
-/**
  * 根据展开的文件夹实际高度计算上移距离
  * 展开面板已在 CSS 中封顶（max-height），配合内部滚动，任意内容量都不会超出视口
  */
@@ -668,17 +634,8 @@ function renderFolderChildrenExpanded(container, children, folderIndex, path) {
         const willOpen = !subEl.classList.contains('open');
         subEl.classList.toggle('open', willOpen);
         subTrigger.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
-        // 子文件夹展开/收回时，动态调整上移距离
-        if (willOpen) {
-          // 更新祖先文件夹的透明度距离
-          updateAncestorDistance(subEl);
-          scheduleFolderShift(true);
-        } else {
-          // 收回时清除自身及子级的距离标记
-          clearDistanceRecursive(subEl);
-          updateAncestorDistance(subEl);
-          scheduleFolderShift(true);
-        }
+        // 子面板占位展开/收回，按新高度逐帧跟随上移
+        scheduleFolderShift(true);
       });
       subEl.appendChild(subTrigger);
 
@@ -687,6 +644,7 @@ function renderFolderChildrenExpanded(container, children, folderIndex, path) {
       if (child.children && child.children.length > 0) {
         renderFolderChildrenExpanded(subChildren, child.children, folderIndex, subPath);
       } else {
+        subChildren.classList.add('is-empty');
         const empty = document.createElement('div');
         empty.className = 'shortcut-expanded-empty';
         empty.innerHTML = EMPTY_FOLDER_HTML;
