@@ -192,6 +192,12 @@ body.has-image-bg .shortcut-folder.open .shortcut-folder-trigger {
   box-shadow: none !important;
 }
 
+/* 图片模式：面板内标签不再叠玻璃阴影（面板自身已有阴影，标签阴影会糊在面板上）。
+   选择器需盖过注入样式的 html body.has-image-bg .shortcut-btn 与 low-perf 版本 */
+html body.has-image-bg .shortcut-folder .shortcut-expanded .shortcut-btn {
+  box-shadow: none !important;
+}
+
 /* 图片模式：子文件夹容器使用统一毛玻璃配方，与主标签/设置页一致 */
 body.has-image-bg .shortcut-expanded-subfolder.open,
 body.has-image-bg .shortcut-expanded-subfolder:not(.open) {
