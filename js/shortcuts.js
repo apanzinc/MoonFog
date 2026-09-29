@@ -700,10 +700,17 @@ function renderFolderChildrenExpanded(container, children, folderIndex, path, po
 
       const subChildren = document.createElement('div');
       subChildren.className = 'shortcut-expanded-subfolder-children';
+      // 每深一层 z 提一层：深层面板盖浅层，文件夹中的文件夹不被上层覆盖
+      subChildren.style.zIndex = String(depth);
       // 面板内部滚动（封顶）时关闭其内的子面板（弹层锚点已失效）
       subChildren.addEventListener('scroll', () => {
         subChildren.querySelectorAll('.shortcut-expanded-subfolder.open').forEach(collapseSubfolder);
       }, { passive: true });
+      // 关键：面板不进 subEl，挂到独立 portal（folder 直下、主面板外）——
+      // 不包裹在主面板里，不受其 overflow 裁剪/滚动约束。
+      // 必须在递归前 append：portal 内 DOM 序浅在前、深在后，深层面板才不会被浅层盖住
+      subEl.subPanelEl = subChildren;
+      portal.appendChild(subChildren);
       if (child.children && child.children.length > 0) {
         renderFolderChildrenExpanded(subChildren, child.children, folderIndex, subPath, portal);
       } else {
@@ -717,10 +724,6 @@ function renderFolderChildrenExpanded(container, children, folderIndex, path, po
         });
         subChildren.appendChild(empty);
       }
-      // 关键：面板不进 subEl，挂到独立 portal（folder 直下、主面板外）——
-      // 不包裹在主面板里，不受其 overflow 裁剪/滚动约束
-      subEl.subPanelEl = subChildren;
-      portal.appendChild(subChildren);
       container.appendChild(subEl);
     } else {
       // 普通链接项：与主页快捷方式完全一致的样式
