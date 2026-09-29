@@ -1139,8 +1139,7 @@ function confirmShortcutModal() {
   }
   if (requiresUrl) url = normalizeShortcutUrl(url);
 
-  // 文件夹内操作统一取一欨tar
-getFolder
+  // 文件夹内操作统一取目标文件夹
   const needsTargetFolder = type === 'new-child-folder' || type === 'child-folder' || type === 'new-child' || type === 'child';
   const targetFolder = needsTargetFolder ? getFolderByPath(shortcuts, editingShortcutIndex, editingShortcutPath) : null;
 
