@@ -598,64 +598,70 @@ function scheduleFolderShift(follow) {
 }
 
 /**
- * 清除子面板点击时写入的定位/限宽 inline 样式
- */
-function clearSubPanelInline(p) {
-  p.style.removeProperty('max-width');
-  p.style.removeProperty('left');
-  p.style.removeProperty('top');
-  p.style.removeProperty('bottom');
-}
-
-/**
- * 收起子文件夹：清 open、aria-expanded 与面板 inline 定位样式
+ * 收起子文件夹：清 open（含 portal 里的面板）与 aria-expanded
  */
 function collapseSubfolder(sf) {
   sf.classList.remove('open');
   const t = sf.querySelector(':scope > .shortcut-folder-trigger');
   if (t) t.setAttribute('aria-expanded', 'false');
-  const p = sf.querySelector(':scope > .shortcut-expanded-subfolder-children');
-  if (p) clearSubPanelInline(p);
+  if (sf.subPanelEl) sf.subPanelEl.classList.remove('open');
 }
 
 /**
- * 展开前设置子面板：缩放锚点（胶囊中心）、按最近滚动宿主限宽、下方不够则向上弹
+ * 展开前设置子面板（portal 定位）：锚点换算到 folder 坐标系、限宽、视口内翻转/夹取
+ * 子面板挂在 .subfolder-portal（folder 直下、主面板外），坐标相对 folder，不受主面板裁剪
  */
 function prepareSubPanel(subEl, panelEl) {
-  // 缩放锚点 = 胶囊中心（面板 top 在胶囊下方 8px），面板从胶囊里弹出/收回
-  panelEl.style.transformOrigin =
-    `${(subEl.offsetWidth / 2).toFixed(1)}px ${(-(subEl.offsetHeight / 2 + 8)).toFixed(1)}px`;
-  // 裁剪宿主 = 最近的滚动容器（主面板或上级子面板）
-  let host = subEl.parentElement;
-  while (host && host !== document.body && getComputedStyle(host).overflowY === 'visible') {
-    host = host.parentElement;
+  const folder = subEl.closest('.shortcut-folder');
+  if (!folder) return;
+  // subEl 相对 folder 的布局偏移（offsetParent 链穿主面板/上级面板，不受 scale 动画影响）
+  let ox = 0;
+  let oy = 0;
+  let n = subEl;
+  while (n && n !== folder) {
+    ox += n.offsetLeft;
+    oy += n.offsetTop;
+    n = n.offsetParent;
   }
-  if (!host || host === document.body) return;
-  const subRect = subEl.getBoundingClientRect();
-  const hostRect = host.getBoundingClientRect();
-  // 宽度上限：不越过宿主右缘内 12px；不足 168px 时向左补足
-  const avail = Math.floor(hostRect.right - subRect.left - 12);
+  if (n !== folder) return;
+  const subW = subEl.offsetWidth;
+  const subH = subEl.offsetHeight;
+  const folderRect = folder.getBoundingClientRect();
+  // 限宽：右缘不超主面板（视觉对齐），不足 168px 时向左补足
+  const expanded = subEl.closest('.shortcut-expanded');
+  const avail = expanded
+    ? expanded.offsetWidth - ox - 12
+    : Math.min(window.innerWidth, 360) - ox - 12;
+  const leftPx = Math.round(ox + Math.min(0, avail - 168));
   panelEl.style.maxWidth = Math.max(168, avail) + 'px';
-  panelEl.style.left = Math.min(0, avail - 168) + 'px';
-  // 下方放不下则向上弹
+  panelEl.style.left = leftPx + 'px';
+  // 下方放不下则向上弹，最后夹进视口
   const panelH = panelEl.offsetHeight;
-  const spaceBelow = hostRect.bottom - 4 - (subRect.bottom + 8);
-  const spaceAbove = subRect.top - 8 - hostRect.top - 4;
-  if (panelH > spaceBelow && spaceAbove > spaceBelow) {
-    panelEl.style.top = 'auto';
-    panelEl.style.bottom = 'calc(100% + 8px)';
-  } else {
-    panelEl.style.removeProperty('top');
-    panelEl.style.removeProperty('bottom');
-  }
+  const anchorTop = folderRect.top + oy;
+  const spaceBelow = window.innerHeight - 4 - (anchorTop + subH + 8);
+  const spaceAbove = anchorTop - 4;
+  let top = oy + subH + 8;
+  if (panelH + 8 > spaceBelow && spaceAbove > spaceBelow) top = oy - panelH - 8;
+  top = Math.max(
+    4 - folderRect.top,
+    Math.min(top, window.innerHeight - 4 - folderRect.top - panelH),
+  );
+  const topPx = Math.round(top);
+  panelEl.style.top = topPx + 'px';
+  // 缩放锚点 = 胶囊中心（换算进面板坐标系），面板从胶囊里弹出/收回
+  panelEl.style.transformOrigin =
+    `${((subW / 2) + (ox - leftPx)).toFixed(1)}px ${((subH / 2) + (oy - topPx)).toFixed(1)}px`;
 }
 
 /**
- * 递归渲染文件夹子项到主页弹窗容器（支持多级子文件夹）
- * @param {HTMLElement} container - 展开容器元素
+ * 递归渲染文件夹子项（支持多级子文件夹）
+ * @param {HTMLElement} container - 所在层级的标签流容器（主面板或上级子面板）
  * @param {Array} children - 子项数组
- * @param {number} folderIndex - 顶层文件夹索引 * @param {Array} path - 当前路径（子索引数组） */
-function renderFolderChildrenExpanded(container, children, folderIndex, path) {
+ * @param {number} folderIndex - 顶层文件夹索引
+ * @param {Array} path - 当前路径（子索引数组）
+ * @param {HTMLElement} portal - 子面板 portal（folder 直下），所有层级共用
+ */
+function renderFolderChildrenExpanded(container, children, folderIndex, path, portal) {
   // 按原始顺序渲染，子文件夹和链接混合排列（与浏览器书签一致）
   children.forEach((child, ci) => {
     if (child.type === 'folder') {
@@ -681,13 +687,10 @@ function renderFolderChildrenExpanded(container, children, folderIndex, path) {
           if (sf !== subEl) collapseSubfolder(sf);
         });
         const willOpen = !subEl.classList.contains('open');
-        const panelEl = subEl.querySelector(':scope > .shortcut-expanded-subfolder-children');
+        const panelEl = subEl.subPanelEl;
         if (panelEl) {
-          if (willOpen) {
-            prepareSubPanel(subEl, panelEl);
-          } else {
-            clearSubPanelInline(panelEl);
-          }
+          panelEl.classList.toggle('open', willOpen);
+          if (willOpen) prepareSubPanel(subEl, panelEl);
         }
         subEl.classList.toggle('open', willOpen);
         subTrigger.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
@@ -696,8 +699,12 @@ function renderFolderChildrenExpanded(container, children, folderIndex, path) {
 
       const subChildren = document.createElement('div');
       subChildren.className = 'shortcut-expanded-subfolder-children';
+      // 面板内部滚动（封顶）时关闭其内的子面板（弹层锚点已失效）
+      subChildren.addEventListener('scroll', () => {
+        subChildren.querySelectorAll('.shortcut-expanded-subfolder.open').forEach(collapseSubfolder);
+      }, { passive: true });
       if (child.children && child.children.length > 0) {
-        renderFolderChildrenExpanded(subChildren, child.children, folderIndex, subPath);
+        renderFolderChildrenExpanded(subChildren, child.children, folderIndex, subPath, portal);
       } else {
         subChildren.classList.add('is-empty');
         const empty = document.createElement('div');
@@ -709,7 +716,10 @@ function renderFolderChildrenExpanded(container, children, folderIndex, path) {
         });
         subChildren.appendChild(empty);
       }
-      subEl.appendChild(subChildren);
+      // 关键：面板不进 subEl，挂到独立 portal（folder 直下、主面板外）——
+      // 不包裹在主面板里，不受其 overflow 裁剪/滚动约束
+      subEl.subPanelEl = subChildren;
+      portal.appendChild(subChildren);
       container.appendChild(subEl);
     } else {
       // 普通链接项：与主页快捷方式完全一致的样式
@@ -783,11 +793,21 @@ function renderShortcuts() {
         });
         expanded.appendChild(empty);
       } else {
+        // 子面板 portal（folder 直下、主面板外）：所有层级的子面板都挂这里，
+        // 不包裹进主页面板，不受其 overflow 裁剪/滚动约束
+        const portal = document.createElement('div');
+        portal.className = 'subfolder-portal';
+        folder.appendChild(portal);
         // 递归渲染文件夹子项（支持多级子文件夹）
-        renderFolderChildrenExpanded(expanded, item.children, idx, []);
+        renderFolderChildrenExpanded(expanded, item.children, idx, [], portal);
       }
 
       folder.appendChild(expanded);
+
+      // 主面板封顶内部滚动时关闭全部子面板（弹层锚点失效）
+      expanded.addEventListener('scroll', () => {
+        expanded.querySelectorAll('.shortcut-expanded-subfolder.open').forEach(collapseSubfolder);
+      }, { passive: true });
 
       trigger.addEventListener('click', () => {
         const willOpen = !folder.classList.contains('open');

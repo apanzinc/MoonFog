@@ -193,8 +193,10 @@ body.has-image-bg .shortcut-folder.open .shortcut-folder-trigger {
 }
 
 /* 图片模式：面板内标签不再叠玻璃阴影（面板自身已有阴影，标签阴影会糊在面板上）。
-   选择器需盖过注入样式的 html body.has-image-bg .shortcut-btn 与 low-perf 版本 */
-html body.has-image-bg .shortcut-folder .shortcut-expanded .shortcut-btn {
+   选择器需盖过注入样式的 html body.has-image-bg .shortcut-btn 与 low-perf 版本；
+   子面板在独立 portal（.subfolder-portal）内，需并列选择 */
+html body.has-image-bg .shortcut-folder .shortcut-expanded .shortcut-btn,
+html body.has-image-bg .shortcut-folder .subfolder-portal .shortcut-btn {
   box-shadow: none !important;
 }
 
@@ -430,13 +432,16 @@ html body.has-image-bg .shortcut-folder .shortcut-expanded .shortcut-btn {
   text-decoration: none;
 }
 
-.shortcut-expanded .shortcut-btn {
+.shortcut-expanded .shortcut-btn,
+.subfolder-portal .shortcut-btn {
   max-width: 100%;
 }
 
 /* 文件夹弹窗内标签：取消 hover 拉伸效果 */
 .shortcut-expanded .shortcut-btn:hover,
-.shortcut-expanded .shortcut-folder-trigger:hover {
+.shortcut-expanded .shortcut-folder-trigger:hover,
+.subfolder-portal .shortcut-btn:hover,
+.subfolder-portal .shortcut-folder-trigger:hover {
   padding-left: 8px;
   padding-right: 8px;
 }
@@ -501,13 +506,20 @@ html body.has-image-bg .shortcut-folder .shortcut-expanded .shortcut-btn {
   max-width: 100%;
 }
 
-/* children = 主页面板的复刻：absolute 弹出，不占文档流——后面的标签不避让，
-   面板自己缩放出现/收回；裁剪与限宽由 JS 在点击时按最近滚动宿主计算 */
+/* 子面板 portal：挂在 .shortcut-folder 直下、主面板之外——面板不包裹在主面板里，
+   不受其 overflow/滚动/缩放约束；0 尺寸不挡点击，z-index 盖过主面板（120） */
+.subfolder-portal {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 0;
+  z-index: 121;
+}
+
+/* 子面板：独立弹层，定位/限宽/翻转由 JS 在点击时按 folder 坐标系计算 */
 .shortcut-expanded-subfolder-children {
   position: absolute;
-  top: calc(100% + 8px);
-  left: 0;
-  z-index: 5;
   box-sizing: border-box;
   min-width: 168px;
   max-width: min(72vw, 360px);
@@ -556,7 +568,7 @@ html body.has-image-bg .shortcut-folder .shortcut-expanded .shortcut-btn {
 }
 
 /* 展开：从胶囊里弹出，起步即动后减速落位（与主页面板同参数） */
-.shortcut-expanded-subfolder.open > .shortcut-expanded-subfolder-children {
+.shortcut-expanded-subfolder-children.open {
   opacity: 1;
   visibility: visible;
   pointer-events: auto;
@@ -567,7 +579,7 @@ html body.has-image-bg .shortcut-folder .shortcut-expanded .shortcut-btn {
     transform 0.22s cubic-bezier(0.25, 1, 0.5, 1) 0s;
 }
 
-.shortcut-expanded-subfolder.open > .shortcut-expanded-subfolder-children.is-empty {
+.shortcut-expanded-subfolder-children.open.is-empty {
   min-width: 140px;
 }
 
