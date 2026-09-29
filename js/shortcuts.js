@@ -555,7 +555,7 @@ function clearDistanceRecursive(el) {
 
 /**
  * 根据展开的文件夹实际高度计算上移距离
- * 优先用实际 DOM 高度测量，确保内容不溢出屏幕
+ * 展开面板已在 CSS 中封顶（max-height），配合内部滚动，任意内容量都不会超出视口
  */
 function updateFolderShift() {
   const openFolder = document.querySelector('.shortcut-folder.open');
@@ -563,17 +563,21 @@ function updateFolderShift() {
     document.documentElement.style.setProperty('--folder-shift', '0px');
     return;
   }
-  const expanded = openFolder.querySelector('.shortcut-expanded');
+  const expanded = openFolder.querySelector(':scope > .shortcut-expanded');
   if (!expanded) {
     document.documentElement.style.setProperty('--folder-shift', '0px');
     return;
   }
-  // 用实际高度，而非估算值
-  const expandedHeight = expanded.scrollHeight;
+  const content = document.querySelector('.content');
+  // .content 的 top 过渡期间 getBoundingClientRect 拿到的是动画中的位置，
+  // 加上当前实际生效的位移还原成静态位置，重复计算才不会互相打架
+  const applied = content ? -(parseFloat(getComputedStyle(content).top) || 0) : 0;
+  const staticBottom = openFolder.getBoundingClientRect().bottom + applied;
   const viewportH = window.innerHeight;
-  const folderRect = openFolder.getBoundingClientRect();
+  // offsetHeight = 封顶后的可见高度（scrollHeight 是未裁剪的内容高度）
+  const expandedHeight = expanded.offsetHeight;
   // 弹窗底部预计位置
-  const expandedBottom = folderRect.bottom + 8 + expandedHeight;
+  const expandedBottom = staticBottom + 8 + expandedHeight;
   // 如果弹窗底部超出视口底部，需要上移
   const overflow = expandedBottom - viewportH + 20; // 20px 安全距离
   let shift;
@@ -584,9 +588,27 @@ function updateFolderShift() {
     // 没溢出，给一个基础上移量，腾出呼吸空间
     shift = 60;
   }
-  // 最多上移到把搜索框和问候语都推出屏幕也没关系
-  shift = Math.min(shift, viewportH + 200);
+  // 触发器不能被顶出屏幕：上移量最多让触发器停在视口顶部下方
+  const maxShift = Math.max(0, staticBottom - openFolder.offsetHeight - 8);
+  shift = Math.min(shift, maxShift, viewportH + 200);
   document.documentElement.style.setProperty('--folder-shift', shift + 'px');
+}
+
+let folderShiftRaf = 0;
+/**
+ * 子文件夹展开/收回有 0.3s 的 max-height 过渡，面板高度是渐变的
+ * 在过渡期间逐帧重算，上移量始终跟住面板实际高度
+ */
+function scheduleFolderShift() {
+  cancelAnimationFrame(folderShiftRaf);
+  const start = performance.now();
+  const step = () => {
+    updateFolderShift();
+    if (performance.now() - start < 400) {
+      folderShiftRaf = requestAnimationFrame(step);
+    }
+  };
+  folderShiftRaf = requestAnimationFrame(step);
 }
 
 /**
@@ -630,16 +652,12 @@ function renderFolderChildrenExpanded(container, children, folderIndex, path) {
         if (willOpen) {
           // 更新祖先文件夹的透明度距离
           updateAncestorDistance(subEl);
-          requestAnimationFrame(() => {
-            updateFolderShift();
-          });
+          scheduleFolderShift();
         } else {
           // 收回时清除自身及子级的距离标记
           clearDistanceRecursive(subEl);
           updateAncestorDistance(subEl);
-          requestAnimationFrame(() => {
-            updateFolderShift();
-          });
+          scheduleFolderShift();
         }
       });
       subEl.appendChild(subTrigger);
@@ -758,9 +776,7 @@ function renderShortcuts() {
         document.body.classList.toggle('folder-open', willOpen);
         // 根据弹窗实际高度动态调整上移距离，确保不超出屏幕底部
         if (willOpen) {
-          requestAnimationFrame(() => {
-            updateFolderShift();
-          });
+          scheduleFolderShift();
         } else {
           document.documentElement.style.setProperty('--folder-shift', '0px');
         }

@@ -362,7 +362,8 @@ body.has-image-bg .shortcut-expanded-subfolder:not(.open) {
   transform-origin: top left;
   min-width: 168px;
   max-width: min(72vw, 360px);
-  max-height: none;
+  /* 封顶：body 不可滚动，面板自身限制高度 + 内部滚动，内容再多也不会被裁 */
+  max-height: min(70vh, calc(100vh - 200px));
   overflow-y: auto;
   background: color-mix(in srgb, var(--card-bg) 92%, transparent);
   border: 1px solid var(--border);
