@@ -544,11 +544,11 @@ html body.has-image-bg .shortcut-folder .subfolder-portal .shortcut-btn {
   /* 默认锚点在自身左上角，点击展开前 JS 换成胶囊中心 */
   transform: scale(0.6);
   transform-origin: top left;
-  /* 收起：加速缩回胶囊（visibility 延迟与 transform 同时长） */
+  /* 收起：与打开对称的 0.22s，沿同一锚点收回胶囊（visibility 延迟与 transform 同时长） */
   transition:
-    opacity 0.18s cubic-bezier(0.4, 0, 1, 1),
-    visibility 0s linear 0.18s,
-    transform 0.18s cubic-bezier(0.4, 0, 1, 1);
+    opacity 0.22s cubic-bezier(0.4, 0, 1, 1),
+    visibility 0s linear 0.22s,
+    transform 0.22s cubic-bezier(0.4, 0, 1, 1);
   scrollbar-width: thin;
   scrollbar-color: color-mix(in srgb, var(--text-primary) 20%, transparent) transparent;
 }

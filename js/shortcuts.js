@@ -689,8 +689,9 @@ function renderFolderChildrenExpanded(container, children, folderIndex, path, po
         const willOpen = !subEl.classList.contains('open');
         const panelEl = subEl.subPanelEl;
         if (panelEl) {
-          panelEl.classList.toggle('open', willOpen);
+          // 先定位/换锚点，再开——同一渲染帧内生效，打开起点即胶囊锚点
           if (willOpen) prepareSubPanel(subEl, panelEl);
+          panelEl.classList.toggle('open', willOpen);
         }
         subEl.classList.toggle('open', willOpen);
         subTrigger.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
@@ -1360,14 +1361,20 @@ function initShortcutSettings() {
     if (!e.target.closest('.context-menu')) {
       hideShortcutContextMenu();
     }
+    // 点子面板/子胶囊以外的空白（含主面板内标签间隙）→ 收起所有子面板
+    const inSubArea =
+      e.target.closest('.shortcut-expanded-subfolder') ||
+      e.target.closest('.shortcut-expanded-subfolder-children');
+    if (!inSubArea) {
+      document.querySelectorAll('.shortcut-expanded-subfolder.open').forEach(collapseSubfolder);
+    }
     if (!e.target.closest('.shortcut-folder') && !e.target.closest('.shortcut-expanded-subfolder')) {
       document.querySelectorAll('.shortcut-folder.open').forEach((f) => {
         f.classList.remove('open');
         const trigger = f.querySelector('.shortcut-folder-trigger');
         if (trigger) trigger.setAttribute('aria-expanded', 'false');
       });
-      // 同时收起子文件夹并恢复问候语
-      document.querySelectorAll('.shortcut-expanded-subfolder.open').forEach(collapseSubfolder);
+      // 恢复问候语
       document.body.classList.remove('folder-open');
       stopFolderShiftFollow();
       document.documentElement.style.setProperty('--folder-shift', '0px');
