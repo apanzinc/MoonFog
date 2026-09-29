@@ -183,7 +183,8 @@ function getShortcuts() {
         const valid = data.every(item => item && item.name);
         if (valid) return data;
       }
-      // 数据异常，清除      localStorage.removeItem(SHORTCUTS_STORAGE_KEY);
+      // 数据异常，清除
+      localStorage.removeItem(SHORTCUTS_STORAGE_KEY);
     }
   } catch {
     localStorage.removeItem(SHORTCUTS_STORAGE_KEY);
@@ -578,7 +579,8 @@ function updateFolderShift() {
   let shift;
   if (overflow > 0) {
     // 溢出了，按溢出量上移，让弹窗底部刚好在视口内
-    shift = overflow + 40; // 额外余量，确保完整显示  } else {
+    shift = overflow + 40; // 额外余量，确保完整显示
+  } else {
     // 没溢出，给一个基础上移量，腾出呼吸空间
     shift = 60;
   }

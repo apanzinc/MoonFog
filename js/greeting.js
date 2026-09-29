@@ -458,7 +458,8 @@ function isQuoteAcceptable(quote, options = {}) {
 
   if (options.avoidRecent) {
     const recent = getRecentQuoteContents();
-    // 只避开最5 条，避免接口几乎全被度    const slice = recent.slice(0, 5);
+    // 只避开最近 5 条，避免接口几乎全被过滤
+    const slice = recent.slice(0, 5);
     if (slice.some((s) => normalizeQuoteText(s) === norm)) return false;
   }
 
@@ -1188,7 +1189,8 @@ function advanceToNextQuote(options = {}) {
       });
     }
     if (result && result.ok && result.quote) {
-      // 打开静默换：有下一句再换；点击始终      const same =
+      // 打开静默换：有下一句再换；点击始终换
+      const same =
         cachedDailyQuote &&
         normalizeQuoteText(cachedDailyQuote.content) ===
           normalizeQuoteText(result.quote.content);

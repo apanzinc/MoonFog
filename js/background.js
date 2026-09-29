@@ -2103,7 +2103,8 @@ function hydrateImagePaletteSeed() {
         } catch (_) {}
       }
       if (cached.v < IMAGE_PALETTE_VERSION) {
-        // 旧算注sceneL 不可信：去掉 polarity 提示，等重采标        delete lastDominant.sceneDark;
+        // 旧算法 sceneL 不可信：去掉 polarity 提示，等重采样
+        delete lastDominant.sceneDark;
       }
     } else if (cached.seedHex && /^#?[0-9a-fA-F]{6}$/.test(String(cached.seedHex))) {
       const hex = String(cached.seedHex).replace('#', '');

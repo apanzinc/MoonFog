@@ -101,7 +101,8 @@ function normalizeSettings(value) {
     if (!palette || typeof palette !== 'object') return;
     next[mode].colorBack = validHex(palette.colorBack, next[mode].colorBack);
     if (Array.isArray(palette.colors)) {
-      // 始终保留 7 个槽位，缺失时用循环默认值补�?      const source = palette.colors.slice(0, 7);
+      // 始终保留 7 个槽位，缺失时用循环默认值补齐
+      const source = palette.colors.slice(0, 7);
       const merged = [];
       for (let i = 0; i < 7; i++) {
         merged.push(validHex(source[i], next[mode].colors[i]));

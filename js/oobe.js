@@ -368,7 +368,8 @@ function syncOobeAppearanceUI() {
   if (!grid) return;
   let pref = oobeAppearancePref || getOobeAppearancePref();
   const supportsWallpaper = isOobeWallpaperSceneAvailable();
-  // 没有可取样壁纸场景时隐藏「壁纸」选项，并落到系统。  const wallBtn = grid.querySelector('[data-oobe-mode="wallpaper"]');
+  // 没有可取样壁纸场景时隐藏「壁纸」选项，并落到系统。
+  const wallBtn = grid.querySelector('[data-oobe-mode="wallpaper"]');
   if (wallBtn) {
     wallBtn.hidden = !supportsWallpaper;
     if (!supportsWallpaper && pref === 'wallpaper') {
@@ -545,7 +546,8 @@ function setOobeMiniHomeVisible(show, isImage) {
     note.hidden = !show;
     note.classList.toggle('is-on-image', !!isImage);
   }
-  // has-mini-home 挂在 media 上；frame 始终 overflow:hidden 保圆触  if (media) media.classList.toggle('has-mini-home', !!show);
+  // has-mini-home 挂在 media 上；frame 始终 overflow:hidden 保圆角
+  if (media) media.classList.toggle('has-mini-home', !!show);
   if (frame) frame.classList.toggle('has-mini-home', !!show);
 }
 
@@ -612,7 +614,8 @@ function ensureOobeToneSwatches() {
   const grid = document.getElementById('oobeToneSwatches');
   if (!grid || grid.dataset.built === '1') return;
   grid.dataset.built = '1';
-  // 复用设置页theme-swatch 结构与样式  grid.classList.add('theme-swatches');
+  // 复用设置页 theme-swatch 结构与样式
+  grid.classList.add('theme-swatches');
   grid.innerHTML = OOBE_TONES.map((t) => {
     return (
       '<button type="button" class="theme-swatch" role="radio" data-oobe-tone="' +
@@ -795,7 +798,8 @@ function updateOobeWallpaperPreview(mode, options = {}) {
 
   if (m === 'solid') {
     showSolid();
-    // 色调 UI 只在「背景」步显示，不在问倝明暗预览里带出    return;
+    // 色调 UI 只在「背景」步显示，不在问候明暗预览里带出
+    return;
   }
 
   if (m === 'grain') {
@@ -1011,7 +1015,8 @@ function syncOobeGreetingUI() {
 function ensureOobeGreetingGrid() {
   const grid = document.getElementById('oobeGreeting');
   if (!grid) return;
-  // 重建为紧凑的单列选择列表。  if (grid.dataset.built === '1' && grid.querySelector('.oobe-greet-chip')) return;
+  // 重建为紧凑的单列选择列表。
+  if (grid.dataset.built === '1' && grid.querySelector('.oobe-greet-chip')) return;
   grid.classList.remove('oobe-appearance', 'greeting-mode-list');
   grid.classList.add('oobe-greeting');
   grid.dataset.built = '1';
@@ -1089,7 +1094,8 @@ function setOobeGreetingBlockVisible(show) {
   syncOobeGreetingUI();
   } else {
     block.hidden = true;
-    // 离开时收起二级，避免下次闪一下    const nameField = document.getElementById('oobeNameField');
+    // 离开时收起二级，避免下次闪一下
+    const nameField = document.getElementById('oobeNameField');
     const customField = document.getElementById('oobeCustomField');
     if (nameField) {
       nameField.classList.remove('is-open', 'is-entering');
@@ -1173,7 +1179,8 @@ function ensureOobeWallpaperGrid() {
             r.readAsDataURL(file);
           });
         }
-        // 内存预览 + 实时切主页背景；完成引导才写盛        oobeLocalPreviewDataUrl = dataUrl;
+        // 内存预览 + 实时切主页背景；完成引导才写盘
+        oobeLocalPreviewDataUrl = dataUrl;
         if (typeof localBgDataUrl !== 'undefined') localBgDataUrl = dataUrl;
         oobeBgMode = 'local';
         oobeLocalPickedSession = true;
@@ -1387,7 +1394,8 @@ function fillOobeStepContent(step) {
       points.hidden = true;
       points.innerHTML = '';
     } else if (step.pointsStyle === 'mosaic') {
-      // 设置步：2×2 错落磁贴，避免与欢迎页列表同�?      points.hidden = false;
+      // 设置步：2×2 错落磁贴，避免与欢迎页列表同一风格
+      points.hidden = false;
       points.classList.add('oobe-points--mosaic');
       points.innerHTML = list
         .map((item, i) => {
@@ -1494,7 +1502,8 @@ function fillOobeStepContent(step) {
     oobeMediaKind = kind;
     updateOobeMedia(step);
   } else if (kind === 'preview' && step.greeting) {
-    // 仍在预览态：只同步迷你问候文案，不重播壁纸动画    refreshOobeMiniGreeting();
+    // 仍在预览态：只同步迷你问候文案，不重播壁纸动画
+    refreshOobeMiniGreeting();
   }
 }
 
@@ -1564,7 +1573,8 @@ function renderOobeStep(options = {}) {
     'is-slide-in-left',
     'is-slide-in-right'
   );
-  // 当前页滑出  body.classList.add(dir > 0 ? 'is-slide-out-left' : 'is-slide-out-right');
+  // 当前页滑出
+  body.classList.add(dir > 0 ? 'is-slide-out-left' : 'is-slide-out-right');
 
   window.setTimeout(() => {
     if (token !== oobeAnimToken) return;
@@ -1768,7 +1778,8 @@ function finishOobe() {
     root.style.pointerEvents = 'none';
     root.setAttribute('aria-hidden', 'true');
     root.classList.add('is-visible');
-    // 1) 先冻成实色2) 同帧开 zoom 3) 落盘延后，不挡动画    solidifyOobeCard();
+    // 1) 先冻成实色 2) 同帧开 zoom 3) 落盘延后，不挡动画
+    solidifyOobeCard();
     root.classList.remove('is-closing');
     void root.offsetWidth;
     root.classList.add('is-closing');

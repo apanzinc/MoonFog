@@ -241,7 +241,8 @@ function navigateSettings(pageId, options = {}) {
     pageView.style.pointerEvents = 'none';
 
     if (fromPeek && isRoot) {
-      // 1) 冻结度20%（不依赖 data-view度      panel.classList.add('settings-back-from-peek');
+      // 1) 冻结 20%（不依赖 data-view）
+      panel.classList.add('settings-back-from-peek');
       panel.classList.remove('settings-back-peek');
       pageView.style.transition = 'none';
       pageView.style.transform = 'translate3d(20%, 0, 0)';

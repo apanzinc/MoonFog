@@ -43,7 +43,8 @@ function fallbackIcon(img, fallbackChar) {
       return;
     }
   }
-  // 本地也失败，隐藏图片显示首字�  img.style.display = 'none';
+  // 本地也失败，隐藏图片显示首字母
+  img.style.display = 'none';
   let span = img.nextElementSibling;
   if (!span || !span.classList.contains('engine-favicon-initial')) {
     span = document.createElement('span');
@@ -127,7 +128,8 @@ function initCardClick(gridId, storageKey, callback, options = {}) {
     });
   });
 
-  // 初始化选中�  initCardSelection(gridId, storageKey, '');
+  // 初始化选中态
+  initCardSelection(gridId, storageKey, '');
 }
 
 /**
@@ -559,7 +561,8 @@ function setSettingsReveal(el, show, options) {
       updateScrollbar();
       return true;
     }
-    // 先锁收起态，再清 is-leaving / 显式，避免中途打断时弹一�    el.classList.add('is-entering');
+    // 先锁收起态，再清 is-leaving / is-entering，避免中途打断时弹一下
+    el.classList.add('is-entering');
     el.classList.remove('is-leaving');
     el.hidden = false;
     el.removeAttribute('hidden');
