@@ -303,19 +303,42 @@ html body.has-image-bg .shortcut-folder .subfolder-portal .shortcut-btn {
   line-height: 1;
   color: var(--text-secondary);
   background: color-mix(in srgb, var(--text-primary) 8%, transparent);
+  /* 可插值上限（收起动画需要从数值过渡到 0），容纳 4 位数字 */
+  max-width: 4rem;
+  /* 出场（文件夹收起、角标回来）：ease-out 弹回 */
+  transition:
+    opacity 0.18s cubic-bezier(0.25, 1, 0.5, 1),
+    transform 0.18s cubic-bezier(0.25, 1, 0.5, 1),
+    min-width 0.18s cubic-bezier(0.25, 1, 0.5, 1),
+    max-width 0.18s cubic-bezier(0.25, 1, 0.5, 1),
+    padding 0.18s cubic-bezier(0.25, 1, 0.5, 1),
+    margin-left 0.18s cubic-bezier(0.25, 1, 0.5, 1);
 }
 
 .shortcut-folder-count[hidden] {
   display: none !important;
 }
 
-.shortcut-folder.open .shortcut-folder-count {
-  display: none !important;
-}
-
-/* 子文件夹展开时也隐藏计数 */
-.shortcut-expanded-subfolder.open .shortcut-folder-count {
-  display: none !important;
+/* 展开：角标淡出+向右端缩小+占位收拢（不再是瞬时 display:none）。
+   选择器用 > 限定「自己的胶囊」——主面板里子胶囊的 count 保持显示 */
+.shortcut-folder.open > .shortcut-folder-trigger .shortcut-folder-count,
+.shortcut-expanded-subfolder.open > .shortcut-expanded-subfolder-trigger .shortcut-folder-count {
+  opacity: 0;
+  transform: scale(0.3);
+  transform-origin: right center;
+  min-width: 0;
+  max-width: 0;
+  padding: 0;
+  /* 抵消与 label 之间收拢后残留的 6px gap */
+  margin-left: -6px;
+  /* 进场（展开、角标没入）：ease-in 加速收 */
+  transition:
+    opacity 0.15s cubic-bezier(0.4, 0, 1, 1),
+    transform 0.15s cubic-bezier(0.4, 0, 1, 1),
+    min-width 0.15s cubic-bezier(0.4, 0, 1, 1),
+    max-width 0.15s cubic-bezier(0.4, 0, 1, 1),
+    padding 0.15s cubic-bezier(0.4, 0, 1, 1),
+    margin-left 0.15s cubic-bezier(0.4, 0, 1, 1);
 }
 
 .shortcut-drag-wrapper {
@@ -942,6 +965,7 @@ html body.has-image-bg .shortcut-folder .subfolder-portal .shortcut-btn {
 @media (prefers-reduced-motion: reduce) {
   .shortcut-btn,
   .shortcut-folder-trigger,
+  .shortcut-folder-count,
   .context-menu,
   .context-menu-item,
   .shortcut-expanded,
