@@ -508,12 +508,15 @@ body.has-image-bg .shortcut-expanded-subfolder:not(.open) {
 }
 
 /* 未展开的子文件夹：胶囊形，跟标签一致 */
+/* 关闭时圆角延迟到子项收完(0.3s)再过渡：盒子还高时 999px 会被裁成
+   min(宽,高)/2，瞬间切换会先变成圆形；此时高度已只剩触发条，过渡几乎不可见 */
 .shortcut-expanded-subfolder:not(.open) {
   border: 1px solid var(--border);
   border-radius: 999px;
   background: color-mix(in srgb, var(--bg-warm-alt) 30%, transparent);
   padding: 0;
   margin: 2px 0;
+  transition: border-radius 0.15s ease-out 0.3s;
 }
 
 /* 展开状态下：标题按钮去掉描边，背景与容器一致 */
