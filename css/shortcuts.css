@@ -435,6 +435,14 @@ html body.has-image-bg .shortcut-folder .subfolder-portal .shortcut-btn {
 .shortcut-expanded .shortcut-btn,
 .subfolder-portal .shortcut-btn {
   max-width: 100%;
+  /* flex item 默认 min-width:auto（=文字最小宽）会压过 max-width 溢出面板被硬裁 */
+  min-width: 0;
+}
+
+.shortcut-expanded .shortcut-label,
+.subfolder-portal .shortcut-label {
+  /* 允许收缩到面板宽度内，触发 label 自身的 max-width/overflow 省略号 */
+  min-width: 0;
 }
 
 /* 文件夹弹窗内标签：取消 hover 拉伸效果 */
