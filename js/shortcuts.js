@@ -598,6 +598,20 @@ function scheduleFolderShift(follow) {
 }
 
 /**
+ * 收起子文件夹：清 open、aria-expanded 与面板宽度的 inline 覆盖
+ */
+function collapseSubfolder(sf) {
+  sf.classList.remove('open');
+  const t = sf.querySelector(':scope > .shortcut-folder-trigger');
+  if (t) t.setAttribute('aria-expanded', 'false');
+  const p = sf.querySelector(':scope > .shortcut-expanded-subfolder-children');
+  if (p) {
+    p.style.removeProperty('max-width');
+    p.style.removeProperty('margin-left');
+  }
+}
+
+/**
  * 递归渲染文件夹子项到主页弹窗容器（支持多级子文件夹）
  * @param {HTMLElement} container - 展开容器元素
  * @param {Array} children - 子项数组
@@ -625,16 +639,25 @@ function renderFolderChildrenExpanded(container, children, folderIndex, path) {
         e.stopPropagation();
         // 关闭同级其他已展开的子文件夹
         subEl.parentElement.querySelectorAll('.shortcut-expanded-subfolder.open').forEach((sf) => {
-          if (sf !== subEl) {
-            sf.classList.remove('open');
-            const t = sf.querySelector('.shortcut-folder-trigger');
-            if (t) t.setAttribute('aria-expanded', 'false');
-          }
+          if (sf !== subEl) collapseSubfolder(sf);
         });
         const willOpen = !subEl.classList.contains('open');
+        const panelEl = subEl.querySelector(':scope > .shortcut-expanded-subfolder-children');
+        const host = subEl.closest('.shortcut-expanded');
+        if (panelEl && host) {
+          if (willOpen) {
+            // 面板右缘最多到主面板内 12px；右侧不足 168px 时向左补足
+            const avail = Math.floor(host.getBoundingClientRect().right - subEl.getBoundingClientRect().left - 12);
+            panelEl.style.maxWidth = Math.max(168, avail) + 'px';
+            panelEl.style.marginLeft = Math.min(0, avail - 168) + 'px';
+          } else {
+            panelEl.style.removeProperty('max-width');
+            panelEl.style.removeProperty('margin-left');
+          }
+        }
         subEl.classList.toggle('open', willOpen);
         subTrigger.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
-        // 子面板占位展开/收回，按新高度逐帧跟随上移
+        // 子面板宽高逐帧过渡（同行标签被平滑挤下移），整页按新高度跟随上移
         scheduleFolderShift(true);
       });
       subEl.appendChild(subTrigger);
@@ -745,9 +768,7 @@ function renderShortcuts() {
           }
         });
         // 同时关闭已展开的子文件夹
-        document.querySelectorAll('.shortcut-expanded-subfolder.open').forEach((sf) => {
-          sf.classList.remove('open');
-        });
+        document.querySelectorAll('.shortcut-expanded-subfolder.open').forEach(collapseSubfolder);
         if (willOpen) {
           // 缩放锚点 = 触发器胶囊中心（面板 top 在胶囊下方 8px），面板从胶囊里长出/缩回
           expanded.style.transformOrigin =
@@ -1294,9 +1315,7 @@ function initShortcutSettings() {
         if (trigger) trigger.setAttribute('aria-expanded', 'false');
       });
       // 同时收起子文件夹并恢复问候语
-      document.querySelectorAll('.shortcut-expanded-subfolder.open').forEach((sf) => {
-        sf.classList.remove('open');
-      });
+      document.querySelectorAll('.shortcut-expanded-subfolder.open').forEach(collapseSubfolder);
       document.body.classList.remove('folder-open');
       stopFolderShiftFollow();
       document.documentElement.style.setProperty('--folder-shift', '0px');

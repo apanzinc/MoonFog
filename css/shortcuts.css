@@ -363,7 +363,8 @@ html body.has-image-bg .shortcut-folder .shortcut-expanded .shortcut-btn {
   padding: 8px;
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-start;
+  /* 底对齐：子文件夹是行内标签，展开时行高增加，同行元素随行高平滑下移 */
+  align-items: flex-end;
   gap: 6px;
   opacity: 0;
   visibility: hidden;
@@ -479,14 +480,12 @@ html body.has-image-bg .shortcut-folder .shortcut-expanded .shortcut-btn {
   background: var(--bg-warm-alt);
 }
 
-/* 多级子文件夹：弹窗内的子文件夹，全宽显示 */
+/* 多级子文件夹：面板内的行内标签，与图标标签同一行排列 */
 .shortcut-expanded-subfolder {
-  display: flex;
+  display: inline-flex;
   flex-direction: column;
   vertical-align: top;
   position: relative;
-  width: 100%;
-  flex: 1 0 100%;
   box-sizing: border-box;
 }
 
@@ -501,15 +500,16 @@ html body.has-image-bg .shortcut-folder .shortcut-expanded .shortcut-btn {
   max-width: 100%;
 }
 
-/* children = 主页面板的复刻：独立圆角面板（14px + 玻璃 + 阴影），
-   占位展开，closed 态 border-width:0 避免 max-height:0 后残留 2px 边框 */
+/* children = 主页面板的复刻：独立圆角面板（14px + 玻璃 + 阴影）。
+   宽度也参与过渡：closed 态 max-width:0，展开时向右长出，
+   同行标签被逐帧挤下移；closed 态 border-width:0 避免 max-height:0 后残留 2px 边框 */
 .shortcut-expanded-subfolder-children {
   position: relative;
   box-sizing: border-box;
   align-self: flex-start;
-  width: auto;
-  min-width: 168px;
-  max-width: 100%;
+  width: max-content;
+  min-width: 0;
+  max-width: 0;
   max-height: 0;
   overflow: hidden;
   opacity: 0;
@@ -518,7 +518,7 @@ html body.has-image-bg .shortcut-folder .shortcut-expanded .shortcut-btn {
   align-items: flex-start;
   gap: 6px;
   padding: 0;
-  margin-top: 0;
+  margin: 0;
   border: 1px solid var(--border);
   border-width: 0;
   border-radius: 14px;
@@ -528,21 +528,26 @@ html body.has-image-bg .shortcut-folder .shortcut-expanded .shortcut-btn {
   -webkit-backdrop-filter: blur(var(--chrome-blur, 14px)) saturate(var(--glass-saturate, 1.12));
   transition:
     max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    min-width 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    max-width 0.3s cubic-bezier(0.4, 0, 0.2, 1),
     opacity 0.2s ease-out,
     padding 0.3s cubic-bezier(0.4, 0, 0.2, 1),
-    margin-top 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    margin 0.3s cubic-bezier(0.4, 0, 0.2, 1),
     border-width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .shortcut-expanded-subfolder.open > .shortcut-expanded-subfolder-children {
   max-height: 1000px;
-  opacity: 1;
-  padding: 8px;
+  min-width: 168px;
+  /* 默认上限；点击时 JS 按主面板右缘覆盖，防止右侧溢出被裁 */
+  max-width: min(72vw, 360px);
   margin-top: 8px;
+  padding: 8px;
   border-width: 1px;
+  opacity: 1;
 }
 
-.shortcut-expanded-subfolder-children.is-empty {
+.shortcut-expanded-subfolder.open > .shortcut-expanded-subfolder-children.is-empty {
   min-width: 140px;
 }
 
