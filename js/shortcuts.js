@@ -616,6 +616,9 @@ function scheduleFolderShift(follow) {
   if (follow) {
     document.body.classList.add('folder-following');
   }
+  // 同步先算一次：与点击里刚加的 class 同帧 flush，
+  // 位移不比面板动画晚一帧起步（晚一帧就肉眼可见“面板先开、页面后动”）
+  updateFolderShift();
   const start = performance.now();
   const step = () => {
     updateFolderShift();

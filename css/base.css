@@ -207,7 +207,8 @@ html.theme-animating .settings-wrapper {
   left: 0;
   top: 0;
   /* 不用 transform 让位：transform 会切断搜索框/标签的 backdrop-filter */
-  transition: left 0.3s var(--ease), top 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  /* top 时长必须与面板 .shortcut-expanded 的 opacity 0.2s 对齐，否则页面会比面板晚收尾 */
+  transition: left 0.3s var(--ease), top 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* 文件夹展开时：用负 top 整体上移内容，可以突破视口顶部（问候区也能推出屏幕） */
@@ -285,7 +286,8 @@ body.folder-open .settings-wrapper,
 body.folder-open .shortcuts-row > .shortcut-drag-wrapper > .shortcut-btn,
 body.folder-open .shortcuts-row > .shortcut-drag-wrapper > .shortcut-folder:not(.open) .shortcut-folder-trigger {
   opacity: 0.2 !important;
-  transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  /* 与面板淡入同为 0.2s，页面变暗与面板同时收尾 */
+  transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* 一言：占满内容区宽度，减少左右大片空 */
