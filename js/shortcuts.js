@@ -598,16 +598,55 @@ function scheduleFolderShift(follow) {
 }
 
 /**
- * 收起子文件夹：清 open、aria-expanded 与面板宽度的 inline 覆盖
+ * 清除子面板点击时写入的定位/限宽 inline 样式
+ */
+function clearSubPanelInline(p) {
+  p.style.removeProperty('max-width');
+  p.style.removeProperty('left');
+  p.style.removeProperty('top');
+  p.style.removeProperty('bottom');
+}
+
+/**
+ * 收起子文件夹：清 open、aria-expanded 与面板 inline 定位样式
  */
 function collapseSubfolder(sf) {
   sf.classList.remove('open');
   const t = sf.querySelector(':scope > .shortcut-folder-trigger');
   if (t) t.setAttribute('aria-expanded', 'false');
   const p = sf.querySelector(':scope > .shortcut-expanded-subfolder-children');
-  if (p) {
-    p.style.removeProperty('max-width');
-    p.style.removeProperty('margin-left');
+  if (p) clearSubPanelInline(p);
+}
+
+/**
+ * 展开前设置子面板：缩放锚点（胶囊中心）、按最近滚动宿主限宽、下方不够则向上弹
+ */
+function prepareSubPanel(subEl, panelEl) {
+  // 缩放锚点 = 胶囊中心（面板 top 在胶囊下方 8px），面板从胶囊里弹出/收回
+  panelEl.style.transformOrigin =
+    `${(subEl.offsetWidth / 2).toFixed(1)}px ${(-(subEl.offsetHeight / 2 + 8)).toFixed(1)}px`;
+  // 裁剪宿主 = 最近的滚动容器（主面板或上级子面板）
+  let host = subEl.parentElement;
+  while (host && host !== document.body && getComputedStyle(host).overflowY === 'visible') {
+    host = host.parentElement;
+  }
+  if (!host || host === document.body) return;
+  const subRect = subEl.getBoundingClientRect();
+  const hostRect = host.getBoundingClientRect();
+  // 宽度上限：不越过宿主右缘内 12px；不足 168px 时向左补足
+  const avail = Math.floor(hostRect.right - subRect.left - 12);
+  panelEl.style.maxWidth = Math.max(168, avail) + 'px';
+  panelEl.style.left = Math.min(0, avail - 168) + 'px';
+  // 下方放不下则向上弹
+  const panelH = panelEl.offsetHeight;
+  const spaceBelow = hostRect.bottom - 4 - (subRect.bottom + 8);
+  const spaceAbove = subRect.top - 8 - hostRect.top - 4;
+  if (panelH > spaceBelow && spaceAbove > spaceBelow) {
+    panelEl.style.top = 'auto';
+    panelEl.style.bottom = 'calc(100% + 8px)';
+  } else {
+    panelEl.style.removeProperty('top');
+    panelEl.style.removeProperty('bottom');
   }
 }
 
@@ -643,22 +682,15 @@ function renderFolderChildrenExpanded(container, children, folderIndex, path) {
         });
         const willOpen = !subEl.classList.contains('open');
         const panelEl = subEl.querySelector(':scope > .shortcut-expanded-subfolder-children');
-        const host = subEl.closest('.shortcut-expanded');
-        if (panelEl && host) {
+        if (panelEl) {
           if (willOpen) {
-            // 面板右缘最多到主面板内 12px；右侧不足 168px 时向左补足
-            const avail = Math.floor(host.getBoundingClientRect().right - subEl.getBoundingClientRect().left - 12);
-            panelEl.style.maxWidth = Math.max(168, avail) + 'px';
-            panelEl.style.marginLeft = Math.min(0, avail - 168) + 'px';
+            prepareSubPanel(subEl, panelEl);
           } else {
-            panelEl.style.removeProperty('max-width');
-            panelEl.style.removeProperty('margin-left');
+            clearSubPanelInline(panelEl);
           }
         }
         subEl.classList.toggle('open', willOpen);
         subTrigger.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
-        // 子面板宽高逐帧过渡（同行标签被平滑挤下移），整页按新高度跟随上移
-        scheduleFolderShift(true);
       });
       subEl.appendChild(subTrigger);
 
