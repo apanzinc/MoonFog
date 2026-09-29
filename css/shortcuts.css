@@ -513,7 +513,8 @@ body.has-image-bg .shortcut-expanded-subfolder:not(.open) {
   border-radius: 14px;
   background: color-mix(in srgb, var(--bg-warm-alt) 50%, transparent);
   padding: 2px;
-  margin: 2px 0;
+  /* 与相邻标签的间距交给面板 gap(6px)，不再额外加 margin */
+  margin: 0;
 }
 
 /* 未展开的子文件夹：胶囊形，跟标签一致 */
@@ -524,13 +525,14 @@ body.has-image-bg .shortcut-expanded-subfolder:not(.open) {
   border-radius: 999px;
   background: color-mix(in srgb, var(--bg-warm-alt) 30%, transparent);
   padding: 0;
-  margin: 2px 0;
+  margin: 0;
   transition: border-radius 0.15s ease-out 0.3s;
 }
 
 /* 展开状态下：标题按钮去掉描边，背景与容器一致 */
 .shortcut-expanded-subfolder.open > .shortcut-expanded-subfolder-trigger {
-  margin: 0 0 2px;
+  /* 标题与下方图标间距 = 面板统一的 6px */
+  margin: 0 0 6px;
   border: none !important;
   background: transparent !important;
   box-shadow: none !important;
