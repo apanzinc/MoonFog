@@ -598,6 +598,34 @@ function scheduleFolderShift(follow) {
 }
 
 /**
+ * 层级聚焦：按当前打开的最深层级，给祖先面板打淡化档
+ * （距最深一层 dim-1=0.75，两层及以上 dim-2=0.55，最深层不淡——逐层清晰）
+ */
+function refreshAllDim() {
+  document.querySelectorAll('.shortcut-folder.open').forEach((folder) => {
+    const expanded = folder.querySelector(':scope > .shortcut-expanded');
+    if (!expanded) return;
+    let maxDepth = 1;
+    const walkDepth = (panel, depth) => {
+      if (depth > maxDepth) maxDepth = depth;
+      panel.querySelectorAll('.shortcut-expanded-subfolder.open').forEach((sf) => {
+        if (sf.subPanelEl) walkDepth(sf.subPanelEl, depth + 1);
+      });
+    };
+    walkDepth(expanded, 1);
+    const applyDim = (panel, depth) => {
+      const gap = maxDepth - depth;
+      panel.classList.toggle('dim-1', gap === 1);
+      panel.classList.toggle('dim-2', gap >= 2);
+      panel.querySelectorAll('.shortcut-expanded-subfolder.open').forEach((sf) => {
+        if (sf.subPanelEl) applyDim(sf.subPanelEl, depth + 1);
+      });
+    };
+    applyDim(expanded, 1);
+  });
+}
+
+/**
  * 收起子文件夹：清 open（含 portal 里的面板）与 aria-expanded
  */
 function collapseSubfolder(sf) {
@@ -605,6 +633,7 @@ function collapseSubfolder(sf) {
   const t = sf.querySelector(':scope > .shortcut-folder-trigger');
   if (t) t.setAttribute('aria-expanded', 'false');
   if (sf.subPanelEl) sf.subPanelEl.classList.remove('open');
+  refreshAllDim();
 }
 
 /**
@@ -695,6 +724,7 @@ function renderFolderChildrenExpanded(container, children, folderIndex, path, po
         }
         subEl.classList.toggle('open', willOpen);
         subTrigger.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+        refreshAllDim();
       });
       subEl.appendChild(subTrigger);
 
@@ -831,6 +861,7 @@ function renderShortcuts() {
             `${(folder.offsetWidth / 2).toFixed(1)}px ${(-(folder.offsetHeight / 2 + 8)).toFixed(1)}px`;
         }
         folder.classList.toggle('open', willOpen);
+        refreshAllDim();
         trigger.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
         // 切换 body.folder-open 以控制问候语显隐
         document.body.classList.toggle('folder-open', willOpen);
