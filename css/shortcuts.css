@@ -438,15 +438,12 @@ html body.has-image-bg .shortcut-folder .subfolder-portal .shortcut-btn {
     filter 0.18s cubic-bezier(0.25, 1, 0.5, 1) 0s;
 }
 
-/* 层级聚焦：子面板展开时祖先面板逐层退后——淡化 + 失焦模糊
-   （最近一层 0.7/1.3px，更上 0.5/2.6px，最深层面板完全清晰） */
+/* 层级聚焦：子面板展开时祖先面板逐层失焦（最近一层 1.3px，更上 2.6px，最深层清晰） */
 .shortcut-folder.open .shortcut-expanded.dim-1 {
-  opacity: 0.7;
   filter: blur(1.3px);
 }
 
 .shortcut-folder.open .shortcut-expanded.dim-2 {
-  opacity: 0.5;
   filter: blur(2.6px);
 }
 
@@ -621,14 +618,12 @@ html body.has-image-bg .shortcut-folder .subfolder-portal .shortcut-btn {
     filter 0.18s cubic-bezier(0.25, 1, 0.5, 1) 0s;
 }
 
-/* 层级聚焦：祖先面板逐层退后（同主面板档位） */
+/* 层级聚焦：祖先面板逐层失焦（同主面板档位） */
 .shortcut-expanded-subfolder-children.open.dim-1 {
-  opacity: 0.7;
   filter: blur(1.3px);
 }
 
 .shortcut-expanded-subfolder-children.open.dim-2 {
-  opacity: 0.5;
   filter: blur(2.6px);
 }
 
