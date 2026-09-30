@@ -477,28 +477,27 @@ html body.has-image-bg .shortcut-folder .subfolder-portal .shortcut-btn {
   padding-right: 8px;
 }
 
-/* 空文件夹占位：纵向居中空状态（虚线图标 + 文案 + 添加胶囊） */
+/* 空文件夹占位：纵向居中（圆底图标同 count 角标族，按钮复用 .shortcut-btn 胶囊） */
 .shortcut-expanded-empty {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
-  padding: 14px 12px 12px;
+  gap: 8px;
+  padding: 12px 10px;
   width: 100%;
   white-space: nowrap;
 }
 
 .empty-folder-icon {
-  width: 42px;
-  height: 42px;
+  width: 36px;
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1.5px dashed var(--border);
-  border-radius: 14px;
-  background: color-mix(in srgb, var(--text-primary) 3%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--text-primary) 6%, transparent);
   color: var(--text-tertiary);
-  font-size: 17px;
+  font-size: 15px;
   line-height: 1;
 }
 
@@ -507,43 +506,9 @@ html body.has-image-bg .shortcut-folder .subfolder-portal .shortcut-btn {
   color: var(--text-tertiary);
   margin: 0;
   line-height: 1;
-  opacity: 0.85;
 }
 
-.shortcut-expanded-add {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  height: 26px;
-  padding: 0 12px;
-  border: 1px dashed var(--border);
-  border-radius: 999px;
-  background: transparent;
-  color: var(--text-tertiary);
-  font-size: 0.6875rem;
-  font-family: inherit;
-  cursor: pointer;
-  transition:
-    border-color 0.15s var(--ease),
-    color 0.15s var(--ease),
-    background 0.15s var(--ease),
-    transform 0.15s var(--ease);
-  flex-shrink: 0;
-}
-
-.shortcut-expanded-add .mgc_add_line {
-  font-size: 13px;
-}
-
-.shortcut-expanded-add:hover {
-  border-color: color-mix(in srgb, var(--accent, #4a90e2) 55%, var(--border));
-  color: var(--accent, #4a90e2);
-  background: color-mix(in srgb, var(--accent, #4a90e2) 8%, transparent);
-}
-
-.shortcut-expanded-add:active {
-  transform: scale(0.96);
-}
+/* 添加按钮：与 .shortcut-btn 组合（胶囊/毛玻璃/hover/focus 全部同款） */
 
 /* 多级子文件夹：面板内的行内标签，与图标标签同一行排列 */
 .shortcut-expanded-subfolder {
