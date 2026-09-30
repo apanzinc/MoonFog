@@ -291,7 +291,14 @@ body.folder-open .shortcuts-row > .shortcut-drag-wrapper > .shortcut-btn,
 body.folder-open .shortcuts-row > .shortcut-drag-wrapper > .shortcut-folder:not(.open) .shortcut-folder-trigger {
   opacity: 0.2 !important;
   /* 与上移同为 ease-out 0.22s，起步即变，不比面板慢半拍 */
-  transition: opacity 0.22s cubic-bezier(0.25, 1, 0.5, 1);
+  transition:
+    opacity 0.22s cubic-bezier(0.25, 1, 0.5, 1),
+    filter 0.22s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+/* 打开文件夹时搜索框一并失焦退后 */
+body.folder-open .search-section {
+  filter: blur(2px);
 }
 
 /* 一言：占满内容区宽度，减少左右大片空 */
@@ -548,7 +555,9 @@ html.boot-ready.bg-entered .page-bg-image.is-active {
   /* 父级永不 transform，避免切断子级毛玻璃 */
   transform: none;
   opacity: 1;
-  transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition:
+    opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    filter 0.22s cubic-bezier(0.25, 1, 0.5, 1);
 }
 
 /* 进场动画打在搜索框自身：动画中也能实时 backdrop-filter
