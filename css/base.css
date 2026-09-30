@@ -306,10 +306,16 @@ body.folder-open .search-section {
   filter: blur(2px);
 }
 
-/* 再开一级（任意子面板展开）时，页面上的标签才失焦退后 */
-body.has-subpanel .shortcuts-row > .shortcut-drag-wrapper > .shortcut-btn,
+/* 再开一级（任意子面板展开）时，页面上的标签才失焦退后（文件夹 trigger 另有 not(.open) 排除） */
+body.has-subpanel .shortcuts-row > .shortcut-drag-wrapper > .shortcut-btn:not(.shortcut-folder-trigger),
 body.has-subpanel .shortcuts-row > .shortcut-drag-wrapper > .shortcut-folder:not(.open) .shortcut-folder-trigger {
   filter: blur(1.5px);
+}
+
+/* 打开中的文件夹胶囊是当前锚点：任何失焦/淡化规则都不作用于它 */
+.shortcut-folder.open > .shortcut-folder-trigger {
+  filter: none !important;
+  opacity: 1 !important;
 }
 
 /* 一言：占满内容区宽度，减少左右大片空 */
