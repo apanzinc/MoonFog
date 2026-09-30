@@ -288,7 +288,7 @@ body.folder-open .greeting-section,
 body.folder-open .search-section,
 body.folder-open .bing-credit,
 body.folder-open .settings-wrapper,
-body.folder-open .shortcuts-row > .shortcut-drag-wrapper > .shortcut-btn,
+body.folder-open .shortcuts-row > .shortcut-drag-wrapper > .shortcut-btn:not(.shortcut-folder-trigger),
 body.folder-open .shortcuts-row > .shortcut-drag-wrapper > .shortcut-folder:not(.open) .shortcut-folder-trigger {
   opacity: 0.2 !important;
   /* 与上移同为 ease-out 0.22s，起步即变，不比面板慢半拍 */
