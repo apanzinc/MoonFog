@@ -131,7 +131,8 @@ body.has-image-bg.img-ui-dark .icon-mono {
   -webkit-tap-highlight-color: transparent;
   transition:
     background 0.18s var(--ease),
-    color 0.18s var(--ease);
+    color 0.18s var(--ease),
+    filter 0.18s var(--ease);
 }
 
 .shortcut-btn:focus-visible,
@@ -438,12 +439,20 @@ html body.has-image-bg .shortcut-folder .subfolder-portal .shortcut-btn {
     filter 0.18s cubic-bezier(0.25, 1, 0.5, 1) 0s;
 }
 
-/* 层级聚焦：子面板展开时祖先面板逐层失焦（最近一层 1.3px，更上 2.6px，最深层清晰） */
-.shortcut-folder.open .shortcut-expanded.dim-1 {
+/* 层级聚焦：子面板展开时祖先面板逐层失焦（最近一层 1.3px，更上 2.6px，最深层清晰）。
+   糊在面板子项而非面板容器：filter 作用于整个子树，容器级 blur 会连带糊掉
+   打开中的子文件夹胶囊（锚点必须始终清晰，后代 filter:none 无法从祖先 filter 逃逸） */
+.shortcut-folder.open .shortcut-expanded.dim-1 > .shortcut-btn,
+.shortcut-folder.open .shortcut-expanded.dim-1 > .shortcut-expanded-subfolder:not(.open),
+.shortcut-expanded-subfolder-children.open.dim-1 > .shortcut-btn,
+.shortcut-expanded-subfolder-children.open.dim-1 > .shortcut-expanded-subfolder:not(.open) {
   filter: blur(1.3px);
 }
 
-.shortcut-folder.open .shortcut-expanded.dim-2 {
+.shortcut-folder.open .shortcut-expanded.dim-2 > .shortcut-btn,
+.shortcut-folder.open .shortcut-expanded.dim-2 > .shortcut-expanded-subfolder:not(.open),
+.shortcut-expanded-subfolder-children.open.dim-2 > .shortcut-btn,
+.shortcut-expanded-subfolder-children.open.dim-2 > .shortcut-expanded-subfolder:not(.open) {
   filter: blur(2.6px);
 }
 
@@ -530,6 +539,8 @@ html body.has-image-bg .shortcut-folder .subfolder-portal .shortcut-btn {
   vertical-align: top;
   position: relative;
   box-sizing: border-box;
+  /* 层级失焦落在子项上：档位切换随面板开合平滑进出 */
+  transition: filter 0.18s var(--ease);
 }
 
 /* 展开状态：trigger 保持胶囊并像主页一样常驻 hover 底色 */
@@ -618,14 +629,7 @@ html body.has-image-bg .shortcut-folder .subfolder-portal .shortcut-btn {
     filter 0.18s cubic-bezier(0.25, 1, 0.5, 1) 0s;
 }
 
-/* 层级聚焦：祖先面板逐层失焦（同主面板档位） */
-.shortcut-expanded-subfolder-children.open.dim-1 {
-  filter: blur(1.3px);
-}
-
-.shortcut-expanded-subfolder-children.open.dim-2 {
-  filter: blur(2.6px);
-}
+/* 层级聚焦：子项级 blur 档位已与主面板统一到 .shortcut-expanded.dim-* 规则处（锚点豁免） */
 
 .shortcut-expanded-subfolder-children.open.is-empty {
   min-width: 140px;
@@ -986,6 +990,7 @@ html body.has-image-bg .shortcut-folder .subfolder-portal .shortcut-btn {
   .context-menu,
   .context-menu-item,
   .shortcut-expanded,
+  .shortcut-expanded-subfolder,
   .shortcut-expanded-subfolder-children,
   .shortcut-expanded-add,
   .shortcut-list-item,
