@@ -276,10 +276,11 @@ html.boot-ready .content > .shortcuts-section {
   width: 100%;
   max-width: 100%;
   transform: none;
-  /* 文件夹展开时：透明度降低，不隐藏 */
+  /* 文件夹展开时：透明度降低并失焦，不隐藏 */
   transition:
     opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1),
-    transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    filter 0.22s cubic-bezier(0.25, 1, 0.5, 1);
 }
 
 /* 文件夹展开时：所有非文件夹内容透明度 80%（opacity 0.2），仍可见但不抢眼 */
@@ -296,9 +297,19 @@ body.folder-open .shortcuts-row > .shortcut-drag-wrapper > .shortcut-folder:not(
     filter 0.22s cubic-bezier(0.25, 1, 0.5, 1);
 }
 
-/* 打开文件夹时搜索框一并失焦退后 */
+/* 打开文件夹时问候区与搜索框一并失焦退后 */
+body.folder-open .greeting-section {
+  filter: blur(2px);
+}
+
 body.folder-open .search-section {
   filter: blur(2px);
+}
+
+/* 再开一级（任意子面板展开）时，页面上的标签才失焦退后 */
+body.has-subpanel .shortcuts-row > .shortcut-drag-wrapper > .shortcut-btn,
+body.has-subpanel .shortcuts-row > .shortcut-drag-wrapper > .shortcut-folder:not(.open) .shortcut-folder-trigger {
+  filter: blur(1.5px);
 }
 
 /* 一言：占满内容区宽度，减少左右大片空 */

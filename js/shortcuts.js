@@ -602,6 +602,7 @@ function scheduleFolderShift(follow) {
  * （距最深一层 dim-1=0.75，两层及以上 dim-2=0.55，最深层不淡——逐层清晰）
  */
 function refreshAllDim() {
+  let anySub = false;
   document.querySelectorAll('.shortcut-folder.open').forEach((folder) => {
     const expanded = folder.querySelector(':scope > .shortcut-expanded');
     if (!expanded) return;
@@ -613,6 +614,7 @@ function refreshAllDim() {
       });
     };
     walkDepth(expanded, 1);
+    if (maxDepth > 1) anySub = true;
     const applyDim = (panel, depth) => {
       const gap = maxDepth - depth;
       panel.classList.toggle('dim-1', gap === 1);
@@ -623,6 +625,8 @@ function refreshAllDim() {
     };
     applyDim(expanded, 1);
   });
+  // 页面标签只在再开一级（存在打开的子面板）时才失焦
+  document.body.classList.toggle('has-subpanel', anySub);
 }
 
 /**
