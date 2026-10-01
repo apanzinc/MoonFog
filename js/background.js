@@ -190,9 +190,16 @@ function resolveVisualSurfaceBlur(value) {
   return base;
 }
 
+/** 运行时模糊值同步回 ThemeManager state，防 apply() 拿启动旧值覆盖内联变量 */
+function syncThemeBlurState(patch) {
+  const tm = window.__MOONFOG_THEME_MANAGER__;
+  if (tm && tm.state) Object.assign(tm.state, patch);
+}
+
 function applySearchBlur(blurPx, options) {
   const silent = options && options.silent;
   currentSearchBlur = normalizeSurfaceBlur(blurPx, DEFAULT_SEARCH_BLUR);
+  syncThemeBlurState({ searchBlur: currentSearchBlur });
   if (!silent) {
     try { localStorage.setItem(SEARCH_BLUR_KEY, String(currentSearchBlur)); } catch (_) {}
   }
@@ -206,6 +213,7 @@ function applySearchBlur(blurPx, options) {
 function applyPanelBlur(blurPx, options) {
   const silent = options && options.silent;
   currentPanelBlur = normalizeSurfaceBlur(blurPx, DEFAULT_PANEL_BLUR);
+  syncThemeBlurState({ panelBlur: currentPanelBlur });
   if (!silent) {
     try { localStorage.setItem(PANEL_BLUR_KEY, String(currentPanelBlur)); } catch (_) {}
   }
@@ -229,6 +237,7 @@ function applyPerfMode(modeOrBool, options) {
 
   currentPerfMode = mode;
   currentLowPerf = mode === 'low';
+  syncThemeBlurState({ perfMode: mode });
 
   if (!silent) {
     try {
@@ -512,6 +521,7 @@ function applyBgBlur(blurPx) {
   // 存用户设定值；实际渲染 blur 受性能档位影响
   currentBgBlur = normalizeBgBlur(blurPx);
   localStorage.setItem(BG_BLUR_KEY, String(currentBgBlur));
+  syncThemeBlurState({ bgBlur: currentBgBlur });
   const visual = resolveVisualBgBlur();
   document.documentElement.style.setProperty('--bg-blur', `${visual}px`);
   const scale =

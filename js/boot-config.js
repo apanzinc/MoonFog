@@ -338,9 +338,9 @@
       tone: tone,
       mode: mode,
       modePref: modePref,
-      panelBlur: parseInt(blur, 10) || 10,
+      panelBlur: panelBlur,
       searchBlur: parseInt(get('moonfog_search_blur'), 10) || 40,
-      bgBlur: parseInt(blur, 10) || 20,
+      bgBlur: blur,
       perfMode: perfMode || 'full',
       imageBg: !!(bgUrl && (bgMode === 'local' || bgMode === 'bing')),
       grainActive: bgMode === 'grain'
