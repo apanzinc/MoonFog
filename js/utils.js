@@ -67,11 +67,19 @@ function initCardSelection(gridId, storageKey, defaultValue) {
   if (storageKey === 'moonfog_tone' && typeof resolveToneKey === 'function') {
     savedValue = resolveToneKey(savedValue);
   }
+  // 背景模式：local/bing 是「图片」卡的子态，映射成 image 再校验——
+  // 否则校验失败会把真实模式抹成空串，重启后 initBackground 读到 '' 退回纯色
+  if (storageKey === 'moonfog_bg_mode' && (savedValue === 'local' || savedValue === 'bing')) {
+    savedValue = 'image';
+  }
   // 防呆：验证 savedValue 是否属于 grid 内的有效选项，无效则回退 defaultValue
   const validValues = Array.from(grid.querySelectorAll('[data-value]')).map(item => item.dataset.value);
   if (validValues.length > 0 && validValues.indexOf(savedValue) === -1) {
     savedValue = defaultValue;
-    try { localStorage.setItem(storageKey, defaultValue); } catch (_) {}
+    // 只有非空默认值才落盘：写空串会把有效模式抹掉（initCardClick 默认值就是 ''）
+    if (defaultValue) {
+      try { localStorage.setItem(storageKey, defaultValue); } catch (_) {}
+    }
   }
 
   grid.querySelectorAll('[data-value]').forEach((item) => {
