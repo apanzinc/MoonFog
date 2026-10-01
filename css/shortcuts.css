@@ -509,7 +509,7 @@ html body.has-image-bg .shortcut-folder .subfolder-portal .shortcut-btn {
   padding-right: 8px;
 }
 
-/* 空文件夹占位：纵向居中（圆底图标同 count 角标族，按钮复用 .shortcut-btn 胶囊） */
+/* 空文件夹占位：纵向堆叠的提示文案 + 虚线添加按钮（与设置页 add-engine-btn 同族） */
 .shortcut-expanded-empty {
   display: flex;
   flex-direction: column;
@@ -520,19 +520,6 @@ html body.has-image-bg .shortcut-folder .subfolder-portal .shortcut-btn {
   white-space: nowrap;
 }
 
-.empty-folder-icon {
-  width: 36px;
-  height: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--text-primary) 6%, transparent);
-  color: var(--text-tertiary);
-  font-size: 15px;
-  line-height: 1;
-}
-
 .shortcut-expanded-empty p {
   font-size: 0.75rem;
   color: var(--text-tertiary);
@@ -540,7 +527,31 @@ html body.has-image-bg .shortcut-folder .subfolder-portal .shortcut-btn {
   line-height: 1;
 }
 
-/* 添加按钮：与 .shortcut-btn 组合（胶囊/毛玻璃/hover/focus 全部同款） */
+/* 虚线添加按钮：透明底 + dashed 边框，hover 提亮（focus/reduced-motion 见文件尾部同名选择器） */
+.shortcut-expanded-add {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-height: 32px;
+  width: 100%;
+  padding: 6px 10px;
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-tertiary);
+  font-family: var(--font);
+  font-size: 0.75rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: color 0.2s var(--ease), background 0.2s var(--ease), border-color 0.2s var(--ease);
+}
+
+.shortcut-expanded-add:hover {
+  color: var(--text-secondary);
+  border-color: var(--border-strong);
+  background: color-mix(in srgb, var(--text-primary) 6%, transparent);
+}
 
 /* 多级子文件夹：面板内的行内标签，与图标标签同一行排列 */
 .shortcut-expanded-subfolder {

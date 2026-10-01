@@ -990,7 +990,9 @@ body.has-image-bg .shortcut-expanded-item {
   color: var(--img-chrome-text, var(--img-text, var(--text-primary)));
 }
 
-body.has-image-bg .shortcut-expanded-empty {
+body.has-image-bg .shortcut-expanded-empty,
+body.has-image-bg .shortcut-expanded-empty p,
+body.has-image-bg .shortcut-expanded-add {
   color: var(--img-text-secondary, var(--text-secondary));
 }
 
