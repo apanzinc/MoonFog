@@ -635,7 +635,10 @@ function bindFolderExpandDirSetting() {
 // 改设置 / 换窗口尺寸 / 跨标签页改动：已展开的面板实时重排，方向与位移始终跟随存储值
 window.addEventListener('resize', () => {
   const openFolder = document.querySelector('.shortcut-folder.open');
-  if (openFolder) applyFolderExpandLayoutTo(openFolder);
+  if (!openFolder) return;
+  // 尺寸变化后子面板的锚点与空间都失效，先收起再重排主面板（与滚动收起的约定一致）
+  document.querySelectorAll('.shortcut-expanded-subfolder.open').forEach(collapseSubfolder);
+  applyFolderExpandLayoutTo(openFolder);
 });
 window.addEventListener('storage', (e) => {
   if (e.key !== null && e.key !== FOLDER_EXPAND_DIR_KEY) return;
@@ -645,7 +648,8 @@ window.addEventListener('storage', (e) => {
 });
 
 /**
- * 计算展开面板对应的整页位移：向上 = 打开时定好的下移量，向下 = 按实际高度上移
+ * 计算展开面板对应的整页位移：向上 = 打开时定好的下移量，向下 = 按实际高度上移；
+ * 打开的子面板底部/顶部也不许出屏，让位量取所有需求的最大值（单一写入者，防互相回冲）
  * 展开面板已在 CSS 中封顶（max-height），配合内部滚动，任意内容量都不会超出视口
  */
 function updateFolderShift() {
@@ -659,17 +663,30 @@ function updateFolderShift() {
     document.documentElement.style.setProperty('--folder-shift', '0px');
     return;
   }
-  // 向上展开：整页位移量在布局决策时已定（上方放不下 → 整页下移给标签让位），直接沿用
-  if (expanded.classList.contains('is-up')) {
-    document.documentElement.style.setProperty('--folder-shift', -(expanded._upShift || 0) + 'px');
-    return;
-  }
   const content = document.querySelector('.content');
   // .content 的 top 过渡期间 getBoundingClientRect 拿到的是动画中的位置，
   // 加上当前实际生效的位移还原成静态位置，重复计算才不会互相打架
   const applied = content ? -(parseFloat(getComputedStyle(content).top) || 0) : 0;
-  const staticBottom = openFolder.getBoundingClientRect().bottom + applied;
   const viewportH = window.innerHeight;
+  const row = document.querySelector('.shortcuts-row');
+  const rowBottomStatic = row
+    ? row.getBoundingClientRect().bottom + applied
+    : openFolder.getBoundingClientRect().bottom + applied;
+  // 向上展开：位移量在布局决策时已定（上方放不下 → 整页下移给标签让位），直接沿用
+  if (expanded.classList.contains('is-up')) {
+    const maxDown = Math.max(0, viewportH - rowBottomStatic - 48);
+    let downShift = Math.min(expanded._upShift || 0, maxDown);
+    // 打开的子面板：静态顶部不许出屏顶 → 需要更多下移
+    document.querySelectorAll('.shortcut-expanded-subfolder.open').forEach((sf) => {
+      const p = sf.subPanelEl;
+      if (!p) return;
+      const deficit = 4 - (p.getBoundingClientRect().top + applied);
+      if (deficit > downShift) downShift = deficit;
+    });
+    document.documentElement.style.setProperty('--folder-shift', -Math.min(downShift, maxDown) + 'px');
+    return;
+  }
+  const staticBottom = openFolder.getBoundingClientRect().bottom + applied;
   // offsetHeight = 封顶后的可见高度（scrollHeight 是未裁剪的内容高度）
   const expandedHeight = expanded.offsetHeight;
   // 弹窗底部预计位置
@@ -684,6 +701,13 @@ function updateFolderShift() {
     // 没溢出，给一个基础上移量，腾出呼吸空间
     shift = 60;
   }
+  // 打开的子面板：静态底部不许出屏（与子面板打开时的让位公式同一 margin，不来回震荡）
+  document.querySelectorAll('.shortcut-expanded-subfolder.open').forEach((sf) => {
+    const p = sf.subPanelEl;
+    if (!p) return;
+    const subNeed = p.getBoundingClientRect().bottom + applied - viewportH + 20;
+    if (subNeed > shift) shift = subNeed;
+  });
   // 触发器不能被顶出屏幕：上移量最多让触发器停在视口顶部下方
   const maxShift = Math.max(0, staticBottom - openFolder.offsetHeight - 8);
   shift = Math.min(shift, maxShift, viewportH + 200);
@@ -768,6 +792,8 @@ function collapseSubfolder(sf) {
   if (t) t.setAttribute('aria-expanded', 'false');
   if (sf.subPanelEl) sf.subPanelEl.classList.remove('open');
   refreshAllDim();
+  // 子面板收起后让位量回落到主面板基线（走 .content 的 top 过渡，平滑回弹）
+  scheduleFolderShift();
 }
 
 /**
@@ -798,27 +824,51 @@ function prepareSubPanel(subEl, panelEl) {
   const leftPx = Math.round(ox + Math.min(0, avail - 168));
   panelEl.style.maxWidth = Math.max(168, avail) + 'px';
   panelEl.style.left = leftPx + 'px';
-  // 方向三态：优先按设置方向，该方向放不下时翻到另一侧
-  // （up=先上、放不下转下；down=先下、放不下转上；auto=取空间更大的一侧）
+  // 方向三态：优先按设置方向，该方向放不下时整页让位（整体上/下移），
+  // 让位到极限（触发器不出屏顶、标签行不出屏底）仍放不下才自适应换边；
+  // auto 取空间更大的一侧，选中侧同样允许让位补齐
+  const viewportH = window.innerHeight;
   const panelH = panelEl.offsetHeight;
   const anchorTop = folderRect.top + oy;
-  const spaceBelow = window.innerHeight - 4 - (anchorTop + subH + 8);
+  const content = document.querySelector('.content');
+  // 位移过渡期间 rect 是动画中的位置，先减掉当前生效的位移还原成静态坐标
+  const applied = content ? -(parseFloat(getComputedStyle(content).top) || 0) : 0;
+  const folderTopStatic = folderRect.top + applied;
+  const row = document.querySelector('.shortcuts-row');
+  const rowBottomStatic = row ? row.getBoundingClientRect().bottom + applied : folderTopStatic;
+  // 还能整页让多少位（上=触发器不出屏顶，下=标签行不出屏底）
+  const headroomUp = Math.max(0, folderTopStatic - 8 - applied);
+  const headroomDown = Math.max(0, applied + (viewportH - rowBottomStatic - 48));
   const spaceAbove = anchorTop - 4;
+  const spaceBelow = viewportH - 20 - (anchorTop + subH + 8);
+  const need = panelH + 8;
+  const shortUp = Math.max(0, need - spaceAbove);
+  const shortDown = Math.max(0, need - spaceBelow);
   const expandDir = getFolderExpandDir();
-  const fitsUp = panelH + 8 <= spaceAbove;
-  const fitsDown = panelH + 8 <= spaceBelow;
   let up;
-  if (expandDir === 'up') up = fitsUp || (!fitsDown && spaceAbove >= spaceBelow);
-  else if (expandDir === 'down') up = !fitsDown && (fitsUp || spaceAbove > spaceBelow);
-  else up = !fitsDown && spaceAbove > spaceBelow;
+  let shiftDelta = 0; // 整页位移增量（正=上移，负=下移）
+  if (expandDir === 'up') {
+    up = shortUp <= headroomDown;
+    shiftDelta = up ? -Math.min(shortUp, headroomDown) : Math.min(shortDown, headroomUp);
+  } else if (expandDir === 'down') {
+    up = shortDown > headroomUp && shortUp <= headroomDown;
+    shiftDelta = up ? -Math.min(shortUp, headroomDown) : Math.min(shortDown, headroomUp);
+  } else {
+    up = shortDown > 0 && spaceAbove > spaceBelow;
+    shiftDelta = up ? -Math.min(shortUp, headroomDown) : Math.min(shortDown, headroomUp);
+  }
   let top = up ? oy - panelH - 8 : oy + subH + 8;
-  // 最后夹进视口（任何方向都不出屏）
+  // 按位移后的预期位置夹进视口（让位已保证在屏内，这里只兜测量误差）
   top = Math.max(
-    4 - folderRect.top,
-    Math.min(top, window.innerHeight - 4 - folderRect.top - panelH),
+    4 - folderRect.top + shiftDelta,
+    Math.min(top, viewportH - 4 - folderRect.top - panelH + shiftDelta),
   );
   const topPx = Math.round(top);
   panelEl.style.top = topPx + 'px';
+  // 整页让位：把面板连同锚点一起带进屏内（updateFolderShift 之后按同一公式收敛，不打架）
+  if (shiftDelta !== 0) {
+    document.documentElement.style.setProperty('--folder-shift', (applied + shiftDelta) + 'px');
+  }
   // 缩放锚点 = 胶囊中心（换算进面板坐标系），面板从胶囊里弹出/收回
   panelEl.style.transformOrigin =
     `${((subW / 2) + (ox - leftPx)).toFixed(1)}px ${((subH / 2) + (oy - topPx)).toFixed(1)}px`;
