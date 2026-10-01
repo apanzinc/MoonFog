@@ -785,15 +785,33 @@ function refreshAllDim() {
 
 /**
  * 收起子文件夹：清 open（含 portal 里的面板）与 aria-expanded
+ * 级联收回更深层：子面板 portal 平铺在 folder 直下，深层 panel 不在父 panel 的 DOM 内，
+ * 只收一层会留下深层孤儿面板——沿「直开子级 → subPanelEl」引用链显式逐层收
  */
 function collapseSubfolder(sf) {
-  sf.classList.remove('open');
-  const t = sf.querySelector(':scope > .shortcut-folder-trigger');
-  if (t) t.setAttribute('aria-expanded', 'false');
-  if (sf.subPanelEl) sf.subPanelEl.classList.remove('open');
+  let node = sf;
+  while (node && node.classList.contains('open')) {
+    const panel = node.subPanelEl;
+    const next = panel ? panel.querySelector(':scope > .shortcut-expanded-subfolder.open') : null;
+    node.classList.remove('open');
+    const t = node.querySelector(':scope > .shortcut-folder-trigger');
+    if (t) t.setAttribute('aria-expanded', 'false');
+    if (panel) panel.classList.remove('open');
+    node = next;
+  }
   refreshAllDim();
   // 子面板收起后让位量回落到主面板基线（走 .content 的 top 过渡，平滑回弹）
   scheduleFolderShift();
+}
+
+/**
+ * 模糊即失活：点击带 dim 档的面板时，收起其内直开的子文件夹链（含更深层级），
+ * 面板自身保持展开；最深层清晰面板点击不走此逻辑
+ */
+function collapseDimmedChain(panel) {
+  if (!panel.classList.contains('dim-1') && !panel.classList.contains('dim-2')) return;
+  const sf = panel.querySelector(':scope > .shortcut-expanded-subfolder.open');
+  if (sf) collapseSubfolder(sf);
 }
 
 /**
@@ -907,15 +925,19 @@ function renderFolderChildrenExpanded(container, children, folderIndex, path, po
         subEl.parentElement.querySelectorAll('.shortcut-expanded-subfolder.open').forEach((sf) => {
           if (sf !== subEl) collapseSubfolder(sf);
         });
-        const willOpen = !subEl.classList.contains('open');
+        // 关闭自身走 collapseSubfolder：级联收掉更深层（手动 toggle 会留孤儿面板）
+        if (subEl.classList.contains('open')) {
+          collapseSubfolder(subEl);
+          return;
+        }
         const panelEl = subEl.subPanelEl;
         if (panelEl) {
           // 先定位/换锚点，再开——同一渲染帧内生效，打开起点即胶囊锚点
-          if (willOpen) prepareSubPanel(subEl, panelEl);
-          panelEl.classList.toggle('open', willOpen);
+          prepareSubPanel(subEl, panelEl);
+          panelEl.classList.add('open');
         }
-        subEl.classList.toggle('open', willOpen);
-        subTrigger.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+        subEl.classList.add('open');
+        subTrigger.setAttribute('aria-expanded', 'true');
         refreshAllDim();
       });
       subEl.appendChild(subTrigger);
@@ -928,6 +950,8 @@ function renderFolderChildrenExpanded(container, children, folderIndex, path, po
       subChildren.addEventListener('scroll', () => {
         subChildren.querySelectorAll('.shortcut-expanded-subfolder.open').forEach(collapseSubfolder);
       }, { passive: true });
+      // 模糊即失活：点击失活子面板任意处 → 收起更深一层（面板自身保持展开）
+      subChildren.addEventListener('click', () => collapseDimmedChain(subChildren));
       // 关键：面板不进 subEl，挂到独立 portal（folder 直下、主面板外）——
       // 不包裹在主面板里，不受其 overflow 裁剪/滚动约束。
       // 必须在递归前 append：portal 内 DOM 序浅在前、深在后，深层面板才不会被浅层盖住
@@ -1034,6 +1058,8 @@ function renderShortcuts() {
       expanded.addEventListener('scroll', () => {
         expanded.querySelectorAll('.shortcut-expanded-subfolder.open').forEach(collapseSubfolder);
       }, { passive: true });
+      // 模糊即失活：点击失活主面板任意处 → 收起更深一层（document 的全局收起兜底等价）
+      expanded.addEventListener('click', () => collapseDimmedChain(expanded));
 
       trigger.addEventListener('click', () => {
         const willOpen = !folder.classList.contains('open');

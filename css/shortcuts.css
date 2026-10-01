@@ -441,12 +441,15 @@ html body.has-image-bg .shortcut-folder .subfolder-portal .shortcut-btn {
 
 /* 层级聚焦：子面板展开时祖先面板逐层失焦（最近一层 1.3px，更上 2.6px，最深层清晰）。
    糊在面板子项而非面板容器：filter 作用于整个子树，容器级 blur 会连带糊掉
-   打开中的子文件夹胶囊（锚点必须始终清晰，后代 filter:none 无法从祖先 filter 逃逸） */
+   打开中的子文件夹胶囊（锚点必须始终清晰，后代 filter:none 无法从祖先 filter 逃逸）。
+   模糊即失活：失焦项 pointer-events:none（不可点/不可右键，<a> 不跳转），
+   点击落到面板本身 → collapseDimmedChain 收起更深一层，面板自身保持展开 */
 .shortcut-folder.open .shortcut-expanded.dim-1 > .shortcut-btn,
 .shortcut-folder.open .shortcut-expanded.dim-1 > .shortcut-expanded-subfolder:not(.open),
 .shortcut-expanded-subfolder-children.open.dim-1 > .shortcut-btn,
 .shortcut-expanded-subfolder-children.open.dim-1 > .shortcut-expanded-subfolder:not(.open) {
   filter: blur(1.3px);
+  pointer-events: none;
 }
 
 .shortcut-folder.open .shortcut-expanded.dim-2 > .shortcut-btn,
@@ -454,6 +457,7 @@ html body.has-image-bg .shortcut-folder .subfolder-portal .shortcut-btn {
 .shortcut-expanded-subfolder-children.open.dim-2 > .shortcut-btn,
 .shortcut-expanded-subfolder-children.open.dim-2 > .shortcut-expanded-subfolder:not(.open) {
   filter: blur(2.6px);
+  pointer-events: none;
 }
 
 /* 热区桥：防止鼠标移动时丢失弹窗 */
