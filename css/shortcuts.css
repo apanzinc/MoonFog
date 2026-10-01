@@ -466,7 +466,7 @@ html body.has-image-bg .shortcut-folder .subfolder-portal .shortcut-btn {
   height: 10px;
 }
 
-/* 向上展开（设置项 up，或 auto 判定上方空间更大时由 JS 打类）：
+/* 向上展开（设置项 up，或设置方向/自适应放不下时由 JS 翻上来打类）：
    面板挂在胶囊上方，热区桥改到面板下沿（胶囊与面板之间的缝隙在下方） */
 .shortcut-expanded.is-up {
   top: auto;

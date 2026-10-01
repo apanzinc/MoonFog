@@ -521,7 +521,8 @@ function fetchFavicon(url, forceRefresh) {
 
 /**
  * 文件夹展开方向设置：up 向上（标签上面）| down 向下（标签下面，默认）| auto 屏幕自适应
- * 主面板与多级子面板统一按此设置弹出，auto 每次打开时按视口空间现算
+ * 主面板与多级子面板统一按此设置弹出；指定方向放不下时自动翻到另一侧，
+ * auto 每次打开时直接取空间更大的一侧
  */
 const FOLDER_EXPAND_DIR_KEY = 'moonfog_folder_expand_dir';
 
@@ -718,16 +719,20 @@ function prepareSubPanel(subEl, panelEl) {
   const leftPx = Math.round(ox + Math.min(0, avail - 168));
   panelEl.style.maxWidth = Math.max(168, avail) + 'px';
   panelEl.style.left = leftPx + 'px';
-  // 方向三态：up 强制向上、down 强制向下、auto 下方放不下且上方更空才向上
+  // 方向三态：优先按设置方向，该方向放不下时翻到另一侧
+  // （up=先上、放不下转下；down=先下、放不下转上；auto=取空间更大的一侧）
   const panelH = panelEl.offsetHeight;
   const anchorTop = folderRect.top + oy;
   const spaceBelow = window.innerHeight - 4 - (anchorTop + subH + 8);
   const spaceAbove = anchorTop - 4;
   const expandDir = getFolderExpandDir();
-  let top = oy + subH + 8;
-  if (expandDir === 'up' || (expandDir === 'auto' && panelH + 8 > spaceBelow && spaceAbove > spaceBelow)) {
-    top = oy - panelH - 8;
-  }
+  const fitsUp = panelH + 8 <= spaceAbove;
+  const fitsDown = panelH + 8 <= spaceBelow;
+  let up;
+  if (expandDir === 'up') up = fitsUp || (!fitsDown && spaceAbove >= spaceBelow);
+  else if (expandDir === 'down') up = !fitsDown && (fitsUp || spaceAbove > spaceBelow);
+  else up = !fitsDown && spaceAbove > spaceBelow;
+  let top = up ? oy - panelH - 8 : oy + subH + 8;
   // 最后夹进视口（任何方向都不出屏）
   top = Math.max(
     4 - folderRect.top,
@@ -914,17 +919,20 @@ function renderShortcuts() {
         // 同时关闭已展开的子文件夹
         document.querySelectorAll('.shortcut-expanded-subfolder.open').forEach(collapseSubfolder);
         if (willOpen) {
-          // 方向决策：up/down 直接定，auto 先还原 CSS 封顶量高再按视口空间现算
+          // 方向决策：优先按设置方向，该方向放不下时翻到另一侧
+          // （up=先上、放不下转下；down=先下、放不下转上；auto=取空间更大的一侧）
           const dir = getFolderExpandDir();
-          if (dir === 'auto') expanded.style.maxHeight = '';
+          expanded.style.maxHeight = '';
           const folderRect = folder.getBoundingClientRect();
-          let up = dir === 'up';
-          if (dir === 'auto') {
-            const panelH = expanded.offsetHeight;
-            const spaceBelow = window.innerHeight - 4 - (folderRect.bottom + 8);
-            const spaceAbove = folderRect.top - 4;
-            up = panelH + 8 > spaceBelow && spaceAbove > spaceBelow;
-          }
+          const panelH = expanded.offsetHeight;
+          const spaceBelow = window.innerHeight - 4 - (folderRect.bottom + 8);
+          const spaceAbove = folderRect.top - 4;
+          const fitsUp = panelH + 8 <= spaceAbove;
+          const fitsDown = panelH + 8 <= spaceBelow;
+          let up;
+          if (dir === 'up') up = fitsUp || (!fitsDown && spaceAbove >= spaceBelow);
+          else if (dir === 'down') up = !fitsDown && (fitsUp || spaceAbove > spaceBelow);
+          else up = !fitsDown && spaceAbove > spaceBelow;
           expanded.classList.toggle('is-up', up);
           // 向上弹：封顶到标签上方的可视空间（面板内部滚动，不出视口顶）
           expanded.style.maxHeight = up
