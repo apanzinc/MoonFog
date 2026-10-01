@@ -520,6 +520,51 @@ function fetchFavicon(url, forceRefresh) {
  */
 
 /**
+ * 文件夹展开方向设置：up 向上（标签上面）| down 向下（标签下面，默认）| auto 屏幕自适应
+ * 主面板与多级子面板统一按此设置弹出，auto 每次打开时按视口空间现算
+ */
+const FOLDER_EXPAND_DIR_KEY = 'moonfog_folder_expand_dir';
+
+function normalizeExpandDir(value) {
+  return value === 'up' || value === 'auto' ? value : 'down';
+}
+
+function getFolderExpandDir() {
+  return normalizeExpandDir(getStorage(FOLDER_EXPAND_DIR_KEY, ''));
+}
+
+/**
+ * 收起所有已展开的文件夹/子面板并复位页面位移（改设置后旧定位失效时用）
+ */
+function closeAllShortcutPanels() {
+  document.querySelectorAll('.shortcut-expanded-subfolder.open').forEach(collapseSubfolder);
+  document.querySelectorAll('.shortcut-folder.open').forEach((f) => {
+    f.classList.remove('open');
+    const t = f.querySelector('.shortcut-folder-trigger');
+    if (t) t.setAttribute('aria-expanded', 'false');
+  });
+  document.body.classList.remove('folder-open');
+  stopFolderShiftFollow();
+  document.documentElement.style.setProperty('--folder-shift', '0px');
+  refreshAllDim();
+}
+
+/**
+ * 展开方向三选一（收藏夹设置页）
+ */
+function bindFolderExpandDirSetting() {
+  const seg = document.getElementById('folderExpandDirSegment');
+  if (!seg || seg.dataset.bound === '1') return;
+  seg.dataset.bound = '1';
+  // 归一化存量值：保证 initSegment 恢复选中时一定能命中一个按钮
+  const dir = getFolderExpandDir();
+  if (getStorage(FOLDER_EXPAND_DIR_KEY, '') !== dir) setStorage(FOLDER_EXPAND_DIR_KEY, dir);
+  initSegment('folderExpandDirSegment', FOLDER_EXPAND_DIR_KEY, () => {
+    closeAllShortcutPanels();
+  }, { attr: 'data-expand-dir' });
+}
+
+/**
  * 根据展开的文件夹实际高度计算上移距离
  * 展开面板已在 CSS 中封顶（max-height），配合内部滚动，任意内容量都不会超出视口
  */
@@ -531,6 +576,11 @@ function updateFolderShift() {
   }
   const expanded = openFolder.querySelector(':scope > .shortcut-expanded');
   if (!expanded) {
+    document.documentElement.style.setProperty('--folder-shift', '0px');
+    return;
+  }
+  // 向上展开：面板向标签上方生长，整页不用让位（上移反而会把胶囊顶出屏幕）
+  if (expanded.classList.contains('is-up')) {
     document.documentElement.style.setProperty('--folder-shift', '0px');
     return;
   }
@@ -668,13 +718,17 @@ function prepareSubPanel(subEl, panelEl) {
   const leftPx = Math.round(ox + Math.min(0, avail - 168));
   panelEl.style.maxWidth = Math.max(168, avail) + 'px';
   panelEl.style.left = leftPx + 'px';
-  // 下方放不下则向上弹，最后夹进视口
+  // 方向三态：up 强制向上、down 强制向下、auto 下方放不下且上方更空才向上
   const panelH = panelEl.offsetHeight;
   const anchorTop = folderRect.top + oy;
   const spaceBelow = window.innerHeight - 4 - (anchorTop + subH + 8);
   const spaceAbove = anchorTop - 4;
+  const expandDir = getFolderExpandDir();
   let top = oy + subH + 8;
-  if (panelH + 8 > spaceBelow && spaceAbove > spaceBelow) top = oy - panelH - 8;
+  if (expandDir === 'up' || (expandDir === 'auto' && panelH + 8 > spaceBelow && spaceAbove > spaceBelow)) {
+    top = oy - panelH - 8;
+  }
+  // 最后夹进视口（任何方向都不出屏）
   top = Math.max(
     4 - folderRect.top,
     Math.min(top, window.innerHeight - 4 - folderRect.top - panelH),
@@ -860,9 +914,28 @@ function renderShortcuts() {
         // 同时关闭已展开的子文件夹
         document.querySelectorAll('.shortcut-expanded-subfolder.open').forEach(collapseSubfolder);
         if (willOpen) {
-          // 缩放锚点 = 触发器胶囊中心（面板 top 在胶囊下方 8px），面板从胶囊里长出/缩回
+          // 方向决策：up/down 直接定，auto 先还原 CSS 封顶量高再按视口空间现算
+          const dir = getFolderExpandDir();
+          if (dir === 'auto') expanded.style.maxHeight = '';
+          const folderRect = folder.getBoundingClientRect();
+          let up = dir === 'up';
+          if (dir === 'auto') {
+            const panelH = expanded.offsetHeight;
+            const spaceBelow = window.innerHeight - 4 - (folderRect.bottom + 8);
+            const spaceAbove = folderRect.top - 4;
+            up = panelH + 8 > spaceBelow && spaceAbove > spaceBelow;
+          }
+          expanded.classList.toggle('is-up', up);
+          // 向上弹：封顶到标签上方的可视空间（面板内部滚动，不出视口顶）
+          expanded.style.maxHeight = up
+            ? Math.max(80, Math.min(folderRect.top - 8, window.innerHeight * 0.7)) + 'px'
+            : '';
+          // 缩放锚点 = 触发器胶囊中心（分方向换算进面板坐标系），面板从胶囊里长出/缩回
+          const originY = up
+            ? expanded.offsetHeight + folder.offsetHeight / 2 + 8
+            : -(folder.offsetHeight / 2 + 8);
           expanded.style.transformOrigin =
-            `${(folder.offsetWidth / 2).toFixed(1)}px ${(-(folder.offsetHeight / 2 + 8)).toFixed(1)}px`;
+            `${(folder.offsetWidth / 2).toFixed(1)}px ${originY.toFixed(1)}px`;
         }
         folder.classList.toggle('open', willOpen);
         refreshAllDim();
@@ -871,7 +944,13 @@ function renderShortcuts() {
         document.body.classList.toggle('folder-open', willOpen);
         // 根据弹窗实际高度动态调整上移距离，确保不超出屏幕底部
         if (willOpen) {
-          scheduleFolderShift();
+          if (expanded.classList.contains('is-up')) {
+            // 向上弹：面板不占下方空间，整页归位
+            stopFolderShiftFollow();
+            document.documentElement.style.setProperty('--folder-shift', '0px');
+          } else {
+            scheduleFolderShift();
+          }
         } else {
           stopFolderShiftFollow();
           document.documentElement.style.setProperty('--folder-shift', '0px');
@@ -1345,6 +1424,8 @@ function deleteChildShortcut(folderIndex, childIndex, path) {
  * 设置面板 + 主页：快捷导航弹窗与右键菜单
  * 用initSettings() 调用一次 */
 function initShortcutSettings() {
+  bindFolderExpandDirSetting();
+
   const shortcutModal = document.getElementById('shortcutModal');
 
   const closeBtn = document.getElementById('shortcutModalClose');
