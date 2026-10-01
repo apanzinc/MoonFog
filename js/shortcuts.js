@@ -521,8 +521,9 @@ function fetchFavicon(url, forceRefresh) {
 
 /**
  * 文件夹展开方向设置：up 向上（标签上面）| down 向下（标签下面，默认）| auto 屏幕自适应
- * 主面板与多级子面板统一按此设置弹出；指定方向放不下时自动翻到另一侧，
- * auto 每次打开时直接取空间更大的一侧
+ * 指定方向放不下时优先整页让位（向上=问候语/搜索框/标签整体下移，向下=整体上移），
+ * 让位到极限（标签行/触发器不出屏）仍放不下才自适应翻到另一侧；
+ * auto 每次打开直接取空间更大的一侧
  */
 const FOLDER_EXPAND_DIR_KEY = 'moonfog_folder_expand_dir';
 
@@ -532,6 +533,52 @@ function normalizeExpandDir(value) {
 
 function getFolderExpandDir() {
   return normalizeExpandDir(getStorage(FOLDER_EXPAND_DIR_KEY, ''));
+}
+
+/**
+ * 主面板展开布局：按设置方向决策展开侧、封顶高度、缩放锚点，并算出整页位移量
+ * @returns {number} 展开侧为 up 时整页需要下移的像素，down 时为 0
+ */
+function applyFolderExpandLayout(folder, expanded) {
+  const dir = getFolderExpandDir();
+  expanded.style.maxHeight = '';
+  const content = document.querySelector('.content');
+  // .content 的 top 过渡期间 rect 是动画中的位置，先减掉当前生效的位移
+  // 还原成静态坐标，新决策才不会跟旧位移互相打架
+  const applied = content ? -(parseFloat(getComputedStyle(content).top) || 0) : 0;
+  const rect = folder.getBoundingClientRect();
+  const viewportH = window.innerHeight;
+  const staticTop = rect.top + applied;
+  const staticBottom = rect.bottom + applied;
+  // offsetHeight = 复位 maxHeight 后的实际高度（CSS 封顶内，含内部滚动裁剪）
+  const need = expanded.offsetHeight + 8;
+  const spaceAbove = staticTop - 4;
+  const spaceBelow = viewportH - 4 - (staticBottom + 8);
+  // 整页让位的极限：上移 = 触发器停在视口顶部下方；下移 = 标签行不出屏（留 48 给悬浮件）
+  const maxUp = Math.max(0, staticTop - 8);
+  const row = document.querySelector('.shortcuts-row');
+  const rowBottom = row ? row.getBoundingClientRect().bottom + applied : staticBottom;
+  const maxDown = Math.max(0, viewportH - rowBottom - 48);
+  // 向上放不下时需要的整页下移量（让面板顶部落进视口内）
+  const downShift = Math.max(0, need - spaceAbove);
+  let up;
+  if (dir === 'up') up = downShift <= maxDown;
+  else if (dir === 'down') up = need > spaceBelow + maxUp && downShift <= maxDown;
+  else up = need > spaceBelow && spaceAbove > spaceBelow;
+  const shiftDown = up ? Math.min(downShift, maxDown) : 0;
+  expanded.classList.toggle('is-up', up);
+  expanded._upShift = shiftDown;
+  // 向上弹：可用高度 = 上方静态空间 + 整页下移量（不够时封顶，面板内部滚动，不出视口顶）
+  expanded.style.maxHeight = up
+    ? Math.max(80, Math.min(spaceAbove + shiftDown - 8, viewportH * 0.7)) + 'px'
+    : '';
+  // 缩放锚点 = 触发器胶囊中心（分方向换算进面板坐标系），面板从胶囊里长出/缩回
+  const originY = up
+    ? expanded.offsetHeight + folder.offsetHeight / 2 + 8
+    : -(folder.offsetHeight / 2 + 8);
+  expanded.style.transformOrigin =
+    `${(folder.offsetWidth / 2).toFixed(1)}px ${originY.toFixed(1)}px`;
+  return shiftDown;
 }
 
 /**
@@ -566,7 +613,7 @@ function bindFolderExpandDirSetting() {
 }
 
 /**
- * 根据展开的文件夹实际高度计算上移距离
+ * 计算展开面板对应的整页位移：向上 = 打开时定好的下移量，向下 = 按实际高度上移
  * 展开面板已在 CSS 中封顶（max-height），配合内部滚动，任意内容量都不会超出视口
  */
 function updateFolderShift() {
@@ -580,9 +627,9 @@ function updateFolderShift() {
     document.documentElement.style.setProperty('--folder-shift', '0px');
     return;
   }
-  // 向上展开：面板向标签上方生长，整页不用让位（上移反而会把胶囊顶出屏幕）
+  // 向上展开：整页位移量在布局决策时已定（上方放不下 → 整页下移给标签让位），直接沿用
   if (expanded.classList.contains('is-up')) {
-    document.documentElement.style.setProperty('--folder-shift', '0px');
+    document.documentElement.style.setProperty('--folder-shift', -(expanded._upShift || 0) + 'px');
     return;
   }
   const content = document.querySelector('.content');
@@ -919,43 +966,20 @@ function renderShortcuts() {
         // 同时关闭已展开的子文件夹
         document.querySelectorAll('.shortcut-expanded-subfolder.open').forEach(collapseSubfolder);
         if (willOpen) {
-          // 方向决策：优先按设置方向，该方向放不下时翻到另一侧
-          // （up=先上、放不下转下；down=先下、放不下转上；auto=取空间更大的一侧）
-          const dir = getFolderExpandDir();
-          expanded.style.maxHeight = '';
-          const folderRect = folder.getBoundingClientRect();
-          const panelH = expanded.offsetHeight;
-          const spaceBelow = window.innerHeight - 4 - (folderRect.bottom + 8);
-          const spaceAbove = folderRect.top - 4;
-          const fitsUp = panelH + 8 <= spaceAbove;
-          const fitsDown = panelH + 8 <= spaceBelow;
-          let up;
-          if (dir === 'up') up = fitsUp || (!fitsDown && spaceAbove >= spaceBelow);
-          else if (dir === 'down') up = !fitsDown && (fitsUp || spaceAbove > spaceBelow);
-          else up = !fitsDown && spaceAbove > spaceBelow;
-          expanded.classList.toggle('is-up', up);
-          // 向上弹：封顶到标签上方的可视空间（面板内部滚动，不出视口顶）
-          expanded.style.maxHeight = up
-            ? Math.max(80, Math.min(folderRect.top - 8, window.innerHeight * 0.7)) + 'px'
-            : '';
-          // 缩放锚点 = 触发器胶囊中心（分方向换算进面板坐标系），面板从胶囊里长出/缩回
-          const originY = up
-            ? expanded.offsetHeight + folder.offsetHeight / 2 + 8
-            : -(folder.offsetHeight / 2 + 8);
-          expanded.style.transformOrigin =
-            `${(folder.offsetWidth / 2).toFixed(1)}px ${originY.toFixed(1)}px`;
+          // 方向决策 + 整页位移量：放不下优先整页让位，极限处才自适应翻侧
+          applyFolderExpandLayout(folder, expanded);
         }
         folder.classList.toggle('open', willOpen);
         refreshAllDim();
         trigger.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
         // 切换 body.folder-open 以控制问候语显隐
         document.body.classList.toggle('folder-open', willOpen);
-        // 根据弹窗实际高度动态调整上移距离，确保不超出屏幕底部
+        // 根据弹窗实际高度动态调整整页位移，确保面板与标签都不出屏幕
         if (willOpen) {
           if (expanded.classList.contains('is-up')) {
-            // 向上弹：面板不占下方空间，整页归位
+            // 向上弹：位移量已在布局决策里定好，直接落位（.content 的 top 过渡做平滑）
             stopFolderShiftFollow();
-            document.documentElement.style.setProperty('--folder-shift', '0px');
+            document.documentElement.style.setProperty('--folder-shift', -(expanded._upShift || 0) + 'px');
           } else {
             scheduleFolderShift();
           }
