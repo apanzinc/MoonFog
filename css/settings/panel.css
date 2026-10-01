@@ -983,6 +983,47 @@ html.perf-low .settings-btn {
   -webkit-backdrop-filter: none !important;
 }
 
+/* —— 极致：内容模糊全撤，层级改由透明度表达（folder-open 组自带 0.2 淡化兜底） —— */
+html.low-perf body.folder-open .greeting-section,
+html.low-perf body.folder-open .search-section,
+html.low-perf body.folder-open .bing-credit,
+html.low-perf body.folder-open .settings-wrapper,
+html.low-perf body.folder-open .shortcuts-row > .shortcut-drag-wrapper > .shortcut-btn,
+html.low-perf body.folder-open .shortcuts-row > .shortcut-drag-wrapper > .shortcut-folder .shortcut-folder-trigger,
+html.perf-low body.folder-open .greeting-section,
+html.perf-low body.folder-open .search-section,
+html.perf-low body.folder-open .bing-credit,
+html.perf-low body.folder-open .settings-wrapper,
+html.perf-low body.folder-open .shortcuts-row > .shortcut-drag-wrapper > .shortcut-btn,
+html.perf-low body.folder-open .shortcuts-row > .shortcut-drag-wrapper > .shortcut-folder .shortcut-folder-trigger {
+  filter: none !important;
+}
+
+/* —— 极致：子面板层级失焦（dim）改用透明度替代 blur —— */
+html.low-perf .shortcut-folder.open .shortcut-expanded.dim-1 > .shortcut-btn,
+html.low-perf .shortcut-folder.open .shortcut-expanded.dim-1 > .shortcut-expanded-subfolder:not(.open),
+html.low-perf .shortcut-expanded-subfolder-children.open.dim-1 > .shortcut-btn,
+html.low-perf .shortcut-expanded-subfolder-children.open.dim-1 > .shortcut-expanded-subfolder:not(.open),
+html.perf-low .shortcut-folder.open .shortcut-expanded.dim-1 > .shortcut-btn,
+html.perf-low .shortcut-folder.open .shortcut-expanded.dim-1 > .shortcut-expanded-subfolder:not(.open),
+html.perf-low .shortcut-expanded-subfolder-children.open.dim-1 > .shortcut-btn,
+html.perf-low .shortcut-expanded-subfolder-children.open.dim-1 > .shortcut-expanded-subfolder:not(.open) {
+  filter: none !important;
+  opacity: 0.55;
+}
+
+html.low-perf .shortcut-folder.open .shortcut-expanded.dim-2 > .shortcut-btn,
+html.low-perf .shortcut-folder.open .shortcut-expanded.dim-2 > .shortcut-expanded-subfolder:not(.open),
+html.low-perf .shortcut-expanded-subfolder-children.open.dim-2 > .shortcut-btn,
+html.low-perf .shortcut-expanded-subfolder-children.open.dim-2 > .shortcut-expanded-subfolder:not(.open),
+html.perf-low .shortcut-folder.open .shortcut-expanded.dim-2 > .shortcut-btn,
+html.perf-low .shortcut-folder.open .shortcut-expanded.dim-2 > .shortcut-expanded-subfolder:not(.open),
+html.perf-low .shortcut-expanded-subfolder-children.open.dim-2 > .shortcut-btn,
+html.perf-low .shortcut-expanded-subfolder-children.open.dim-2 > .shortcut-expanded-subfolder:not(.open) {
+  filter: none !important;
+  opacity: 0.4;
+}
+
 /* 完全限制：纯色底（不用带 alpha 的 img-surface） */
 html.low-perf body.has-image-bg .search-box,
 html.low-perf body.has-image-bg .shortcut-btn,

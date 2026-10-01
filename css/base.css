@@ -297,18 +297,17 @@ body.folder-open .shortcuts-row > .shortcut-drag-wrapper > .shortcut-folder:not(
     filter 0.22s cubic-bezier(0.25, 1, 0.5, 1);
 }
 
-/* 打开文件夹时问候区与搜索框一并失焦退后 */
-body.folder-open .greeting-section {
+/* 打开文件夹时问候区/搜索框/必应来源/设置按钮一并失焦退后 */
+body.folder-open .greeting-section,
+body.folder-open .search-section,
+body.folder-open .bing-credit,
+body.folder-open .settings-wrapper {
   filter: blur(2px);
 }
 
-body.folder-open .search-section {
-  filter: blur(2px);
-}
-
-/* 再开一级（任意子面板展开）时，页面上的标签才失焦退后（文件夹 trigger 另有 not(.open) 排除） */
-body.has-subpanel .shortcuts-row > .shortcut-drag-wrapper > .shortcut-btn:not(.shortcut-folder-trigger),
-body.has-subpanel .shortcuts-row > .shortcut-drag-wrapper > .shortcut-folder:not(.open) .shortcut-folder-trigger {
+/* 文件夹一展开，页面上的其他标签就失焦退后（打开中的胶囊走下方锚点豁免，not(.open) 排除关闭中的文件夹 trigger） */
+body.folder-open .shortcuts-row > .shortcut-drag-wrapper > .shortcut-btn:not(.shortcut-folder-trigger),
+body.folder-open .shortcuts-row > .shortcut-drag-wrapper > .shortcut-folder:not(.open) .shortcut-folder-trigger {
   filter: blur(1.5px);
 }
 
