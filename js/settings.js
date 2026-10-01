@@ -634,6 +634,7 @@ try { renderCustomEngines(); } catch (_) {}
   try { if (typeof updateLowPerfUI === 'function') updateLowPerfUI(); } catch (_) {}
   try { if (typeof syncSurfaceBlurAvailability === 'function') syncSurfaceBlurAvailability(); } catch (_) {}
   try { renderShortcutList(); } catch (_) {}
+  try { if (typeof updateFolderExpandDirUI === 'function') updateFolderExpandDirUI(); } catch (_) {}
   try { updateAboutBannerBg(); } catch (_) {}
   try { updateSettingsBannerBg(); } catch (_) {}
 }

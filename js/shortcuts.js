@@ -582,35 +582,67 @@ function applyFolderExpandLayout(folder, expanded) {
 }
 
 /**
- * 收起所有已展开的文件夹/子面板并复位页面位移（改设置后旧定位失效时用）
+ * 对已展开的主面板实时重排（改设置 / 窗口尺寸变化时立刻套用新方向与新位移）
  */
-function closeAllShortcutPanels() {
-  document.querySelectorAll('.shortcut-expanded-subfolder.open').forEach(collapseSubfolder);
-  document.querySelectorAll('.shortcut-folder.open').forEach((f) => {
-    f.classList.remove('open');
-    const t = f.querySelector('.shortcut-folder-trigger');
-    if (t) t.setAttribute('aria-expanded', 'false');
-  });
-  document.body.classList.remove('folder-open');
-  stopFolderShiftFollow();
-  document.documentElement.style.setProperty('--folder-shift', '0px');
-  refreshAllDim();
+function applyFolderExpandLayoutTo(folder) {
+  const expanded = folder.querySelector(':scope > .shortcut-expanded');
+  if (!expanded) return;
+  applyFolderExpandLayout(folder, expanded);
+  if (expanded.classList.contains('is-up')) {
+    stopFolderShiftFollow();
+    document.documentElement.style.setProperty('--folder-shift', -(expanded._upShift || 0) + 'px');
+  } else {
+    scheduleFolderShift();
+  }
 }
 
 /**
- * 展开方向三选一（收藏夹设置页）
+ * 按存储值刷新展开方向三选一的选中态（打开设置面板 / 跨标签页改动后重同步）
+ */
+function updateFolderExpandDirUI() {
+  const seg = document.getElementById('folderExpandDirSegment');
+  if (!seg) return;
+  const dir = getFolderExpandDir();
+  seg.querySelectorAll('[data-expand-dir]').forEach((btn) => {
+    const active = btn.getAttribute('data-expand-dir') === dir;
+    btn.classList.toggle('active', active);
+    btn.setAttribute('aria-checked', active ? 'true' : 'false');
+  });
+}
+
+/**
+ * 展开方向三选一（收藏夹设置页）；缺控件不再静默，打 warning 便于定位
  */
 function bindFolderExpandDirSetting() {
   const seg = document.getElementById('folderExpandDirSegment');
-  if (!seg || seg.dataset.bound === '1') return;
+  if (!seg) {
+    console.warn('[MoonFog] #folderExpandDirSegment 未找到，展开方向设置未绑定');
+    return;
+  }
+  if (seg.dataset.bound === '1') return;
   seg.dataset.bound = '1';
   // 归一化存量值：保证 initSegment 恢复选中时一定能命中一个按钮
   const dir = getFolderExpandDir();
   if (getStorage(FOLDER_EXPAND_DIR_KEY, '') !== dir) setStorage(FOLDER_EXPAND_DIR_KEY, dir);
   initSegment('folderExpandDirSegment', FOLDER_EXPAND_DIR_KEY, () => {
-    closeAllShortcutPanels();
+    // 实时生效：子面板锚点已变先收起，主面板立刻按新方向重排（不关面板）
+    document.querySelectorAll('.shortcut-expanded-subfolder.open').forEach(collapseSubfolder);
+    const openFolder = document.querySelector('.shortcut-folder.open');
+    if (openFolder) applyFolderExpandLayoutTo(openFolder);
   }, { attr: 'data-expand-dir' });
 }
+
+// 改设置 / 换窗口尺寸 / 跨标签页改动：已展开的面板实时重排，方向与位移始终跟随存储值
+window.addEventListener('resize', () => {
+  const openFolder = document.querySelector('.shortcut-folder.open');
+  if (openFolder) applyFolderExpandLayoutTo(openFolder);
+});
+window.addEventListener('storage', (e) => {
+  if (e.key !== null && e.key !== FOLDER_EXPAND_DIR_KEY) return;
+  updateFolderExpandDirUI();
+  const openFolder = document.querySelector('.shortcut-folder.open');
+  if (openFolder) applyFolderExpandLayoutTo(openFolder);
+});
 
 /**
  * 计算展开面板对应的整页位移：向上 = 打开时定好的下移量，向下 = 按实际高度上移
