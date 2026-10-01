@@ -1889,9 +1889,8 @@ function parseBrowserBookmarksHTML(htmlText) {
     String(htmlText || ''),
     'text/html'
   );
-  // 标准格式下最外层 <DL> 直接在<body> �?
-  const outerDL = doc.querySelector('body > DL, body > dl') || doc
-.querySelector('DL, dl');
+  // 标准格式下最外层 <DL> 直接挂在 <body> 下，取不到再退到任意 <DL>
+  const outerDL = doc.querySelector('body > DL, body > dl') || doc.querySelector('DL, dl');
   let items = outerDL ? parseBookmarkDL(outerDL, 20) : [];
 
   // 去重（按 URL + 父级文件夹名，简单按 URL 去重；文件夹用 name+children 哈希）
