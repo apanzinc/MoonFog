@@ -119,7 +119,7 @@
     weight: '700',
     // 模糊
     panelBlur: 10,
-    searchBlur: 40,
+    searchBlur: 20,
     bgBlur: 20,
     // 性能
     perfMode: 'full'

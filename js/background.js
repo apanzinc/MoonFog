@@ -159,11 +159,10 @@ function isImageBackgroundActive(mode) {
 function syncSurfaceBlurAvailability() {
   const isImageMode = isImageBackgroundActive();
   if (typeof updateBgBlurAvailability === 'function') updateBgBlurAvailability(isImageMode);
-  if (typeof updateSearchBlurAvailability === 'function') updateSearchBlurAvailability();
   if (typeof updatePanelBlurAvailability === 'function') updatePanelBlurAvailability();
 }
 
-let currentSearchBlur = DEFAULT_SEARCH_BLUR;
+let currentSearchBlur = DEFAULT_BG_BLUR;
 let currentPanelBlur = DEFAULT_PANEL_BLUR;
 /** @type {'full'|'balanced'|'low'} */
 let currentPerfMode =
@@ -172,9 +171,9 @@ let currentPerfMode =
 let currentLowPerf = false;
 
 function syncChromeBlur() {
-  // 统一“小控件毛玻璃”：取搜索框与设置面板的中间值，避免各处硬编码不一致
+  // 统一"小控件毛玻璃"：搜索框（跟随背景模糊）与设置面板的中间值，避免各处硬编码不一致
 const search = resolveVisualSurfaceBlur(
-    typeof currentSearchBlur === 'number' ? currentSearchBlur : DEFAULT_SEARCH_BLUR
+    typeof currentSearchBlur === 'number' ? currentSearchBlur : DEFAULT_BG_BLUR
   );
   const panel = resolveVisualSurfaceBlur(
     typeof currentPanelBlur === 'number' ? currentPanelBlur : DEFAULT_PANEL_BLUR
@@ -196,17 +195,12 @@ function syncThemeBlurState(patch) {
   if (tm && tm.state) Object.assign(tm.state, patch);
 }
 
-function applySearchBlur(blurPx, options) {
-  const silent = options && options.silent;
-  currentSearchBlur = normalizeSurfaceBlur(blurPx, DEFAULT_SEARCH_BLUR);
+function applySearchBlur(blurPx) {
+  currentSearchBlur = normalizeSurfaceBlur(blurPx, DEFAULT_BG_BLUR);
   syncThemeBlurState({ searchBlur: currentSearchBlur });
-  if (!silent) {
-    try { localStorage.setItem(SEARCH_BLUR_KEY, String(currentSearchBlur)); } catch (_) {}
-  }
   const visual = resolveVisualSurfaceBlur(currentSearchBlur);
   document.documentElement.style.setProperty('--search-blur', visual + 'px');
   if (typeof syncChromeBlur === 'function') syncChromeBlur();
-  updateSearchBlurUI();
   return currentSearchBlur;
 }
 
@@ -271,7 +265,7 @@ function applyPerfMode(modeOrBool, options) {
   }
   // 按用户偏好重算表面模糊（限制档；resolve 与0（
 if (typeof applySearchBlur === 'function') {
-    applySearchBlur(currentSearchBlur, { silent: true });
+    applySearchBlur(currentSearchBlur);
   }
   if (typeof applyPanelBlur === 'function') {
     applyPanelBlur(currentPanelBlur, { silent: true });
@@ -320,35 +314,6 @@ function loadPerfMode() {
     if (legacy === '1' || legacy === 'true') return 'low';
   } catch (_) {}
   return typeof DEFAULT_PERF_MODE === 'string' ? DEFAULT_PERF_MODE : 'full';
-}
-
-function updateSearchBlurAvailability() {
-  const isImageMode = isImageBackgroundActive();
-  const perf = getPerfMode();
-  // 偏好始终可调；纯色限制仅提示实际不生效
-  const slider = document.getElementById('searchBlurSlider');
-  const tip = document.getElementById('searchBlurTip');
-  const item = document.getElementById('searchBlurSetting');
-  if (slider) slider.disabled = false;
-  if (item) item.classList.remove('is-disabled');
-  if (tip) {
-    tip.textContent =
-      perf === 'low'
-        ? '限制档下毛玻璃已关闭'
-        : (isImageMode ? '仅图片背景生效' : '切换到图片背景后生效');
-  }
-}
-
-function updateSearchBlurUI() {
-  const slider = document.getElementById('searchBlurSlider');
-  const label = document.getElementById('searchBlurValue');
-  if (slider && String(slider.value) !== String(currentSearchBlur)) slider.value = String(currentSearchBlur);
-  if (label) {
-    const perf = getPerfMode();
-    if (perf === 'low') label.textContent = currentSearchBlur + 'px（限制关（';
-    else label.textContent = currentSearchBlur + 'px';
-  }
-  if (typeof updateSearchBlurAvailability === 'function') updateSearchBlurAvailability();
 }
 
 function updatePanelBlurAvailability() {
@@ -400,22 +365,22 @@ function updateLowPerfUI() {
     tip.textContent = tips[mode] || tips.full;
   }
   // 数值仍显示用户设定；实际渲染以档位为准
-  updateSearchBlurUI();
   updatePanelBlurUI();
   updateBgBlurUI();
 }
 
 function initDisplayEffects() {
-  let search = DEFAULT_SEARCH_BLUR;
+  // 搜索框/标签毛玻璃与背景模糊共用同一个设置值
+  let search = DEFAULT_BG_BLUR;
   let panel = DEFAULT_PANEL_BLUR;
   let perf = typeof loadPerfMode === 'function' ? loadPerfMode() : 'full';
   try {
-    const s = localStorage.getItem(SEARCH_BLUR_KEY);
+    const s = localStorage.getItem(BG_BLUR_KEY);
     if (s != null) search = s;
     const p = localStorage.getItem(PANEL_BLUR_KEY);
     if (p != null) panel = p;
   } catch (_) {}
-  applySearchBlur(search, { silent: true });
+  applySearchBlur(search);
   applyPanelBlur(panel, { silent: true });
   applyPerfMode(perf, { silent: true });
   if (typeof syncChromeBlur === 'function') syncChromeBlur();
@@ -540,6 +505,8 @@ function applyBgBlur(blurPx) {
       img.style.removeProperty('transform');
     }
   }
+  // 搜索框/标签毛玻璃跟随背景模糊的设定值
+  if (typeof applySearchBlur === 'function') applySearchBlur(currentBgBlur);
   updateBgBlurUI();
 }
 
@@ -557,10 +524,10 @@ function updateBgBlurAvailability(isImageMode) {
   if (tip) {
     tip.textContent =
       perf === 'low'
-        ? '限制档下壁纸不模糊'
+        ? '限制档下模糊与毛玻璃已关闭'
         : perf === 'balanced'
-          ? (isImageMode ? '部分档下模糊会减弱' : '切换到图片背景后生效')
-        : (isImageMode ? '仅图片背景生效' : '切换到图片背景后生效');
+          ? (isImageMode ? '部分档下壁纸模糊减弱' : '切换到图片背景后生效')
+        : (isImageMode ? '图片背景生效：壁纸与控件毛玻璃' : '切换到图片背景后生效');
   }
   if (typeof updateBgWashAvailability === 'function') updateBgWashAvailability(isImageMode);
 }

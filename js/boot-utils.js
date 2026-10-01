@@ -154,7 +154,7 @@ function buildBootConfig() {
   if (!/^(400|500|600|700)$/.test(weight)) weight = '700';
 
   const bgBlur = bootNormalizeBlur(bootGet('moonfog_bg_blur'), 20);
-  const searchBlur = bootNormalizeBlur(bootGet('moonfog_search_blur'), 40);
+  const searchBlur = bgBlur;
   const panelBlur = bootNormalizeBlur(bootGet('moonfog_panel_blur'), 10);
   const perfMode = bootNormalizePerfMode(bootGet('moonfog_perf_mode'));
   const bgMode = bootNormalizeBgMode(bootGet('moonfog_bg_mode', 'solid'));

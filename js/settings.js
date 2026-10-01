@@ -429,7 +429,6 @@ function refreshSettingsAvailability() {
   try { updateUsernameSettingVisibility(); } catch (_) {}
   try { updateBgSettingsUI(); } catch (_) {}
   if (typeof syncSurfaceBlurAvailability === 'function') syncSurfaceBlurAvailability();
-  else if (typeof updateSearchBlurAvailability === 'function') updateSearchBlurAvailability();
 }
 
 /**
@@ -629,7 +628,6 @@ try { renderCustomEngines(); } catch (_) {}
   } } catch (_) {}
   try { updateBgBlurUI(); } catch (_) {}
   try { if (typeof updateBgWashUI === 'function') updateBgWashUI(); } catch (_) {}
-  try { if (typeof updateSearchBlurUI === 'function') updateSearchBlurUI(); } catch (_) {}
   try { if (typeof updatePanelBlurUI === 'function') updatePanelBlurUI(); } catch (_) {}
   try { if (typeof updateLowPerfUI === 'function') updateLowPerfUI(); } catch (_) {}
   try { if (typeof syncSurfaceBlurAvailability === 'function') syncSurfaceBlurAvailability(); } catch (_) {}
@@ -1661,7 +1659,6 @@ function initBgModeGridSelection() {
 function bindDisplaySetting() {
   const bgSlider = document.getElementById('bgBlurSlider');
   const washSlider = document.getElementById('bgWashSlider');
-  const searchSlider = document.getElementById('searchBlurSlider');
   const panelSlider = document.getElementById('panelBlurSlider');
   const lowSeg = document.getElementById('lowPerfSegment');
 
@@ -1679,12 +1676,6 @@ function bindDisplaySetting() {
     });
   }
 
-  if (searchSlider && !searchSlider.dataset.bound) {
-    searchSlider.dataset.bound = '1';
-    searchSlider.addEventListener('input', () => {
-      if (typeof applySearchBlur === 'function') applySearchBlur(searchSlider.value);
-    });
-  }
   if (panelSlider && !panelSlider.dataset.bound) {
     panelSlider.dataset.bound = '1';
     panelSlider.addEventListener('input', () => {

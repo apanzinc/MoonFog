@@ -21,7 +21,6 @@
   // }
 
   const DEF_BG_BLUR = 20;
-  const DEF_SEARCH_BLUR = 40;
   const DEF_PANEL_BLUR = 10;
   const DEF_BG_WASH = -20;
 
@@ -117,13 +116,10 @@
   let weight = get('moonfog_weight') || '700';
   if (!/^(400|500|600|700)$/.test(weight)) weight = '700';
 
-  // 模糊 / 缩放
+  // 模糊 / 缩放（背景模糊同时驱动搜索框与标签毛玻璃）
   let blur = parseInt(get('moonfog_bg_blur'), 10);
   if (!isFinite(blur)) blur = DEF_BG_BLUR;
   blur = Math.min(40, Math.max(0, blur));
-  let searchBlur = parseInt(get('moonfog_search_blur'), 10);
-  if (!isFinite(searchBlur)) searchBlur = DEF_SEARCH_BLUR;
-  searchBlur = Math.min(40, Math.max(0, searchBlur));
   let panelBlur = parseInt(get('moonfog_panel_blur'), 10);
   if (!isFinite(panelBlur)) panelBlur = DEF_PANEL_BLUR;
   panelBlur = Math.min(40, Math.max(0, panelBlur));
@@ -140,7 +136,7 @@
   else if (perfMode === 'balanced') root.classList.add('perf-balanced');
   else root.classList.add('perf-full');
 
-  let visualBlur = blur, visualSearchBlur = searchBlur, visualPanelBlur = panelBlur;
+  let visualBlur = blur, visualSearchBlur = blur, visualPanelBlur = panelBlur;
   if (perfMode === 'low') { visualBlur = 0; visualSearchBlur = 0; visualPanelBlur = 0; }
   else if (perfMode === 'balanced') { visualBlur = Math.min(6, Math.round(blur * 0.45)); }
   let scale = 1 + Math.min(0.12, visualBlur / 200);
@@ -339,7 +335,7 @@
       mode: mode,
       modePref: modePref,
       panelBlur: panelBlur,
-      searchBlur: parseInt(get('moonfog_search_blur'), 10) || 40,
+      searchBlur: blur,
       bgBlur: blur,
       perfMode: perfMode || 'full',
       imageBg: !!(bgUrl && (bgMode === 'local' || bgMode === 'bing')),

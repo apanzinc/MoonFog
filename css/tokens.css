@@ -55,7 +55,7 @@
   --border-strong: rgba(0, 0, 0, 0.15);
   --shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
   --shadow-hover: 0 8px 30px rgba(0, 0, 0, 0.1);
-  --search-blur: 40px;
+  --search-blur: 20px;
   --panel-blur: 10px;
   --chrome-blur: 14px;
   /* 图片背景控件毛玻璃：全站统一（百分比可直接喂给 color-mix） */

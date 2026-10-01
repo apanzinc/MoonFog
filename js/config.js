@@ -424,8 +424,6 @@ const DEFAULT_BG_BLUR = 20; // px，0–40
 const BG_WASH_KEY = 'moonfog_bg_wash';
 // 默认偏黑，提升图片背景上文案对比度
 const DEFAULT_BG_WASH = -20;
-const SEARCH_BLUR_KEY = 'moonfog_search_blur';
-const DEFAULT_SEARCH_BLUR = 40; // 搜索框毛玻璃
 const PANEL_BLUR_KEY = 'moonfog_panel_blur';
 const DEFAULT_PANEL_BLUR = 10; // 设置面板毛玻璃（偏实）
 // 性能档位：full 完整体验 | balanced 部分限制 | low 完全限制
