@@ -1,5 +1,7 @@
 # MoonFog 朔雾
 
+![MoonFog banner](assets/banner.png)
+
 让新标签页安静一点。一个 Chrome 扩展（Manifest V3），替换浏览器默认新标签页。
 
 ## 功能
