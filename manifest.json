@@ -47,9 +47,7 @@
     "fontSettings"
   ],
   "host_permissions": [
-    "https://www.bing.com/*",
     "https://*.bing.com/*",
-    "https://cn.bing.com/*",
     "https://hitokoto.c0ffee.space/*",
     "https://v1.hitokoto.cn/*",
     "https://www.google.com/*",
