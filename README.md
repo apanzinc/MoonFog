@@ -1,4 +1,4 @@
-<h1 align="center">MoonFog 朔雾</h1>
+<h1 align="center"><img src="assets/logo.png" width="38" alt="MoonFog logo"> MoonFog 朔雾</h1>
 
 ![MoonFog banner](assets/banner.png)
 
@@ -53,6 +53,7 @@ js/
   vendor/            第三方库（MCU、Paper Shaders）
 icons/               扩展图标与内置搜索引擎图标
 fonts/               内置思源宋体
+assets/              README 配图（banner、logo）
 ```
 
 ## 许可
