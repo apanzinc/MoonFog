@@ -2,7 +2,7 @@
 
 ![MoonFog banner](assets/banner.png)
 
-月雾之间，新页初启。MoonFog 是一个 Chrome 扩展（Manifest V3）的浏览器默认新标签页。
+月雾之间，新页初启。MoonFog 是一款基于 Manifest V3 的 Chrome 扩展，把浏览器默认新标签页替换成安静、可定制的起始页。
 
 ## 功能
 
