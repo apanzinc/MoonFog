@@ -28,9 +28,9 @@ const DEFAULT_SETTINGS = {
   noise: 86,
   softness: 100,
   intensity: 100,
-  // 渐变色数量（不含背景色），范�?2�?
+  // 渐变色数量（不含背景色），范围 2~7
   colorCount: 4,
-  // Paper Shaders offset�?100�?00 �?u_offset ±1
+  // Paper Shaders offset：0~100 映射到 u_offset ±1
   offsetX: 0,
   offsetY: 0,
   light: DEFAULT_PALETTES.light,
@@ -202,7 +202,9 @@ function configurableUniforms() {
     u_softness: grainSettings.softness / 100,
     u_intensity: grainSettings.intensity / 100,
     u_shape: shapeUniform(),
-    // X：shader �?-u_offsetX，正值图形右�?    // Y：shader �?+u_offsetY 会下移，这里取反�?UI 正�?�?    u_offsetX: grainSettings.offsetX / 100,
+    // X：shader 取 -u_offsetX（graphicOffset.x = -u_offsetX）
+    // Y：shader 取 +u_offsetY 会下移，此处取反以匹配 UI 正方向
+    u_offsetX: grainSettings.offsetX / 100,
     u_offsetY: -grainSettings.offsetY / 100
   };
 }
