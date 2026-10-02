@@ -2,7 +2,7 @@
  * MoonFog - 通用工具
  */
 
-/** 转义 HTML 文本，避免用户输入注�*/
+/** 转义 HTML 文本，避免用户输入注释破坏结构 */
 function escapeHtml(value) {
   return String(value == null ? '' : value)
     .replace(/&/g, '&amp;')
@@ -12,7 +12,7 @@ function escapeHtml(value) {
     .replace(/'/g, '&#39;');
 }
 
-/** 转义 HTML 属性�*/
+/** 转义 HTML 属性 */
 function escapeAttr(value) {
   return escapeHtml(value).replace(/`/g, '&#96;');
 }
@@ -33,7 +33,7 @@ function syncRadioSelection(grid) {
 }
 
 /**
- * 图标三级回退：网�-> 本地 -> 首字� */
+ * 图标三级回退：网络 -> 本地 -> 首字母 */
 function fallbackIcon(img, fallbackChar) {
   if (!img._triedLocal) {
     img._triedLocal = true;
@@ -57,7 +57,7 @@ function fallbackIcon(img, fallbackChar) {
 }
 
 /**
- * 初始化卡�/ 列表选择态（�localStorage 高亮当前项）
+ * 初始化卡片/ 列表选择态（从 localStorage 高亮当前项）
  */
 function initCardSelection(gridId, storageKey, defaultValue) {
   const grid = document.getElementById(gridId);
@@ -89,7 +89,8 @@ function initCardSelection(gridId, storageKey, defaultValue) {
 }
 
 /**
- * 绑定卡片 / 列表项点击（互斥 active + 回调 + 键盘支持� * @param {string} gridId
+ * 绑定卡片 / 列表项点击（互斥 active + 回调 + 键盘支持）
+ * @param {string} gridId
  * @param {string} storageKey
  * @param {function(string):void} callback
  * @param {object} options
@@ -143,7 +144,9 @@ function initCardClick(gridId, storageKey, callback, options = {}) {
 /**
  * 分段控件（Segment）工具：单选按钮组
  * @param {string} segmentId - 容器 ID
- * @param {string} storageKey - 存储� * @param {function(string):void} callback - 值变化回� * @param {object} options
+ * @param {string} storageKey - 存储键
+ * @param {function(string):void} callback - 值变化回调
+ * @param {object} options
  * @param {string} options.attr - 属性名 (默认 'data-value')
  * @param {boolean} options.keyboard - 键盘导航
  */
@@ -188,13 +191,17 @@ function initSegment(segmentId, storageKey, callback, options = {}) {
 }
 
 /**
- * 滑块同步工具：滑�<-> 数值显�<-> 存储
+ * 滑块同步工具：滑块 <-> 数值显示 <-> 存储
  * @param {string} sliderId - 滑块 input ID
  * @param {object} options
- * @param {string} options.storageKey - 存储� * @param {number} options.min - 最小� * @param {number} options.max - 最大� * @param {number} options.step - 步长
- * @param {string} options.valueId - 数值显示元�ID (可�
- * @param {function(number):string} options.formatValue - 格式化显示�(可�
- * @param {function(number):void} options.onChange - 值变化回� * @param {boolean} options.live - input 事件实时回调 (默认 false，只�change 触发)
+ * @param {string} options.storageKey - 存储键
+ * @param {number} options.min - 最小值
+ * @param {number} options.max - 最大值
+ * @param {number} options.step - 步长
+ * @param {string} options.valueId - 数值显示元素 ID（可选）
+ * @param {function(number):string} options.formatValue - 格式化显示（可选）
+ * @param {function(number):void} options.onChange - 值变化回调
+ * @param {boolean} options.live - input 事件实时回调（默认 false，只由 change 触发）
  */
 function initSlider(sliderId, options) {
   const slider = document.getElementById(sliderId);
@@ -238,7 +245,7 @@ function initSlider(sliderId, options) {
 
 
 /**
- * 收集容器内可聚焦元素（可见且�disabled� */
+ * 收集容器内可聚焦元素（可见且非 disabled） */
 function getFocusableElements(root) {
   if (!root) return [];
   const selector = [
@@ -259,7 +266,7 @@ function getFocusableElements(root) {
 }
 
 /**
- * �modal 内安装焦点陷阱：Tab/Shift+Tab 不外溢到背景
+ * 为 modal 内安装焦点陷阱：Tab/Shift+Tab 不外溢到背景
  */
 function trapFocus(modal) {
   if (!modal || modal._mfFocusTrapBound) return;
@@ -300,7 +307,7 @@ function releaseFocusTrap(modal) {
 }
 
 /**
- * 打开通用 modal（统一 active / aria / 焦点 / 焦点陷阱� */
+ * 打开通用 modal（统一 active / aria / 焦点 / 焦点陷阱） */
 function openModal(modal, focusEl) {
   if (!modal) return;
   modal.classList.add('active');
@@ -322,7 +329,7 @@ function openModal(modal, focusEl) {
 }
 
 /**
- * 关闭通用 modal（释放焦点陷阱并恢复焦点� */
+ * 关闭通用 modal（释放焦点陷阱并恢复焦点） */
 function closeModal(modal, restoreEl) {
   if (!modal) return;
   const hadFocus = modal.contains(document.activeElement);
@@ -359,14 +366,15 @@ function setModalError(errorEl, message, invalidEls) {
 }
 
 /**
- * 清理 modal 校验� */
+ * 清理 modal 校验态 */
 function clearModalValidation(errorEl, fields) {
   setModalError(errorEl, '', fields);
 }
 
 
 /**
- * 覆盖式自定义滚动条：不占用布局宽度，避免内容被原生滚动条顶开� * 返回 { update, destroy }
+ * 覆盖式自定义滚动条：不占用布局宽度，避免内容被原生滚动条顶开
+ * 返回 { update, destroy }
  */
 function attachOverlayScrollbar(scroller, options) {
   if (!scroller || scroller.dataset.mfScrollbar === '1') {
@@ -531,8 +539,9 @@ function initOverlayScrollbars(root) {
 
 
 /**
- * 条件设置项展开/收起（与 CSS .settings-reveal 配合� * 进出同一�transition：收起度= 下移 6px + 透明 + max-height 0
- * show=true 进入；false 镜像退出。返回是否发生状态变化� */
+ * 条件设置项展开/收起（与 CSS .settings-reveal 配合）
+ * 进出同一套 transition：收起时下移 6px + 透明 + max-height 0
+ * show=true 进入；false 镜像退出。返回是否发生状态变化 */
 function setSettingsReveal(el, show, options) {
   if (!el) return false;
   const opts = options || {};
@@ -620,20 +629,20 @@ function setSettingsRevealMany(entries) {
   });
 }
 
-/** 检�prefers-reduced-motion，全局复用避免重复�matchMedia */
+/** 检查 prefers-reduced-motion，全局复用避免重复 matchMedia */
 function prefersReducedMotion() {
   if (typeof window === 'undefined' || !window.matchMedia) return false;
   return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
 
-/** 通用 clamp：Number(value) �Math.min(max, Math.max(min, Math.round(n)))，失败返�fallback */
+/** 通用 clamp：Number(value) 经 Math.min(max, Math.max(min, Math.round(n)))，失败返回 fallback */
 function clampNumber(value, min, max, fallback) {
   const n = Number(value);
   if (Number.isNaN(n)) return fallback;
   return Math.min(max, Math.max(min, Math.round(n)));
 }
 
-/** 安全读取 localStorage �JSON.parse，失败返�fallback */
+/** 安全读取 localStorage 与 JSON.parse，失败返回 fallback */
 function loadJSON(key, fallback) {
   try {
     const raw = localStorage.getItem(key);
@@ -676,7 +685,7 @@ function getStorage(key, fallback = '') {
 }
 
 /**
- * 安全写入 localStorage 字符串，失败不抛� */
+ * 安全写入 localStorage 字符串，失败不抛错 */
 function setStorage(key, value) {
   try {
     localStorage.setItem(key, String(value));
@@ -687,7 +696,7 @@ function setStorage(key, value) {
 }
 
 /**
- * 删除 localStorage � */
+ * 删除 localStorage 键 */
 function removeStorage(key) {
   try {
     localStorage.removeItem(key);
@@ -738,7 +747,7 @@ function setStorageTyped(key, value, type = 'string') {
 }
 
 /**
- * 通用数值归一化：clamp �[min, max]，取整，失败返回 fallback
+ * 通用数值归一化：clamp 到 [min, max]，取整，失败返回 fallback
  */
 function normalizeNumber(value, min, max, fallback) {
   const n = Number(value);
@@ -756,7 +765,7 @@ function normalizeBoolean(value, fallback = false) {
 }
 
 /**
- * 十六进制颜色归一化：#rrggbb �#rgb �#rrggbb (小写)
+ * 十六进制颜色归一化：#rrggbb 或 #rgb 归一为 #rrggbb（小写）
  */
 function normalizeHexColor(value, fallback = '#000000') {
   let raw = String(value || '').trim().replace(/^#/, '');
@@ -768,7 +777,7 @@ function normalizeHexColor(value, fallback = '#000000') {
 }
 
 /**
- * 解析十六进制颜色�RGB 对象
+ * 解析十六进制颜色为 RGB 对象
  */
 function hexToRgb(hex) {
   const n = normalizeHexColor(hex, '#000000').slice(1);
@@ -780,7 +789,7 @@ function hexToRgb(hex) {
 }
 
 /**
- * RGB �HSL
+ * RGB 转 HSL
  */
 function rgbToHsl(r, g, b) {
   r /= 255; g /= 255; b /= 255;
@@ -830,7 +839,7 @@ function hslToRgb(h, s, l) {
 }
 
 /**
- * RGB �HSV
+ * RGB 转 HSV
  */
 function rgbToHsv(r, g, b) {
   r /= 255; g /= 255; b /= 255;
@@ -873,7 +882,7 @@ function hsvToRgb(h, s, v) {
 }
 
 /**
- * HSV �Hex
+ * HSV 转 Hex
  */
 function hsvToHex(h, s, v) {
   const rgb = hsvToRgb(h, s, v);
@@ -881,7 +890,7 @@ function hsvToHex(h, s, v) {
 }
 
 /**
- * 相对亮度（sRGB��），用于对比度计� */
+ * 相对亮度（sRGB 空间），用于对比度计算 */
 function relativeLuminance(r, g, b) {
   const toLinear = c => {
     const v = c / 255;
@@ -931,7 +940,7 @@ function shadeColor(hex, percent) {
 }
 
 /**
- * 十六进制�RGBA 字符� */
+ * 十六进制转 RGBA 字符串 */
 function hexToRgba(hex, alpha = 1) {
   const rgb = hexToRgb(hex);
   return `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${alpha})`;
@@ -1041,7 +1050,7 @@ function waitForElement(selector, root = document, timeout = 5000) {
 }
 
 /**
- * 安全执行函数（捕获错误，可�fallback� */
+ * 安全执行函数（捕获错误，可给 fallback） */
 function safeCall(fn, fallback, ...args) {
   try {
     return fn(...args);
@@ -1062,11 +1071,12 @@ async function safeCallAsync(fn, fallback, ...args) {
 }
 
 /**
- * 单次绑定事件：绑定后自动标记，防止重复绑� * @param {HTMLElement} el - 目标元素
+ * 单次绑定事件：绑定后自动标记，防止重复绑定
+ * @param {HTMLElement} el - 目标元素
  * @param {string} event - 事件类型
  * @param {Function} handler - 处理函数
  * @param {object} options - addEventListener 选项
- * @param {string} markAttr - 标记属性名 (默认 'data-bound')
+ * @param {string} markAttr - 标记属性名（默认 'data-bound'）
  */
 function bindOnce(el, event, handler, options, markAttr = 'data-bound') {
   if (!el || el.hasAttribute(markAttr)) return;
@@ -1076,11 +1086,12 @@ function bindOnce(el, event, handler, options, markAttr = 'data-bound') {
 
 /**
  * 批量单次绑定
- * @param {string} selector - 选择� * @param {string} event - 事件类型
- * @param {Function} handler - 处理函数 (接收 element 作为参数)
+ * @param {string} selector - 选择器
+ * @param {string} event - 事件类型
+ * @param {Function} handler - 处理函数（接收 element 作为参数）
  * @param {object} options - addEventListener 选项
  * @param {string} markAttr - 标记属性名
- * @param {HTMLElement} root - 查找根节� */
+ * @param {HTMLElement} root - 查找根节点 */
 function bindOnceAll(selector, event, handler, options, markAttr = 'data-bound', root = document) {
   const els = root.querySelectorAll(selector);
   els.forEach(el => bindOnce(el, event, () => handler(el), options, markAttr));
@@ -1094,13 +1105,13 @@ function uniqueId(prefix = 'id') {
 }
 
 /**
- * 深拷贝（简易版，仅支持 JSON 兼容类型� */
+ * 深拷贝（简易版，仅支持 JSON 兼容类型） */
 function deepClone(obj) {
   return JSON.parse(JSON.stringify(obj));
 }
 
 /**
- * 对象浅合� */
+ * 对象浅合并 */
 function merge(target, ...sources) {
   const result = { ...target };
   sources.forEach(src => {
@@ -1110,13 +1121,13 @@ function merge(target, ...sources) {
 }
 
 /**
- * 获取 CSS 变量� */
+ * 获取 CSS 变量 */
 function getCssVar(name, element = document.documentElement) {
   return getComputedStyle(element).getPropertyValue(name).trim();
 }
 
 /**
- * 设置 CSS 变量� */
+ * 设置 CSS 变量 */
 function setCssVar(name, value, element = document.documentElement) {
   element.style.setProperty(name, value);
 }
@@ -1156,7 +1167,7 @@ function isInViewport(el, threshold = 0) {
 }
 
 /**
- * 格式化数字（添加千分位分隔符� */
+ * 格式化数字（添加千分位分隔符） */
 function formatNumber(num) {
   return String(num).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 }
@@ -1178,14 +1189,14 @@ function randomInt(min, max) {
 }
 
 /**
- * 从数组中随机选取一个元� */
+ * 从数组中随机选取一个元素 */
 function randomPick(arr) {
   if (!Array.isArray(arr) || !arr.length) return null;
   return arr[randomInt(0, arr.length - 1)];
 }
 
 /**
- * 数组去重（基度key 函数� */
+ * 数组去重（基于 key 函数） */
 function uniqBy(arr, keyFn) {
   const seen = new Set();
   return arr.filter(item => {
@@ -1212,10 +1223,10 @@ function groupBy(arr, keyFn) {
  * @param {object} options
  * @param {object} options.vars - CSS 变量键值对 { '--var-name': 'value' }
  * @param {string} options.selector - 选择器前缀 (默认 'html')
- * @param {object} options.attrs - 属性选择�{ 'data-tone': 'sand', 'data-mode': 'dark' }
- * @param {string} options.styleId - style 元素 ID (用于更新/移除)
- * @param {HTMLElement} options.target - 插入目标 (默认 document.head)
- * @param {boolean} options.prepend - 是否插入到头�(默认 true)
+ * @param {object} options.attrs - 属性选择器 { 'data-tone': 'sand', 'data-mode': 'dark' }
+ * @param {string} options.styleId - style 元素 ID（用于更新/移除）
+ * @param {HTMLElement} options.target - 插入目标（默认 document.head）
+ * @param {boolean} options.prepend - 是否插入到头部（默认 true）
  */
 function injectCssVars(options) {
   const {
@@ -1257,7 +1268,7 @@ function injectCssVars(options) {
 }
 
 /**
- * 移除注入�CSS 变量样式
+ * 移除注入的 CSS 变量样式
  */
 function removeInjectedCssVars(styleId) {
   const style = document.getElementById(styleId);
@@ -1265,8 +1276,10 @@ function removeInjectedCssVars(styleId) {
 }
 
 /**
- * 构建主题 CSS 变量字符串（用于内联 style题 * @param {object} vars - CSS 变量对象
- * @param {object} attrs - 属性选择� * @param {string} baseSelector - 基础选择� */
+ * 构建主题 CSS 变量字符串（用于内联 style）
+ * @param {object} vars - CSS 变量对象
+ * @param {object} attrs - 属性选择器
+ * @param {string} baseSelector - 基础选择器 */
 function buildThemeCss(vars, attrs = {}, baseSelector = 'html') {
   let css = baseSelector;
   if (Object.keys(attrs).length) {
@@ -1309,7 +1322,8 @@ function syncColorScheme(isDark) {
 /**
  * DOM 元素缓存器：避免重复 querySelector/getElementById
  * @param {string|HTMLElement} selector - 选择器或元素
- * @param {HTMLElement} root - 查找根节� * @returns {HTMLElement|null}
+ * @param {HTMLElement} root - 查找根节点
+ * @returns {HTMLElement|null}
  */
 const _domCache = new Map();
 function $(selector, root = document) {
@@ -1329,7 +1343,7 @@ function clearDomCache(selector) {
 }
 
 /**
- * 安全获取元素属�� */
+ * 安全获取元素属性 */
 function getVal(el, prop = 'value') {
   if (!el) return '';
   return el[prop] ?? el.getAttribute(prop) ?? '';
@@ -1360,7 +1374,7 @@ function hasClass(el, className) {
 }
 
 /**
- * 批量设置属� */
+ * 批量设置属性 */
 function setAttrs(el, attrs) {
   if (!el || !attrs) return;
   Object.entries(attrs).forEach(([k, v]) => {
@@ -1370,7 +1384,10 @@ function setAttrs(el, attrs) {
 }
 
 /**
- * 创建元素的简易工� * @param {string} tag - 标签� * @param {object} attrs - 属� * @param {string|HTMLElement|Array} children - 子节� */
+ * 创建元素的简易工具
+ * @param {string} tag - 标签名
+ * @param {object} attrs - 属性
+ * @param {string|HTMLElement|Array} children - 子节点 */
 function createEl(tag, attrs = {}, children = []) {
   const el = document.createElement(tag);
   setAttrs(el, attrs);
@@ -1394,7 +1411,7 @@ function htmlToEl(html) {
 }
 
 /**
- * 表单数据序列� */
+ * 表单数据序列化 */
 function formDataToObj(form) {
   const data = {};
   new FormData(form).forEach((v, k) => {
@@ -1435,7 +1452,7 @@ function debouncedInput(el, handler, ms = 300) {
 }
 
 /**
- * 存储键前缀管理� */
+ * 存储键前缀管理器 */
 function createStore(prefix) {
   return {
     get: (key, fallback = '', type = 'string') => getStorageTyped(`${prefix}_${key}`, fallback, type),
@@ -1489,7 +1506,7 @@ const validators = {
 };
 
 /**
- * 验证值对� */
+ * 验证值对象 */
 function validate(obj, rules) {
   const errors = {};
   Object.entries(rules).forEach(([key, rule]) => {
@@ -1605,7 +1622,7 @@ function downloadFile(content, filename, type = 'application/json;charset=utf-8'
 }
 
 /**
- * 获取/设置 CSS 自定义属性（变量� */
+ * 获取/设置 CSS 自定义属性（变量） */
 const cssVars = {
   get: (name, el = document.documentElement) => getComputedStyle(el).getPropertyValue(name).trim(),
   set: (name, value, el = document.documentElement) => el.style.setProperty(name, value),
@@ -1636,7 +1653,7 @@ function stringifyJSON(obj, fallback = '') {
 }
 
 /**
- * 延迟执行（Promise �setTimeout� */
+ * 延迟执行（Promise + setTimeout） */
 function delay(ms) {
   return new Promise(r => setTimeout(r, ms));
 }

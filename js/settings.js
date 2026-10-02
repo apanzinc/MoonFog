@@ -184,7 +184,7 @@ function navigateSettings(pageId, options = {}) {
       backBtn.setAttribute('tabindex', '-1');
       backBtn.hidden = false;
     } else {
-      // 进入：先锁收起态再�is-shown，保�transition 能跑
+      // 进入：先锁收起态再加 is-shown，保证 transition 能跑
       backBtn.hidden = false;
       backBtn.setAttribute('aria-hidden', 'false');
       backBtn.setAttribute('tabindex', '0');
@@ -407,7 +407,7 @@ function bindSettingsNavigation() {
       setSettingsBackPeek(true);
     });
     backBtn.addEventListener('pointerleave', () => {
-      // 即将点击返回 / 已在动画中：不要�peek
+      // 即将点击返回 / 已在动画中：不要清 peek
       if (panel.dataset.backCommit === '1') return;
       if (panel.classList.contains('settings-animating')) return;
       if (panel.classList.contains('settings-back-from-peek')) return;
@@ -432,7 +432,7 @@ function refreshSettingsAvailability() {
 }
 
 /**
- * 同步「文字」分区：各区域字体选中�+ 粗细滑块
+ * 同步「文字」分区：各区域字体选中态 + 粗细滑块
  */
 /** Built-in fonts */
 const BUILTIN_FONT_OPTIONS = [
@@ -580,7 +580,7 @@ function syncTypeRoleSettingsUI() {
 }
 
 /**
- * 打开设置时，�localStorage / 运行时状态同步到面板控件
+ * 打开设置时，将 localStorage / 运行时状态同步到面板控件
  */
 function syncSettingsPanel() {
   const usernameInput = document.getElementById('usernameInput');

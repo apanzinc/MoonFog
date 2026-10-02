@@ -663,7 +663,7 @@ function updateOobeWallpaperPreview(mode, options = {}) {
   const empty = document.getElementById('oobeMediaEmpty');
   if (!frame || !grain || !img || !empty) return;
 
-  // 从设置步返回 livePreview 时必须卸掉齿�?指针
+  // 从设置步返回 livePreview 时必须卸掉齿轮/指针
   setOobeSettingsTipVisible(false);
   setOobeLogoPanelVisible(false);
   frame.classList.remove('has-settings-tip', 'has-logo');
@@ -1315,7 +1315,7 @@ function updateOobeMedia(step) {
     return;
   }
 
-  // 其它步骤：恢复默认框样式，隐�?logo / 设置示意 / 迷你主页，再加载 image 字段
+  // 其它步骤：恢复默认框样式，隐藏 logo / 设置示意 / 迷你主页，再加载 image 字段
   setOobeLogoPanelVisible(false);
   setOobeSettingsTipVisible(false);
   if (frame) {
@@ -1604,7 +1604,7 @@ function finishOobe() {
   const reduce =
     window.matchMedia &&
     window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  // 同一�?zoom 手势：卡往里缩、主页背景从外缩入
+  // 同一套 zoom 手势：卡往里缩、主页背景从外缩入
   const closeMs = reduce ? 0 : 480;
   const fromOobeMs = reduce ? 0 : 720;
 

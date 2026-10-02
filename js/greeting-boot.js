@@ -1,5 +1,6 @@
 /**
- * MoonFog - 问候文案首屏生成（�?boot-config.js 提取�? * 依赖 boot-config.js 设置�?window.__MOONFOG_BOOT__ �?localStorage
+ * MoonFog - 问候文案首屏生成（自 boot-config.js 提取）
+ * 依赖 boot-config.js 设置的 window.__MOONFOG_BOOT__ 与 localStorage
  */
 (function () {
   'use strict';

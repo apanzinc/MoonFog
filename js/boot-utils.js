@@ -1,7 +1,7 @@
 /**
  * MoonFog - Boot 阶段共用工具
  * 与 boot-config.js、greeting-boot.js 复用
- * 必须�?utils.js 之后加载
+ * 在 boot-config.js 等 boot 脚本之前加载
  */
 
 /**
@@ -69,7 +69,7 @@ function bootGetSystemColorScheme() {
 }
 
 /**
- * 根据偏好解析最�?light/dark
+ * 根据偏好解析最终 light/dark
  */
 function bootResolveEffectiveMode(pref, sceneDark) {
   const p = bootResolveModePref(pref);
@@ -79,7 +79,7 @@ function bootResolveEffectiveMode(pref, sceneDark) {
 }
 
 /**
- * 解析字体�? */
+ * 解析字体 key */
 function bootResolveFontKey(raw) {
   if (raw === 'genyomin') return 'sourcehanserif';
   if (raw === 'custom') {
@@ -95,7 +95,7 @@ function bootResolveFontKey(raw) {
 }
 
 /**
- * 获取字体�? */
+ * 获取字体族 */
 function bootGetFontFamily(fontKey) {
   const key = bootResolveFontKey(fontKey);
   if (key.startsWith('sys:')) {
@@ -110,7 +110,7 @@ function bootGetFontFamily(fontKey) {
 }
 
 /**
- * 归一化模糊�?0-40
+ * 归一化模糊值 0-40
  */
 function bootNormalizeBlur(val, def) {
   const n = Number(val);
@@ -119,13 +119,13 @@ function bootNormalizeBlur(val, def) {
 }
 
 /**
- * 归一化背景模�? */
+ * 归一化背景模式 */
 function bootNormalizeBgMode(val) {
   return ['local', 'bing', 'grain', 'solid'].includes(val) ? val : 'solid';
 }
 
 /**
- * 归一化问候模�? */
+ * 归一化问候模式 */
 function bootNormalizeGreetingMode(val) {
   const modes = ['greeting', 'clock', 'date', 'quote', 'custom'];
   return modes.includes(val) ? val : 'greeting';
@@ -143,7 +143,7 @@ function bootNormalizePerfMode(val) {
 }
 
 /**
- * 构建 boot 配置对象 (�?window.__MOONFOG_BOOT__ 使用)
+ * 构建 boot 配置对象（供 window.__MOONFOG_BOOT__ 使用）
  */
 function buildBootConfig() {
   const tone = bootResolveTone(bootGet('moonfog_tone', 'sand'));
@@ -198,7 +198,7 @@ function applyPerfModeToRoot(root, mode) {
 }
 
 /**
- * 计算视觉模糊�?(考虑性能模式)
+ * 计算视觉模糊值（考虑性能模式）
  */
 function computeVisualBlur(baseBlur, perfMode) {
   if (perfMode === 'low') return 0;
@@ -215,7 +215,7 @@ function computeScale(visualBlur, perfMode) {
 }
 
 /**
- * 计算中性遮�?CSS
+ * 计算中性遮罩 CSS
  */
 function computeBgWashCss(wash) {
   const v = Math.min(50, Math.max(-50, Math.round(Number(wash) || 0)));
@@ -225,7 +225,7 @@ function computeBgWashCss(wash) {
 }
 
 /**
- * 归一化问候字�?70-140
+ * 归一化问候字号 70-140
  */
 function bootNormalizeGreetingSize(val) {
   const n = Number(val);
@@ -247,7 +247,7 @@ function bootParsePalette(raw) {
 }
 
 /**
- * 生成问候标�?CSS (根据模式)
+ * 生成问候标题 CSS（根据模式）
  */
 function buildGreetingTitleCss(mode, greetingSize, fontFamily, weight) {
   const size = `calc(clamp(1.35rem,3.2vw,1.9rem)*${greetingSize/100})`;
@@ -288,7 +288,7 @@ function bootPreloadImage(url) {
   });
 }
 
-// 导出到全局�?boot 脚本使用
+// 导出到全局供 boot 脚本使用
 window.__MOONFOG_BOOT_UTILS__ = {
   bootGet,
   bootSet,

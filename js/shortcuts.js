@@ -1641,7 +1641,7 @@ function initShortcutSettings() {
   });
   // 全局阻止原生右键菜单：整个新标签页都用应用自定义菜单
   document.addEventListener('contextmenu', (e) => {
-    // 输入桰文本域保留原生菜单（复制/粘贴等功能）
+    // 输入框 / 文本域保留原生菜单（复制/粘贴等功能）
     const tag = e.target.tagName;
     const isInput = tag === 'INPUT' || tag === 'TEXTAREA' || e.target.isContentEditable;
     if (!isInput) {
@@ -1858,7 +1858,8 @@ function isBookmarkUrlUsable(url) {
 
 /**
  * 把书签HTML 中的<DL> 节点递归解析为 MoonFog 快捷导航数组
- *   DT -> H3  -> folder （其后紧跟的 <DL> 才是它的子项） *   DT -> A   -> link   （读句HREF、textContent、可选 ICON / ICON_URI） */
+ *   DT -> H3  -> folder （其后紧跟的 <DL> 才是它的子项）
+ *   DT -> A   -> link   （读取 HREF、textContent、可选 ICON / ICON_URI） */
 function parseBookmarkDL(dlEl, depthLimit) {
   depthLimit = typeof depthLimit === 'number' ? depthLimit : 20;
   if (!dlEl || depthLimit <= 0) return [];
@@ -1992,7 +1993,7 @@ function importBrowserBookmarksFromFile(file, tipElementId) {
     reader.onload = () => {
       try {
         const raw = String(reader.result || '');
-        // 粗略校验文件格式（Netscape Bookmark DOCTYPE / 常见 HTML 结构（
+        // 粗略校验文件格式（Netscape Bookmark DOCTYPE / 常见 HTML 结构）
         if (!/<DL[\s>]/i.test(raw) && !/<dl[\s>]/i.test(raw)) {
           setTip('文件不是标准的浏览器书签 HTML 格式');
           resolve({ ok: false, reason: 'bad_format' });

@@ -263,8 +263,8 @@ function applyPerfMode(modeOrBool, options) {
   } else {
     root.classList.add('perf-full');
   }
-  // 按用户偏好重算表面模糊（限制档；resolve 与0（
-if (typeof applySearchBlur === 'function') {
+  // 按用户偏好重算表面模糊（限制档时归 0）
+  if (typeof applySearchBlur === 'function') {
     applySearchBlur(currentSearchBlur);
   }
   if (typeof applyPanelBlur === 'function') {
@@ -1016,7 +1016,8 @@ function setPageBackgroundImage(url, active = !!url) {
  * 展示/隐藏必应署名
  */
 /**
- * 把必底title / copyright 整理成展示文桰 * copyright 常见：地炉标题 (© 作
+ * 把必应 title / copyright 整理成展示文案
+ * copyright 常见：地图标题 (© 作者)
  */
 /**
  * 必应沉浸卡：有图时打 has-photo，保证白字叠在图上（不靠 :has 选择器）
@@ -1435,7 +1436,7 @@ function pickMonetColors(buckets) {
     })
     .sort((a, b) => b.score - a.score);
 
-  // Material 默认 seed（无法提取时（
+  // Material 默认 seed（无法提取时使用）
   const fallback = {
     primary: { r: 103, g: 80, b: 164, h: 256, s: 34, l: 48 },
     secondary: { r: 98, g: 91, b: 113, h: 256, s: 10, l: 40 },
@@ -1645,7 +1646,7 @@ async function extractPaletteFromImage(url, mode) {
         const hsl = rgbToHsl(r, g, b);
         // seed 量化：丢掉近白近黙
         if (hsl.l < 5 || hsl.l > 95) continue;
-        // 人口为主，色度轻微加权（贴近 Monet quantizer（
+        // 人口为主，色度轻微加权（贴近 Monet quantizer）
         const weight = 1 + Math.min(1.8, hsl.s / 40);
         const qr = r >> 4;
         const qg = g >> 4;
@@ -1896,9 +1897,9 @@ function buildPaletteFromDominant(input, modeOrScene, maybeMode) {
     }
   }
 
-  // 职责分离（
+  // 职责分离：
   // - 裸露问候字 / 全屏 wash →跟壁纸场景
-  // - 搜索桰/ 标签 / 设置面板表面与字色→跟用户浅深（明暗切换必须生效（
+  // - 搜索框 / 标签 / 设置面板表面与字色→跟用户浅深（明暗切换必须生效）
   const roles = buildMonetRoles(seed, userDark);
 
   const washAlpha = sceneDark
@@ -2174,7 +2175,7 @@ html body.has-image-bg .greeting-section {
   -webkit-backdrop-filter: none !important;
   padding: 0 !important;
 }
-/* 图片模式毛玻璃统一：搜紈/ 标签 / 设置钮同一奂token */
+/* 图片模式毛玻璃统一：搜索框 / 标签 / 设置按钮同一套 token */
 html body.has-image-bg .search-box,
 html.boot-has-image .search-box,
 html body.has-image-bg .shortcut-btn,
@@ -2534,7 +2535,7 @@ async function applyBackgroundMode(mode, options = {}) {
     } catch (_) {}
     updateBgSettingsUI();
     if (typeof syncSurfaceBlurAvailability === 'function') syncSurfaceBlurAvailability();
-    // 流光渐变：应用调色板则UI（非流光时也会清琨inline 样式（
+    // 流光渐变：应用调色板到 UI（非流光时也会清理 inline 样式）
     if (typeof applyGrainPalette === 'function') {
       applyGrainPalette();
     }
@@ -2732,7 +2733,7 @@ async function fetchBingImagePool(force) {
         dayKey,
         at: Date.now(),
         items,
-        // 当前展示在池中的下标（今日默认0（
+        // 当前展示在池中的下标（今日默认 0）
         cursor: 0
       };
       // 若用户当天已选过非今日图，尽量保
@@ -2856,7 +2857,7 @@ async function shuffleBingWallpaper() {
     writeBingCache(meta);
 
     currentBingMeta = meta;
-    // 整页壁纸交叉淡入 + 设置页预览同步动画（并行（
+    // 整页壁纸交叉淡入 + 设置页预览同步动画（并行）
     const [ok] = await Promise.all([
       setPageBackgroundImage(meta.imageUrl, true),
       typeof setBingHeroPreview === 'function'

@@ -3,7 +3,7 @@
  */
 
 /**
- * 初始化搜紈 */
+ * 初始化搜索 */
 function initSearch() {
   const form = document.getElementById('searchForm');
   const input = document.getElementById('searchInput');
@@ -155,7 +155,7 @@ function createCustomEngineEl(key, name, url) {
 }
 
 /**
- * 渲染所有自定义引擎到列�? */
+ * 渲染所有自定义引擎到列表 */
 function renderCustomEngines() {
   const grid = document.getElementById('engineGrid');
   if (!grid) return;
@@ -168,7 +168,7 @@ function renderCustomEngines() {
   }
 }
 
-/** 打开「添加自定义搜索引擎」弹�?*/
+/** 打开「添加自定义搜索引擎」弹窗 */
 function openEngineModal() {
   const engineModal = document.getElementById('engineModal');
   const modalNameInput = document.getElementById('customEngineName');
