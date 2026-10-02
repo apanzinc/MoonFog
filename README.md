@@ -1,4 +1,4 @@
-<h1 align="center"><img src="assets/logo.png" width="38" alt="MoonFog logo" align="middle"> MoonFog 朔雾</h1>
+<h1 align="center"><img src="assets/logo.png" width="38" alt="MoonFog logo" align="top"> MoonFog 朔雾</h1>
 
 ![MoonFog banner](assets/banner.png)
 
