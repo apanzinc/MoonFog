@@ -1,4 +1,4 @@
-# MoonFog 朔雾
+<h1 align="center">MoonFog 朔雾</h1>
 
 ![MoonFog banner](assets/banner.png)
 
