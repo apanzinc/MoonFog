@@ -1,7 +1,7 @@
 /**
  * MoonFog - 首屏同步配置（精简版）
  * 职责：theme 注入 + CSS 变量 + boot-ready 状态
- * 问候文案 → greeting-boot.js | 背景预加载 → background-boot.js
+ * 问候文案 → greeting-boot.js | 背景预加载 → background.js
  */
 (function () {
   'use strict';

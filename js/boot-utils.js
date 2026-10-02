@@ -1,6 +1,6 @@
 /**
  * MoonFog - Boot 阶段共用工具
- * �?boot-config.js, background-boot.js, greeting-boot.js 复用
+ * 与 boot-config.js、greeting-boot.js 复用
  * 必须�?utils.js 之后加载
  */
 
