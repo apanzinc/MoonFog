@@ -335,7 +335,7 @@ function updatePanelBlurUI() {
   if (slider && String(slider.value) !== String(currentPanelBlur)) slider.value = String(currentPanelBlur);
   if (label) {
     const perf = getPerfMode();
-    if (perf === 'low') label.textContent = currentPanelBlur + 'px（限制关（';
+    if (perf === 'low') label.textContent = currentPanelBlur + 'px（限制关）';
     else label.textContent = currentPanelBlur + 'px';
   }
   if (typeof updatePanelBlurAvailability === 'function') updatePanelBlurAvailability();
@@ -2597,7 +2597,7 @@ async function applyBackgroundMode(mode, options = {}) {
     if (cached && cached.imageUrl) {
       currentBingMeta = cached;
       const ok = await setPageBackgroundImage(cached.imageUrl, true);
-      setBingCredit(cached.copyright || cached.title || 'Bing 每日一图（缓存（', cached);
+      setBingCredit(cached.copyright || cached.title || 'Bing 每日一图（缓存）', cached);
       if (ok) {
         whenBgEnterSettled(() => applyPaletteForUrl(cached.imageUrl), 700);
       }

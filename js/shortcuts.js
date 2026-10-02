@@ -1857,7 +1857,7 @@ function isBookmarkUrlUsable(url) {
 }
 
 /**
- * 把书签HTML 中的一中<DL> 节点递归解析与AstrGO 快捷导航数组
+ * 把书签HTML 中的<DL> 节点递归解析为 MoonFog 快捷导航数组
  *   DT -> H3  -> folder （其后紧跟的 <DL> 才是它的子项） *   DT -> A   -> link   （读句HREF、textContent、可选 ICON / ICON_URI） */
 function parseBookmarkDL(dlEl, depthLimit) {
   depthLimit = typeof depthLimit === 'number' ? depthLimit : 20;

@@ -428,8 +428,8 @@ function syncOobeWallpaperUI() {
       tip.textContent = '';
     } else {
       const tips = {
-        grain: '使用动态流光渐句',
-        bing: '将使用必应今日壁纸（需联网（',
+        grain: '使用动态流光渐变',
+        bing: '将使用必应今日壁纸（需联网）',
         local: '从本机选择一张图片'
       };
       tip.textContent = tips[mode] || '';
