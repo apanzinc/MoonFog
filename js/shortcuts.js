@@ -127,10 +127,43 @@ function detectIconHasRoundedCorners(src) {
 }
 
 const DEFAULT_SHORTCUTS = [
-  { name: 'Google', url: 'https://www.google.com' },
-  { name: 'GitHub', url: 'https://github.com' },
-  { name: 'YouTube', url: 'https://youtube.com' },
-  { name: 'Bilibili', url: 'https://bilibili.com' }
+  {
+    type: 'folder',
+    name: '开发工具',
+    children: [
+      { name: 'GitHub', url: 'https://github.com' },
+      { name: 'Gitee', url: 'https://gitee.com' },
+      { name: 'Stack Overflow', url: 'https://stackoverflow.com' },
+      {
+        type: 'folder',
+        name: 'AI 工具',
+        children: [
+          { name: 'ChatGPT', url: 'https://chatgpt.com' },
+          { name: 'DeepSeek', url: 'https://chat.deepseek.com' },
+          { name: 'Claude', url: 'https://claude.ai' }
+        ]
+      }
+    ]
+  },
+  {
+    type: 'folder',
+    name: '影音娱乐',
+    children: [
+      { name: 'YouTube', url: 'https://www.youtube.com' },
+      { name: 'Bilibili', url: 'https://www.bilibili.com' },
+      { name: 'Spotify', url: 'https://open.spotify.com' }
+    ]
+  },
+  {
+    type: 'folder',
+    name: '资讯社区',
+    children: [
+      { name: '知乎', url: 'https://www.zhihu.com' },
+      { name: '微博', url: 'https://weibo.com' },
+      { name: 'X', url: 'https://x.com' },
+      { name: 'Reddit', url: 'https://www.reddit.com' }
+    ]
+  }
 ];
 
 /** 空文件夹占位模板（同族圆底图标 + 文案 + 标签同款胶囊按钮）*/
@@ -1491,10 +1524,7 @@ function normalizeShortcutUrl(url) {
  * 深拷贝默认快捷方式（避免直接改常量）
  */
 function cloneDefaultShortcuts() {
-  return DEFAULT_SHORTCUTS.map((s) => ({
-    ...s,
-    children: s.children ? [...s.children] : undefined
-  }));
+  return JSON.parse(JSON.stringify(DEFAULT_SHORTCUTS));
 }
 
 /**
