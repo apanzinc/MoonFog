@@ -154,6 +154,16 @@ body.has-image-bg.img-ui-dark .icon-mono {
   transform: none;
 }
 
+/* 主页空状态占位标签：虚线胶囊提示可添加 */
+.shortcut-btn-add {
+  border-style: dashed;
+}
+
+.shortcut-add-icon .mgc_add_line {
+  font-size: 13px;
+  line-height: 1;
+}
+
 [data-mode="dark"] .shortcut-btn,
 [data-mode="dark"] .shortcut-folder-trigger {
   background: rgba(255, 255, 255, 0.08);

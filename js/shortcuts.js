@@ -178,8 +178,8 @@ function getShortcuts() {
     const raw = localStorage.getItem(SHORTCUTS_STORAGE_KEY);
     if (raw) {
       const data = JSON.parse(raw);
-      if (Array.isArray(data) && data.length > 0) {
-        // 校验每项至少本name
+      if (Array.isArray(data)) {
+        // 校验每项至少有 name；空数组是用户主动删光的有效状态，保留空态而非回退默认
         const valid = data.every(item => item && item.name);
         if (valid) return data;
       }
@@ -1004,6 +1004,22 @@ function renderShortcuts() {
     if (!Array.isArray(shortcuts)) shortcuts = DEFAULT_SHORTCUTS;
   } catch (e) {
     shortcuts = DEFAULT_SHORTCUTS;
+  }
+
+  // 空状态：保留一个「添加内容」占位标签，点击打开新增弹窗
+  if (shortcuts.length === 0) {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'shortcut-drag-wrapper';
+    const btn = document.createElement('button');
+    btn.className = 'shortcut-btn shortcut-btn-add';
+    btn.type = 'button';
+    btn.title = '添加内容';
+    btn.setAttribute('aria-label', '添加内容');
+    btn.innerHTML = '<span class="shortcut-icon shortcut-add-icon" aria-hidden="true"><span class="mgc_add_line"></span></span><span class="shortcut-label">添加内容</span>';
+    btn.addEventListener('click', () => openShortcutModal(-1, null, 'item'));
+    wrapper.appendChild(btn);
+    row.appendChild(wrapper);
+    return;
   }
 
   shortcuts.forEach((item, idx) => {
