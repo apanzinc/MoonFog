@@ -237,25 +237,6 @@ function bindShortcutsVisibilityToggle() {
   syncShortcutsVisibilityUI();
 }
 
-/** 行尾「关闭收藏夹」按钮：隐藏整块并停用收藏夹逻辑（设置页可重新开启） */
-function createShortcutsToggleButton() {
-  const btn = document.createElement('button');
-  btn.className = 'shortcut-btn shortcut-toggle-off';
-  btn.type = 'button';
-  btn.title = '关闭收藏夹';
-  btn.setAttribute('aria-label', '关闭收藏夹');
-  btn.innerHTML = '<span class="mgc_eye_close_line" aria-hidden="true"></span>';
-  btn.addEventListener('click', () => {
-    setShortcutsVisible(false);
-    renderShortcuts();
-  });
-  btn.addEventListener('contextmenu', (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-  });
-  return btn;
-}
-
 function openShortcutModal(index, data, type, childIndex, path) {
   const scModalTitle = document.getElementById('shortcutModalTitle');
   const scModalConfirm = document.getElementById('shortcutModalConfirm');
@@ -1081,7 +1062,6 @@ function renderShortcuts() {
     btn.addEventListener('click', () => openShortcutModal(-1, null, 'item'));
     wrapper.appendChild(btn);
     row.appendChild(wrapper);
-    row.appendChild(createShortcutsToggleButton());
     return;
   }
 
@@ -1238,8 +1218,6 @@ function renderShortcuts() {
       dragIndex = null;
     });
   });
-
-  row.appendChild(createShortcutsToggleButton());
 
   // 图片背景下：重渲染后重新贴上场景对比色
   if (
