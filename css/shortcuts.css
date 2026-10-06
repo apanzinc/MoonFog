@@ -164,6 +164,23 @@ body.has-image-bg.img-ui-dark .icon-mono {
   line-height: 1;
 }
 
+/* 行尾「关闭收藏夹」按钮：图标胶囊 */
+.shortcut-toggle-off {
+  padding: 0;
+  width: 32px;
+  justify-content: center;
+  color: var(--text-secondary);
+}
+
+.shortcut-toggle-off:hover {
+  color: var(--text-primary);
+}
+
+.shortcut-toggle-off .mgc_eye_close_line {
+  font-size: 15px;
+  line-height: 1;
+}
+
 [data-mode="dark"] .shortcut-btn,
 [data-mode="dark"] .shortcut-folder-trigger {
   background: rgba(255, 255, 255, 0.08);

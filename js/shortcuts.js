@@ -196,6 +196,66 @@ function saveShortcuts(shortcuts) {
   localStorage.setItem(SHORTCUTS_STORAGE_KEY, JSON.stringify(shortcuts));
 }
 
+const SHORTCUTS_VISIBLE_KEY = 'moonfog_shortcuts_visible';
+
+/** 收藏夹开关：无 key 或非 '0' 即显示 */
+function isShortcutsVisible() {
+  try {
+    return localStorage.getItem(SHORTCUTS_VISIBLE_KEY) !== '0';
+  } catch (_) {
+    return true;
+  }
+}
+
+function setShortcutsVisible(visible) {
+  try {
+    if (visible) localStorage.removeItem(SHORTCUTS_VISIBLE_KEY);
+    else localStorage.setItem(SHORTCUTS_VISIBLE_KEY, '0');
+  } catch (_) {}
+}
+
+/** 隐藏时整块 display:none，逻辑入口由 renderShortcuts 短路 */
+function applyShortcutsVisibility() {
+  const section = document.getElementById('shortcutsSection');
+  if (section) section.hidden = !isShortcutsVisible();
+}
+
+function syncShortcutsVisibilityUI() {
+  const el = document.getElementById('shortcutsVisibleToggle');
+  if (el) el.checked = isShortcutsVisible();
+}
+
+function bindShortcutsVisibilityToggle() {
+  const el = document.getElementById('shortcutsVisibleToggle');
+  if (!el || el.dataset.bound) return;
+  el.dataset.bound = '1';
+  el.addEventListener('change', () => {
+    setShortcutsVisible(!!el.checked);
+    renderShortcuts();
+    syncShortcutsVisibilityUI();
+  });
+  syncShortcutsVisibilityUI();
+}
+
+/** 行尾「关闭收藏夹」按钮：隐藏整块并停用收藏夹逻辑（设置页可重新开启） */
+function createShortcutsToggleButton() {
+  const btn = document.createElement('button');
+  btn.className = 'shortcut-btn shortcut-toggle-off';
+  btn.type = 'button';
+  btn.title = '关闭收藏夹';
+  btn.setAttribute('aria-label', '关闭收藏夹');
+  btn.innerHTML = '<span class="mgc_eye_close_line" aria-hidden="true"></span>';
+  btn.addEventListener('click', () => {
+    setShortcutsVisible(false);
+    renderShortcuts();
+  });
+  btn.addEventListener('contextmenu', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  });
+  return btn;
+}
+
 function openShortcutModal(index, data, type, childIndex, path) {
   const scModalTitle = document.getElementById('shortcutModalTitle');
   const scModalConfirm = document.getElementById('shortcutModalConfirm');
@@ -998,6 +1058,8 @@ function renderShortcuts() {
   const row = document.getElementById('shortcutsRow');
   if (!row) return;
   row.innerHTML = '';
+  applyShortcutsVisibility();
+  if (!isShortcutsVisible()) return;
   let shortcuts;
   try {
     shortcuts = getShortcuts() || DEFAULT_SHORTCUTS;
@@ -1019,6 +1081,7 @@ function renderShortcuts() {
     btn.addEventListener('click', () => openShortcutModal(-1, null, 'item'));
     wrapper.appendChild(btn);
     row.appendChild(wrapper);
+    row.appendChild(createShortcutsToggleButton());
     return;
   }
 
@@ -1175,6 +1238,8 @@ function renderShortcuts() {
       dragIndex = null;
     });
   });
+
+  row.appendChild(createShortcutsToggleButton());
 
   // 图片背景下：重渲染后重新贴上场景对比色
   if (
@@ -1581,6 +1646,7 @@ function deleteChildShortcut(folderIndex, childIndex, path) {
  * 用initSettings() 调用一次 */
 function initShortcutSettings() {
   bindFolderExpandDirSetting();
+  bindShortcutsVisibilityToggle();
 
   const shortcutModal = document.getElementById('shortcutModal');
 
