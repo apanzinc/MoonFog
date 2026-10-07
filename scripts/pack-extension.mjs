@@ -4,20 +4,35 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { PACKAGE_PATHS } from './package-paths.mjs';
+
 const require = createRequire(import.meta.url);
 const crx3 = require('crx3');
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const INCLUDE = ['manifest.json', 'newtab.html', 'css', 'js', 'icons', 'fonts', '_locales'];
+
+function takeValue(argv, index, flag) {
+  const value = argv[index + 1];
+  if (!value || value.startsWith('--')) {
+    throw new Error(`${flag} 需要参数`);
+  }
+  return value;
+}
 
 function parseArgs(argv) {
   const args = { key: '', out: 'dist', name: '', keepKey: false };
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
-    if (arg === '--key') args.key = argv[++i] || '';
-    else if (arg === '--out') args.out = argv[++i] || 'dist';
-    else if (arg === '--name') args.name = argv[++i] || '';
-    else if (arg === '--keep-key') args.keepKey = true;
+    if (arg === '--key') {
+      args.key = takeValue(argv, i, arg);
+      i += 1;
+    } else if (arg === '--out') {
+      args.out = takeValue(argv, i, arg);
+      i += 1;
+    } else if (arg === '--name') {
+      args.name = takeValue(argv, i, arg);
+      i += 1;
+    } else if (arg === '--keep-key') args.keepKey = true;
     else throw new Error(`未知参数: ${arg}`);
   }
   return args;
@@ -37,9 +52,16 @@ if (args.key && !existsSync(keyPath)) {
 }
 const generatedKey = !existsSync(keyPath);
 
+for (const item of PACKAGE_PATHS) {
+  if (!existsSync(path.join(root, item))) {
+    console.error(`缺少打包文件: ${item}`);
+    process.exit(1);
+  }
+}
+
 const stage = mkdtempSync(path.join(tmpdir(), 'moonfog-'));
 try {
-  for (const item of INCLUDE) {
+  for (const item of PACKAGE_PATHS) {
     cpSync(path.join(root, item), path.join(stage, item), {
       recursive: true,
       filter: (src) => path.basename(src) !== '.DS_Store',

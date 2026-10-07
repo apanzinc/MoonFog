@@ -1,8 +1,18 @@
 import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { parseChromeVersion } from './extension-version.mjs';
+import { PACKAGE_PATHS } from './package-paths.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+
+function resolveInside(rel) {
+  if (typeof rel !== 'string' || rel === '' || path.isAbsolute(rel)) return null;
+  const resolved = path.resolve(root, rel);
+  const relative = path.relative(root, resolved);
+  if (relative === '' || relative.startsWith('..') || path.isAbsolute(relative)) return null;
+  return resolved;
+}
 const errors = [];
 
 function fail(message) {
@@ -22,26 +32,25 @@ if (manifest.manifest_version !== 3) {
 }
 
 const version = String(manifest.version || '');
-if (!/^\d{1,5}(\.\d{1,5}){2,3}$/.test(version)) {
-  fail(`version 必须是 Chrome 扩展版本号（如 1.2.3）: ${version}`);
-} else if (version.split('.').some((part) => Number(part) > 65535)) {
-  fail('version 每一段必须 <= 65535');
+if (!parseChromeVersion(version)) {
+  fail(`version 必须是 Chrome 扩展版本号（1 到 4 段，每段 0–65535，无前导 0，且不能全为 0）: ${version}`);
 }
 
-for (const item of ['newtab.html', 'css', 'js', 'icons', 'fonts', '_locales']) {
+for (const item of PACKAGE_PATHS) {
   if (!existsSync(path.join(root, item))) {
     fail(`缺少 ${item}`);
   }
 }
 
-const newtab = manifest.chrome_url_overrides?.newtab;
-if (!newtab || !existsSync(path.join(root, newtab))) {
-  fail(`chrome_url_overrides.newtab 不存在: ${newtab || '(空)'}`);
+const newtab = resolveInside(manifest.chrome_url_overrides?.newtab);
+if (!newtab || !existsSync(newtab)) {
+  fail(`chrome_url_overrides.newtab 不存在或不在扩展目录内: ${manifest.chrome_url_overrides?.newtab || '(空)'}`);
 }
 
 for (const [size, rel] of Object.entries(manifest.icons || {})) {
-  if (!existsSync(path.join(root, rel))) {
-    fail(`icons.${size} 不存在: ${rel}`);
+  const iconPath = resolveInside(rel);
+  if (!iconPath || !existsSync(iconPath)) {
+    fail(`icons.${size} 不存在或不在扩展目录内: ${rel}`);
   }
 }
 
@@ -49,8 +58,8 @@ const locale = manifest.default_locale;
 if (!locale) {
   fail('缺少 default_locale');
 } else {
-  const messagesPath = path.join(root, '_locales', locale, 'messages.json');
-  if (!existsSync(messagesPath)) {
+  const messagesPath = resolveInside(path.join('_locales', locale, 'messages.json'));
+  if (!messagesPath || !existsSync(messagesPath)) {
     fail(`缺少 _locales/${locale}/messages.json`);
   } else {
     const messages = JSON.parse(readFileSync(messagesPath, 'utf8'));

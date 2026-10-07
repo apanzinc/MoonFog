@@ -30,20 +30,23 @@ jobs:
           node-version: 22
           cache: npm
 
+      - name: Require a branch
+        run: |
+          case "$GITHUB_REF" in
+            refs/heads/*) ;;
+            *)
+              echo "请从分支运行 Release，当前是 ${GITHUB_REF}" >&2
+              exit 1
+              ;;
+          esac
+
       - name: Normalize version
         id: version
         env:
           RAW_VERSION: ${{ inputs.version }}
         run: |
           VERSION="${RAW_VERSION#v}"
-          python3 - "$VERSION" <<'PY'
-          import re, sys
-          version = sys.argv[1]
-          if not re.fullmatch(r"\d{1,5}(\.\d{1,5}){2,3}", version):
-              sys.exit(f"版本号必须是 1.2.3 或 1.2.3.4，收到: {version}")
-          if any(int(part) > 65535 for part in version.split(".")):
-              sys.exit("版本号每一段必须 <= 65535")
-          PY
+          node scripts/extension-version.mjs "$VERSION" manifest.json
           if git rev-parse -q --verify "refs/tags/v${VERSION}" >/dev/null; then
             echo "tag v${VERSION} 已存在" >&2
             exit 1
@@ -84,6 +87,7 @@ jobs:
           EOF
 
       - run: npm ci
+      - run: npm run check
 
       - name: Pack CRX
         env:
@@ -102,9 +106,7 @@ jobs:
           else
             git commit -m "chore: release v${VERSION}"
           fi
-          git tag -a "v${VERSION}" -m "MoonFog v${VERSION}"
           git push origin "HEAD:${GITHUB_REF_NAME}"
-          git push origin "v${VERSION}"
 
       - name: Publish GitHub Release
         env:
@@ -114,5 +116,6 @@ jobs:
           gh release create "v${VERSION}" \
             "dist/MoonFog-${VERSION}.crx" \
             "dist/MoonFog-${VERSION}.zip" \
+            --target "$(git rev-parse HEAD)" \
             --title "MoonFog v${VERSION}" \
             --generate-notes
