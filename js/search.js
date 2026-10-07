@@ -98,15 +98,19 @@ function createCustomEngineEl(key, name, url) {
 
   const initial = (name.charAt(0) || '?').toUpperCase();
   const safeName = escapeHtml(name);
-  const safeInitial = escapeAttr(initial);
-  const safeHost = escapeAttr(host);
   const safeKey = escapeAttr(key);
   const faviconSrc = host
     ? `https://www.google.com/s2/favicons?domain=${encodeURIComponent(host)}&sz=32`
     : '';
 
+  const favicon = document.createElement('img');
+  favicon.width = 16;
+  favicon.height = 16;
+  favicon.alt = '';
+  favicon.setAttribute('aria-hidden', 'true');
+  favicon.addEventListener('error', () => fallbackIcon(favicon, initial));
+
   row.innerHTML = `
-    <img src="${faviconSrc}" width="16" height="16" alt="" aria-hidden="true" onerror="fallbackIcon(this,'${safeInitial}')">
     <span class="engine-name">${safeName}</span>
     <button type="button" class="engine-delete" data-delete="${safeKey}" aria-label="删除 ${safeName}">
       <span class="mgc_close_line" aria-hidden="true"></span>
@@ -122,6 +126,10 @@ function createCustomEngineEl(key, name, url) {
     syncRadioSelection(grid);
     localStorage.setItem('moonfog_engine', key);
   };
+
+  row.insertBefore(favicon, row.firstChild);
+  if (faviconSrc) favicon.src = faviconSrc;
+  else fallbackIcon(favicon, initial);
 
   row.addEventListener('click', (e) => {
     if (e.target.closest('.engine-delete')) return;

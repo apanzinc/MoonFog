@@ -48,21 +48,11 @@
     "fontSettings"
   ],
   "host_permissions": [
-    "https://*.bing.com/*",
+    "https://www.bing.com/*",
+    "https://cn.bing.com/*",
     "https://hitokoto.c0ffee.space/*",
     "https://v1.hitokoto.cn/*",
     "https://www.google.com/*",
-    "https://icons.duckduckgo.com/*",
-    "https://*/*"
-  ],
-  "web_accessible_resources": [
-    {
-      "resources": [
-        "icons/*"
-      ],
-      "matches": [
-        "<all_urls>"
-      ]
-    }
+    "https://icons.duckduckgo.com/*"
   ]
 }

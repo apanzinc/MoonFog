@@ -25,10 +25,11 @@
 | 权限 | 用途 |
 | --- | --- |
 | `fontSettings` | 读取系统字体设置 |
-| `bing.com` | 获取每日一图与图片署名 |
+| `www.bing.com` / `cn.bing.com` | 获取每日一图与图片署名 |
 | `hitokoto.cn` / `hitokoto.c0ffee.space` | 一言问候文案 |
-| `google.com` / `duckduckgo.com` | 搜索跳转与站点图标抓取 |
-| `<all_urls>` | 自定义快捷导航的站点图标（favicon）抓取 |
+| `www.google.com` / `icons.duckduckgo.com` | 站点图标抓取（搜索本身是页面跳转，不使用主机权限） |
+
+不申请 `<all_urls>`。快捷导航站点自身的 favicon，以及关于页作者头像（`static.apanzinc.top`、`q.qlogo.cn`），只作为图片地址加载。
 
 所有偏好仅存储在本地 `localStorage`，不上传、无遥测、无账号。
 
@@ -53,3 +54,8 @@ assets/              README 配图（banner、logo）
 ## 许可
 
 Copyright (c) 2026 apanzinc。本项目基于 GNU Affero General Public License v3.0 获得许可。
+
+内置字体：
+
+- 思源宋体（Source Han Serif）版权归 Adobe 所有，基于 [SIL Open Font License 1.1](https://scripts.sil.org/OFL) 获得许可。
+- MingCute 图标字体版权归 MingCute 所有，基于 [Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0) 获得许可。
