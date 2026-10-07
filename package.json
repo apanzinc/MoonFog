@@ -1,0 +1,11 @@
+{
+  "name": "moonfog",
+  "private": true,
+  "scripts": {
+    "check": "node scripts/check.mjs",
+    "pack": "node scripts/pack-extension.mjs"
+  },
+  "devDependencies": {
+    "crx3": "2.0.0"
+  }
+}
