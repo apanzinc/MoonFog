@@ -1,0 +1,37 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+      - run: npm run check
+      - run: npm run pack
+
+      - name: Assert CRX3 package
+        run: |
+          python3 - <<'PY'
+          import glob
+          import pathlib
+          crx_files = glob.glob("dist/*.crx")
+          zip_files = glob.glob("dist/*.zip")
+          assert len(crx_files) == 1, crx_files
+          assert len(zip_files) == 1, zip_files
+          data = pathlib.Path(crx_files[0]).read_bytes()
+          assert data[:4] == b"Cr24", data[:4]
+          assert int.from_bytes(data[4:8], "little") == 3
+          print(pathlib.Path(crx_files[0]).name, len(data))
+          PY
+          test -z "$(find dist -name '*.pem' -print)"
