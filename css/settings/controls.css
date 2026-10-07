@@ -2176,7 +2176,7 @@
 .about-inline-links {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 10px;
   flex-wrap: wrap;
 }
 
@@ -2189,6 +2189,21 @@
 
 .about-inline-link:hover {
   color: var(--text-primary);
+}
+
+.about-inline-link--icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+}
+
+.about-inline-link-icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
 }
 
 .about-author {
