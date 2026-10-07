@@ -1,0 +1,118 @@
+name: Release
+
+run-name: Release v${{ inputs.version }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "版本号，如 1.2.3。仓库 Secret CRX_PRIVATE_KEY 须为 PEM 私钥（决定扩展 ID，每次发布用同一把）。"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Normalize version
+        id: version
+        env:
+          RAW_VERSION: ${{ inputs.version }}
+        run: |
+          VERSION="${RAW_VERSION#v}"
+          python3 - "$VERSION" <<'PY'
+          import re, sys
+          version = sys.argv[1]
+          if not re.fullmatch(r"\d{1,5}(\.\d{1,5}){2,3}", version):
+              sys.exit(f"版本号必须是 1.2.3 或 1.2.3.4，收到: {version}")
+          if any(int(part) > 65535 for part in version.split(".")):
+              sys.exit("版本号每一段必须 <= 65535")
+          PY
+          if git rev-parse -q --verify "refs/tags/v${VERSION}" >/dev/null; then
+            echo "tag v${VERSION} 已存在" >&2
+            exit 1
+          fi
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Load signing key
+        env:
+          CRX_PRIVATE_KEY: ${{ secrets.CRX_PRIVATE_KEY }}
+        run: |
+          if [ -z "$CRX_PRIVATE_KEY" ]; then
+            echo "缺少 Secret CRX_PRIVATE_KEY。用 openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out key.pem 生成后，把 PEM 全文存入该 Secret。" >&2
+            exit 1
+          fi
+          python3 - <<'PY'
+          import os
+          import pathlib
+          raw = os.environ["CRX_PRIVATE_KEY"]
+          if "\\n" in raw and raw.count("\n") < 2:
+              raw = raw.replace("\\n", "\n")
+          if "PRIVATE KEY" not in raw:
+              raise SystemExit("CRX_PRIVATE_KEY 不是 PEM 私钥")
+          if not raw.endswith("\n"):
+              raw += "\n"
+          pathlib.Path(os.environ["RUNNER_TEMP"]).joinpath("crx.pem").write_text(raw)
+          PY
+
+      - name: Write manifest version
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          node --input-type=module <<'EOF'
+          import { readFileSync, writeFileSync } from 'node:fs';
+          const version = process.env.VERSION;
+          const manifest = JSON.parse(readFileSync('manifest.json', 'utf8'));
+          manifest.version = version;
+          writeFileSync('manifest.json', `${JSON.stringify(manifest, null, 2)}\n`);
+          EOF
+
+      - run: npm ci
+
+      - name: Pack CRX
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: node scripts/pack-extension.mjs --key "$RUNNER_TEMP/crx.pem" --name "MoonFog-${VERSION}"
+
+      - name: Tag and push
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add manifest.json
+          if git diff --cached --quiet; then
+            echo "manifest.json 已是 ${VERSION}"
+          else
+            git commit -m "chore: release v${VERSION}"
+          fi
+          git tag -a "v${VERSION}" -m "MoonFog v${VERSION}"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
+          git push origin "v${VERSION}"
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          gh release create "v${VERSION}" \
+            "dist/MoonFog-${VERSION}.crx" \
+            "dist/MoonFog-${VERSION}.zip" \
+            --title "MoonFog v${VERSION}" \
+            --generate-notes
