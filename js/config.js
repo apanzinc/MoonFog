@@ -477,6 +477,15 @@ try {
 let currentBingMeta = null;
 let localBgDataUrl = '';
 let currentBgBlur = DEFAULT_BG_BLUR;
+// 同步读回已存模糊度：initDisplayEffects → applyPerfMode → applyBgBlur 会把 currentBgBlur 写回
+// localStorage，若此处仍是默认值，刷新时会把用户保存的模糊度覆盖成默认（issue #4）
+try {
+  const _savedBlur = localStorage.getItem(BG_BLUR_KEY);
+  if (_savedBlur != null && _savedBlur !== '') {
+    const _blur = Math.round(Number(_savedBlur));
+    if (Number.isFinite(_blur)) currentBgBlur = Math.min(40, Math.max(0, _blur));
+  }
+} catch (_) {}
 let currentBgWash = DEFAULT_BG_WASH;
 // 图片取色结果缓存（按 url 粗略缓存）
 let lastPaletteUrl = '';
