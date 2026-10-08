@@ -71,6 +71,27 @@ function resolveNeutralWashCss(wash) {
 }
 
 /**
+ * 图片壁纸可读性底噪：40% 黑（与 boot-config 首帧保持同一数值）
+ */
+const IMAGE_SCRIM_ALPHA = 0.4;
+
+/**
+ * 图片模式遮罩 CSS：40% 可读性底噪 ∘ 用户中性雾，合成单层 rgba。
+ * 单一写入口径：applyBgWash 与 applyImagePalette 都走这里，避免互相覆盖。
+ * wash=0 → rgba(0,0,0,0.4)；偏黑单调更暗、偏白单调更亮，0 点连续无跳变（issue #5）
+ */
+function resolveImageOverlayCss(wash) {
+  const v = normalizeBgWash(wash);
+  const washAlpha = v === 0 ? 0 : Math.min(0.72, Math.abs(v) / 50 * 0.72);
+  // 黑/白雾叠在 40% 黑底噪上的等效单层 alpha
+  const a = IMAGE_SCRIM_ALPHA + washAlpha * (1 - IMAGE_SCRIM_ALPHA);
+  if (v <= 0) return `rgba(0, 0, 0, ${a.toFixed(3)})`;
+  // 白雾：反解单层灰色，使其与「40% 黑 + 白雾」逐像素等效
+  const c = Math.round((washAlpha / a) * 255);
+  return `rgba(${c}, ${c}, ${c}, ${a.toFixed(3)})`;
+}
+
+/**
  * 应用中性遮罩：始终由用户滑块驱动，不叠加取色色相雾
  */
 function applyBgWash(value, options) {
@@ -84,18 +105,19 @@ function applyBgWash(value, options) {
       );
     } catch (_) {}
   }
-  const css = resolveNeutralWashCss(currentBgWash);
+  const activeMode = typeof isImageBackgroundActive === 'function' && isImageBackgroundActive();
+  // 图片模式 = 底噪 ∘ 滑块；其它模式 = 纯滑块值
+  const css = activeMode
+    ? resolveImageOverlayCss(currentBgWash)
+    : resolveNeutralWashCss(currentBgWash);
   const root = document.documentElement;
   root.style.setProperty('--bg-neutral-wash', css);
   root.style.setProperty('--img-wash', css);
   const overlay = document.getElementById('pageBgOverlay');
   if (overlay) {
-    const activeMode = typeof isImageBackgroundActive === 'function' && isImageBackgroundActive();
     if (activeMode) {
-      // 图片模式下 wash=0 不清除 overlay inline style（由 applyImagePalette 统一管理）
-      if (css !== 'transparent') {
-        overlay.style.setProperty('background', css, 'important');
-      }
+      // 图片模式始终由这里写 overlay（含 wash=0 → 40% 底噪），与 applyImagePalette 同一口径
+      overlay.style.setProperty('background', css, 'important');
     } else {
       overlay.style.removeProperty('background');
     }
@@ -2405,9 +2427,13 @@ function applyImagePalette(palette) {
   root.style.setProperty('--img-credit-bg', chromeTextLight ? 'rgba(0,0,0,0.45)' : 'rgba(0,0,0,0.35)');
   root.style.setProperty('--img-credit-text', chromeTextLight ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.8)');
 
-  // 全屏遮罩：统一 40% 压暗，不随浅深模式变化
+  // 全屏遮罩：40% 可读性底噪 ∘ 用户中性雾，与 applyBgWash 同一口径（不再写死 0.4 覆盖滑块值）
   const overlay = document.getElementById('pageBgOverlay');
-  const overlayColor = 'rgba(0,0,0,0.4)';
+  const overlayColor = resolveImageOverlayCss(
+    typeof currentBgWash === 'number'
+      ? currentBgWash
+      : (typeof DEFAULT_BG_WASH === 'number' ? DEFAULT_BG_WASH : 0)
+  );
   root.style.setProperty('--img-wash', overlayColor);
   root.style.setProperty('--bg-neutral-wash', overlayColor);
   if (overlay) overlay.style.setProperty('background', overlayColor, 'important');
