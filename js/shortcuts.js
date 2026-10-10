@@ -654,6 +654,44 @@ function fitExpandedPanelWidth(panel, cap) {
   return width;
 }
 
+/**
+ * 子面板宽度只看自己内部最长的那枚胶囊，不跟主面板对齐、也不被主面板右缘截断。
+ * @returns {number|undefined}
+ */
+function fitSubPanelWidth(panel) {
+  if (!panel || panel.classList.contains('is-empty')) {
+    if (panel) {
+      panel.style.width = '';
+      panel.style.maxWidth = '';
+    }
+    return undefined;
+  }
+  const chips = [...panel.children].filter((el) =>
+    el.matches('.shortcut-btn, .shortcut-expanded-subfolder')
+  );
+  if (!chips.length) {
+    panel.style.width = '';
+    panel.style.maxWidth = '';
+    return undefined;
+  }
+  const longest = Math.max(...chips.map(naturalChipWidth));
+  const limit = folderPanelCap();
+  let width = Math.round(Math.min(limit, longest + FOLDER_PANEL_PAD + 2));
+  panel.style.maxWidth = '';
+  panel.style.width = width + 'px';
+  // 竖向滚动条会吃掉内容宽度，长标题再被挤出省略号；按实际差额补一轮
+  const clip = chips.reduce((max, chip) => {
+    const label = chip.querySelector('.shortcut-label');
+    if (!label) return max;
+    return Math.max(max, label.scrollWidth - label.clientWidth);
+  }, 0);
+  if (clip > 0.5) {
+    width = Math.round(Math.min(limit, width + clip));
+    panel.style.width = width + 'px';
+  }
+  return width;
+}
+
 /** 面板比视口宽时向左收，避免贴在屏幕右侧被裁切。返回向左的像素，供缩放锚点补偿 */
 function placeExpandedPanelX(folder, expanded, width) {
   const rect = folder.getBoundingClientRect();
@@ -967,20 +1005,15 @@ function prepareSubPanel(subEl, panelEl) {
   const subW = subEl.offsetWidth;
   const subH = subEl.offsetHeight;
   const folderRect = folder.getBoundingClientRect();
-  // 限宽：右缘对齐主面板；宽度按内容撑开，避免子面板再收成单列截字
-  const expanded = subEl.closest('.shortcut-expanded');
-  const parentLeft = expanded ? expanded.offsetLeft : 0;
-  const parentRight = expanded
-    ? expanded.offsetLeft + expanded.offsetWidth
-    : Math.min(window.innerWidth, FOLDER_PANEL_MAX);
-  const parentWidth = Math.max(FOLDER_PANEL_MIN, parentRight - parentLeft);
-  const fitted = fitExpandedPanelWidth(panelEl, parentWidth);
+  // 宽度 = 内部最长胶囊；只在超出视口时平移，不跟主面板左右缘对齐
+  const fitted = fitSubPanelWidth(panelEl);
   const panelWidth = fitted || panelEl.offsetWidth || FOLDER_PANEL_MIN;
+  const margin = 12;
   let leftPx = ox;
-  if (leftPx + panelWidth > parentRight - 8) leftPx = parentRight - 8 - panelWidth;
-  if (leftPx < parentLeft) leftPx = parentLeft;
+  const overflowRight = folderRect.left + leftPx + panelWidth - (window.innerWidth - margin);
+  if (overflowRight > 0) leftPx -= overflowRight;
+  if (folderRect.left + leftPx < margin) leftPx += margin - (folderRect.left + leftPx);
   leftPx = Math.round(leftPx);
-  panelEl.style.maxWidth = parentWidth + 'px';
   panelEl.style.left = leftPx + 'px';
   // 方向三态：优先按设置方向，该方向放不下时整页让位（整体上/下移），
   // 让位到极限（触发器不出屏顶、标签行不出屏底）仍放不下才自适应换边；

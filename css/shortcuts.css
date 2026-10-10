@@ -610,7 +610,8 @@ html body.has-image-bg .shortcut-folder .subfolder-portal .shortcut-btn {
 .shortcut-expanded-subfolder-children {
   position: absolute;
   box-sizing: border-box;
-  min-width: 168px;
+  /* 宽度由内部最长胶囊决定，不设 168 下限，避免短标题被撑到和主面板一样宽 */
+  min-width: 0;
   max-width: min(72vw, 480px);
   /* 封顶 + 内部滚动，与主页面板一致 */
   max-height: min(70vh, calc(100vh - 200px));
