@@ -388,11 +388,9 @@ html body.has-image-bg .shortcut-folder .subfolder-portal .shortcut-btn {
   transform: scale(0.6);
   transform-origin: top left;
   min-width: 168px;
-  /* 绝对定位 + flex-wrap 的 shrink-to-fit 会收成单列。宽度由 JS 按内容写入，这里只封顶。 */
-  max-width: min(72vw, 480px);
+  max-width: min(72vw, 360px);
   /* 封顶：body 不可滚动，面板自身限制高度 + 内部滚动，内容再多也不会被裁 */
   max-height: min(70vh, calc(100vh - 200px));
-  overflow-x: hidden;
   overflow-y: auto;
   background: color-mix(in srgb, var(--card-bg) 92%, transparent);
   border: 1px solid var(--border);
@@ -510,9 +508,12 @@ html body.has-image-bg .shortcut-folder .subfolder-portal .shortcut-btn {
   min-width: 0;
 }
 
-.shortcut-expanded .shortcut-label,
+.shortcut-expanded .shortcut-label {
+  /* 主面板标题维持原来的 10rem 上限 */
+  min-width: 0;
+}
+
 .subfolder-portal .shortcut-label {
-  /* 主页胶囊仍限 10rem；展开面板放宽，窄视口再收缩出省略号 */
   flex-shrink: 1;
   max-width: 26rem;
   min-width: 0;

@@ -612,12 +612,9 @@ function getFolderExpandDir() {
 const FOLDER_PANEL_MIN = 168;
 const FOLDER_PANEL_MAX = 480;
 const FOLDER_PANEL_PAD = 16;
-const FOLDER_PANEL_GAP = 6;
 
-function folderPanelCap(extraCap) {
-  const viewportCap = Math.min(window.innerWidth * 0.72, FOLDER_PANEL_MAX);
-  if (extraCap == null || !Number.isFinite(extraCap)) return viewportCap;
-  return Math.max(FOLDER_PANEL_MIN, Math.min(viewportCap, extraCap));
+function folderPanelCap() {
+  return Math.min(window.innerWidth * 0.72, FOLDER_PANEL_MAX);
 }
 
 /** 胶囊被面板挤窄时，用 label 被裁掉的宽度补回自然宽度 */
@@ -627,31 +624,6 @@ function naturalChipWidth(chip) {
   const base = chip.offsetWidth;
   if (!label) return base;
   return Math.ceil(base + Math.max(0, label.scrollWidth - label.clientWidth));
-}
-
-/**
- * 展开面板宽度：短列表贴内容，多枚胶囊在封顶内换行，而不是收成一列把标题截掉。
- * @returns {number|undefined}
- */
-function fitExpandedPanelWidth(panel, cap) {
-  if (!panel || panel.classList.contains('is-empty')) {
-    if (panel) panel.style.width = '';
-    return undefined;
-  }
-  const chips = [...panel.children].filter((el) =>
-    el.matches('.shortcut-btn, .shortcut-expanded-subfolder')
-  );
-  if (!chips.length) {
-    panel.style.width = '';
-    return undefined;
-  }
-  const widths = chips.map(naturalChipWidth);
-  const sum = widths.reduce((a, b) => a + b, 0) + FOLDER_PANEL_GAP * Math.max(0, widths.length - 1);
-  const content = sum + FOLDER_PANEL_PAD;
-  const limit = folderPanelCap(cap);
-  const width = Math.round(Math.min(limit, Math.max(FOLDER_PANEL_MIN, content)));
-  panel.style.width = width + 'px';
-  return width;
 }
 
 /**
@@ -694,25 +666,16 @@ function fitSubPanelWidth(panel) {
   return width;
 }
 
-/** 面板比视口宽时向左收，避免贴在屏幕右侧被裁切。返回向左的像素，供缩放锚点补偿 */
-function placeExpandedPanelX(folder, expanded, width) {
-  const rect = folder.getBoundingClientRect();
-  const margin = 12;
-  const overflowRight = rect.left + width - (window.innerWidth - margin);
-  const shift = Math.max(0, Math.min(overflowRight, Math.max(0, rect.left - margin)));
-  expanded.style.left = shift ? (-shift) + 'px' : '0px';
-  return shift;
-}
-
 /**
  * 主面板展开布局：按设置方向决策展开侧、封顶高度、缩放锚点，并算出整页位移量
+ * 宽度沿用原来的 CSS（不按内容撑开）
  * @returns {number} 展开侧为 up 时整页需要下移的像素，down 时为 0
  */
 function applyFolderExpandLayout(folder, expanded) {
   const dir = getFolderExpandDir();
-  const fitted = fitExpandedPanelWidth(expanded);
-  const panelWidth = fitted || expanded.offsetWidth;
-  const shiftX = placeExpandedPanelX(folder, expanded, panelWidth);
+  expanded.style.width = '';
+  expanded.style.maxWidth = '';
+  expanded.style.left = '';
   expanded.style.maxHeight = '';
   const content = document.querySelector('.content');
   // .content 的 top 过渡期间 rect 是动画中的位置，先减掉当前生效的位移
@@ -748,9 +711,8 @@ function applyFolderExpandLayout(folder, expanded) {
   const originY = up
     ? expanded.offsetHeight + folder.offsetHeight / 2 + 8
     : -(folder.offsetHeight / 2 + 8);
-  const originX = folder.offsetWidth / 2 + shiftX;
   expanded.style.transformOrigin =
-    `${originX.toFixed(1)}px ${originY.toFixed(1)}px`;
+    `${(folder.offsetWidth / 2).toFixed(1)}px ${originY.toFixed(1)}px`;
   return shiftDown;
 }
 
