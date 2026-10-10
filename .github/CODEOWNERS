@@ -1,0 +1,9 @@
+# 代码所有者：敏感路径。
+# 说明：单人仓库不要开启"No approval / require Code Owners review"，否则作者无法自我批准会卡死；
+# 这里主要用于标注敏感路径 + 自动请求审阅。
+/.github/          @apanzinc
+/scripts/          @apanzinc
+/manifest.json     @apanzinc
+/_locales/         @apanzinc
+/package.json      @apanzinc
+/package-lock.json @apanzinc

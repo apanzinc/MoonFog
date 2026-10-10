@@ -1,0 +1,20 @@
+# 编辑器统一配置：文本文件一律 UTF-8 / LF / 末尾换行 / 2 空格缩进。
+# 这里声明规则；真正的强制校验在 scripts/lint-repo.mjs（CI: Guard / hygiene）。
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 2
+
+[*.md]
+trim_trailing_whitespace = false
+
+[*.{yml,yaml}]
+indent_size = 2
+
+[Makefile]
+indent_style = tab

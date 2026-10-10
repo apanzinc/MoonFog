@@ -1,0 +1,20 @@
+# 一律以 LF 存入仓库，避免 Windows 上 CRLF 造成的伪改动。
+* text=auto eol=lf
+
+# 二进制资源不做行尾转换
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.webp binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.otf binary
+*.crx binary
+*.zip binary
+*.pem binary
+
+# 生成物不参与 diff / 语言统计
+package-lock.json -diff linguist-generated

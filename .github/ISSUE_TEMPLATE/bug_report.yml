@@ -1,0 +1,41 @@
+name: Bug 反馈
+description: 报告一个问题
+title: "fix: "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: 感谢反馈！请尽量填完整。
+  - type: textarea
+    id: what
+    attributes:
+      label: 现象
+      description: 发生了什么？
+    validations:
+      required: true
+  - type: textarea
+    id: expect
+    attributes:
+      label: 期望
+      description: 你期望发生什么？
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: 复现步骤
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: 扩展版本
+      description: 扩展管理页（chrome://extensions）里的版本号
+    validations:
+      required: true
+  - type: input
+    id: chrome
+    attributes:
+      label: Chrome 版本
+    validations:
+      required: false
