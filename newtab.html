@@ -48,6 +48,10 @@
           spellcheck="false"
           enterkeyhint="search"
           autofocus
+          role="combobox"
+          aria-autocomplete="list"
+          aria-controls="searchSuggest"
+          aria-expanded="false"
         >
         <button type="button" class="search-clear-btn" id="searchClearBtn" aria-label="清除" hidden>
           <span class="mgc_close_line" aria-hidden="true"></span>
@@ -56,6 +60,7 @@
           <span class="mgc_search_line" aria-hidden="true"></span>
         </button>
       </form>
+      <div class="search-suggest" id="searchSuggest" role="listbox" aria-label="搜索建议" hidden></div>
     </section>
 
     <!-- 快捷导航 -->
@@ -787,6 +792,22 @@
               </div>
             </div>
           </section>
+
+          <section class="settings-group">
+            <h5 class="settings-group-title">搜索建议</h5>
+            <div class="settings-card">
+              <div class="setting-item">
+                <div class="setting-label-row">
+                  <div class="setting-label">输入时显示搜索建议</div>
+                  <label class="switch">
+                    <input type="checkbox" id="searchSuggestToggle" checked>
+                    <span class="switch-slider"></span>
+                  </label>
+                </div>
+                <p class="setting-tip">仅 Google、Bing、百度；启用时查询词会发送至 search-sug.lonely.land，不保存在本地</p>
+              </div>
+            </div>
+          </section>
         </section>
 
         <!-- 快捷导航 -->
@@ -804,7 +825,7 @@
                     <span class="switch-slider"></span>
                   </label>
                 </div>
-                <p class="setting-tip">关闭后主页不再显示收藏夹标签，右键菜单、拖拽排序等收藏夹功能一并停用；可随时在此重新开启</p>
+                <p class="setting-tip">关闭后主页不显示收藏夹</p>
               </div>
             </div>
           </section>
@@ -829,7 +850,7 @@
                   <button class="mode-segment-btn active" type="button" data-expand-dir="down" role="radio" aria-checked="true">向下</button>
                   <button class="mode-segment-btn" type="button" data-expand-dir="auto" role="radio" aria-checked="false">自适应</button>
                 </div>
-                <p class="setting-tip">文件夹面板向标签上方（向上）或下方（向下）弹出；放不下时整页自动让位（向上=问候语与搜索框、标签整体下移，向下=整体上移），让位到极限才换边；自适应直接取空间更大的一侧</p>
+                <p class="setting-tip">放不下时整页让位，到极限才换边</p>
               </div>
             </div>
           </section>
@@ -839,7 +860,7 @@
             <div class="settings-card">
               <div class="setting-item" id="bookmarkImportActionSetting">
                 <div class="setting-label">导入浏览器收藏夹</div>
-                <p class="setting-tip">从 Chrome / Edge / Firefox / Safari 导出的 HTML 书签文件导入（追加到现有列表，支持多级文件夹嵌套）</p>
+                <p class="setting-tip">从 HTML 书签导入，追加到现有列表</p>
                 <div class="settings-action-row">
                   <input type="file" id="importBookmarksInputShortcuts" accept="text/html,.html,.htm" hidden>
                   <button class="bg-action-btn bg-action-btn-ghost" id="importBookmarksBtnShortcuts" type="button">
@@ -859,7 +880,7 @@
                 </div>
                 <p class="setting-tip">
                   <span class="setting-tip-icon setting-tip-icon--muted mgc_warning_line" aria-hidden="true"></span>
-                  此功能需读取浏览器内部书签数据，属于高度敏感权限。开启后扩展可直接访问您的浏览器书签。默认关闭，仅在您明确授权后生效。
+                  读取浏览器书签，需授权后开启
                 </p>
                 <p class="setting-tip" id="bookmarkSyncStatus" hidden></p>
               </div>
@@ -867,7 +888,7 @@
                 <div class="setting-label">数据安全说明</div>
                 <p class="setting-tip">
                   <span class="setting-tip-icon mgc_shield_line" aria-hidden="true"></span>
-                  所有书签数据仅存储在浏览器本地（localStorage），不涉及网络传输，不上云、不同步、不收集。导入操作完全在您的设备上完成。
+                  书签只存在本机，不上传
                 </p>
               </div>
             </div>
@@ -877,6 +898,22 @@
         <!-- 显示与效果 -->
         <section class="settings-page" data-page="display" hidden aria-labelledby="sec-display">
           <h4 class="settings-section-title" id="sec-display" hidden>显示与效果</h4>
+
+          <section class="settings-group">
+            <h5 class="settings-group-title">界面</h5>
+            <div class="settings-card">
+              <div class="setting-item">
+                <div class="setting-label-row">
+                  <div class="setting-label">常显设置按钮</div>
+                  <label class="switch">
+                    <input type="checkbox" id="settingsBtnPinnedToggle" checked>
+                    <span class="switch-slider"></span>
+                  </label>
+                </div>
+                <p class="setting-tip">关闭后悬停右下角才出现</p>
+              </div>
+            </div>
+          </section>
 
           <section class="settings-group">
             <h5 class="settings-group-title">模糊</h5>
@@ -1037,7 +1074,7 @@
             <div class="settings-card">
               <div class="setting-item" id="exportDataSetting">
                 <div class="setting-label">导出数据</div>
-                <p class="setting-tip">将主题、背景、问候、快捷导航等偏好保存为文件</p>
+                <p class="setting-tip">把偏好保存成文件</p>
                 <div class="settings-action-row">
                   <button class="bg-action-btn" id="exportDataBtn" type="button">
                     <span class="mgc_file_export_line" aria-hidden="true"></span>
@@ -1047,7 +1084,7 @@
               </div>
               <div class="setting-item" id="importDataSetting">
                 <div class="setting-label">导入数据</div>
-                <p class="setting-tip">从备份文件恢复偏好（会覆盖当前设置）</p>
+                <p class="setting-tip">从备份恢复，会覆盖当前设置</p>
                 <div class="settings-action-row">
                   <input type="file" id="importDataInput" accept="application/json,.json" hidden>
                   <button class="bg-action-btn" id="importDataBtn" type="button">
@@ -1059,7 +1096,7 @@
               </div>
               <div class="setting-item" id="importBookmarksSetting">
                 <div class="setting-label">导入浏览器收藏夹</div>
-                <p class="setting-tip">从浏览器导出的 HTML 书签文件导入快捷导航（会追加到现有列表，支持多级文件夹嵌套）</p>
+                <p class="setting-tip">从 HTML 书签导入，追加到现有列表</p>
                 <div class="settings-action-row">
                   <input type="file" id="importBookmarksInput" accept="text/html,.html,.htm" hidden>
                   <button class="bg-action-btn bg-action-btn-ghost" id="importBookmarksBtn" type="button">
@@ -1077,7 +1114,7 @@
             <div class="settings-card">
               <div class="setting-item" id="resetDefaultsSetting">
                 <div class="setting-label">重置设置</div>
-                <p class="setting-tip">清空偏好后刷新恢复默认；保留壁纸与一言缓存</p>
+                <p class="setting-tip">恢复默认，保留壁纸和一言</p>
                 <div class="settings-action-row">
                   <button class="bg-action-btn settings-reset-btn" id="resetDefaultsBtn" type="button">
                     <span class="mgc_refresh_2_line" aria-hidden="true"></span>

@@ -567,6 +567,8 @@ html.boot-ready.bg-entered .page-bg-image.is-active {
 }
 
 .search-section {
+  position: relative;
+  z-index: 30;
   width: 100%;
   /* 父级永不 transform，避免切断子级毛玻璃 */
   transform: none;
@@ -881,6 +883,8 @@ html.boot-has-grain .greeting-sub {
  */
 body.has-image-bg .search-box,
 html.boot-has-image .search-box,
+body.has-image-bg .search-suggest,
+html.boot-has-image .search-suggest,
 body.has-image-bg .shortcut-btn,
 body.has-image-bg .shortcut-folder-trigger {
   background: color-mix(
@@ -900,6 +904,7 @@ body.has-image-bg .shortcut-folder-trigger {
 }
 
 body.has-image-bg.img-scene-dark .search-box,
+body.has-image-bg.img-scene-dark .search-suggest,
 body.has-image-bg.img-scene-dark .shortcut-btn,
 body.has-image-bg.img-scene-dark .shortcut-folder-trigger,
 body.has-image-bg.img-scene-dark .shortcut-expanded,
@@ -910,6 +915,7 @@ body.has-image-bg.img-scene-dark .settings-btn {
 }
 
 body.has-image-bg.img-scene-light .search-box,
+body.has-image-bg.img-scene-light .search-suggest,
 body.has-image-bg.img-scene-light .shortcut-btn,
 body.has-image-bg.img-scene-light .shortcut-folder-trigger,
 body.has-image-bg.img-scene-light .shortcut-expanded,
@@ -981,7 +987,8 @@ body.has-image-bg .shortcut-folder-trigger .shortcut-fallback-icon {
 
 /* 设置按钮默认隐藏；悬停样式在 panel.css，避免图片模式强制常显 */
 
-body.has-image-bg .shortcut-expanded {
+body.has-image-bg .shortcut-expanded,
+body.has-image-bg .search-suggest {
   color: var(--img-chrome-text, var(--img-text, var(--text-primary)));
 }
 

@@ -15,6 +15,11 @@
     try { localStorage.setItem(key, value); } catch (e) {}
   }
 
+  // 设置按钮默认常显；仅在用户关闭后才改回悬停出现
+  if (get('moonfog_settings_btn_pinned') === '0') {
+    root.classList.add('settings-btn-hover');
+  }
+
   // OOBE 因编码损坏暂不可用，跳过 boot-oobe-pending
   // if (get('moonfog_oobe_done') !== '1') {
   //   root.classList.add('boot-oobe-pending');
