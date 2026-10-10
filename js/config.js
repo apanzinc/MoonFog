@@ -477,7 +477,25 @@ try {
 let currentBingMeta = null;
 let localBgDataUrl = '';
 let currentBgBlur = DEFAULT_BG_BLUR;
+// 同步读回已存模糊度：initDisplayEffects → applyPerfMode → applyBgBlur 会把 currentBgBlur 写回
+// localStorage，若此处仍是默认值，刷新时会把用户保存的模糊度覆盖成默认（issue #4）
+try {
+  const _savedBlur = localStorage.getItem(BG_BLUR_KEY);
+  if (_savedBlur != null && _savedBlur !== '') {
+    const _blur = Math.round(Number(_savedBlur));
+    if (Number.isFinite(_blur)) currentBgBlur = Math.min(40, Math.max(0, _blur));
+  }
+} catch (_) {}
 let currentBgWash = DEFAULT_BG_WASH;
+// 同步读回已存遮罩值：applyImagePalette 在 applyTheme 阶段就会用到它算图片遮罩，
+// 若等 initBackground 才水合，首帧会用默认值算错（issue #5）
+try {
+  const _savedWash = localStorage.getItem(BG_WASH_KEY);
+  if (_savedWash != null && _savedWash !== '') {
+    const _wash = Math.round(Number(_savedWash));
+    if (Number.isFinite(_wash)) currentBgWash = Math.min(50, Math.max(-50, _wash));
+  }
+} catch (_) {}
 // 图片取色结果缓存（按 url 粗略缓存）
 let lastPaletteUrl = '';
 let lastPalette = null;

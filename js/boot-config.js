@@ -297,9 +297,19 @@
     cssParts.push('.greeting-title{font-family:var(--font-display)!important;font-weight:var(--boot-greeting-weight,700)!important;font-size:calc(clamp(1.75rem,4vw,2.25rem)*var(--size-greeting,1))!important;}');
   }
 
-  // 图片背景：首帧压暗遮罩（与 applyImagePalette 一致，用默认 40% 压暗）
+  // 图片背景：首帧压暗遮罩 = 40% 可读性底噪 ∘ 用户中性雾（与 background.js resolveImageOverlayCss 同一公式）
   if (bgUrl && (bgMode === 'local' || bgMode === 'bing')) {
-    cssParts.push('html.boot-has-image .page-bg-overlay{background:rgba(0,0,0,0.4)!important;}');
+    let imgWashAlpha = bgWash === 0 ? 0 : Math.min(0.72, Math.abs(bgWash) / 50 * 0.72);
+    let imgOverlayAlpha = 0.4 + imgWashAlpha * (1 - 0.4);
+    let imgOverlayCss;
+    if (bgWash <= 0) {
+      imgOverlayCss = 'rgba(0,0,0,' + imgOverlayAlpha.toFixed(3) + ')';
+    } else {
+      let imgWashGray = Math.round((imgWashAlpha / imgOverlayAlpha) * 255);
+      imgOverlayCss = 'rgba(' + imgWashGray + ',' + imgWashGray + ',' + imgWashGray + ',' + imgOverlayAlpha.toFixed(3) + ')';
+    }
+    cssParts.push('html.boot-has-image .page-bg-overlay{background:' + imgOverlayCss + '!important;}');
+    cssParts.push('html[data-tone][data-mode].boot-has-image{--bg-neutral-wash:' + imgOverlayCss + ';--img-wash:' + imgOverlayCss + ';}');
   }
 
   cssParts.push('html,body{background-color:var(--bg-warm);color:var(--text-primary);}');
