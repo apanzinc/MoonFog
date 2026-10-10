@@ -13,7 +13,7 @@
   - 纯色背景
 - **动态主题**：基于 Material Color Utilities（MCU）从壁纸提取种子色，生成整套明暗配色；支持手动浅色/深色
 - **问候语**：按时段（早/午/晚）、用户名自定义文案，字号/粗细/字体可调
-- **搜索**：搜索框可搜索或直接打开网址，支持自定义搜索引擎
+- **搜索**：搜索框可搜索或直接打开网址，支持自定义搜索引擎；Google / Bing / 百度输入时显示搜索建议（[search-suggestions](https://github.com/lonely-4/search-suggestions)）
 - **快捷导航**：自定义站点图标，支持导入浏览器书签（Netscape HTML）
 - **字体**：内置思源宋体，也可选系统字体；正文/问候语可分别设置
 - **性能档**：完全 / 部分 / 限制三档，统一控制背景与表面模糊
@@ -28,6 +28,7 @@
 | `www.bing.com` / `cn.bing.com` | 获取每日一图与图片署名 |
 | `hitokoto.cn` / `hitokoto.c0ffee.space` | 一言问候文案 |
 | `www.google.com` / `icons.duckduckgo.com` | 站点图标抓取（搜索本身是页面跳转，不使用主机权限） |
+| `search-sug.lonely.land` | Google / Bing / 百度的输入建议。只在搜索框有内容且建议开关打开时请求，查询词不落本地 |
 
 不申请 `<all_urls>`。快捷导航站点自身的 favicon，以及关于页作者头像（`static.apanzinc.top`、`q.qlogo.cn`），只作为图片地址加载。
 

@@ -2200,6 +2200,8 @@ html body.has-image-bg .greeting-section {
 /* 图片模式毛玻璃统一：搜索框 / 标签 / 设置按钮同一套 token */
 html body.has-image-bg .search-box,
 html.boot-has-image .search-box,
+html body.has-image-bg .search-suggest,
+html.boot-has-image .search-suggest,
 html body.has-image-bg .shortcut-btn,
 html body.has-image-bg .shortcut-folder-trigger,
 html body.has-image-bg .settings-btn {
@@ -2221,6 +2223,7 @@ html body.has-image-bg .settings-btn {
 /* 完全限制：盖过上面的 blur/半透明 !important，强制纯色底 */
 html.low-perf body.has-image-bg .search-box,
 html.low-perf.boot-has-image .search-box,
+html.low-perf body.has-image-bg .search-suggest,
 html.low-perf body.has-image-bg .shortcut-btn,
 html.low-perf body.has-image-bg .shortcut-folder-trigger,
 html.low-perf body.has-image-bg .shortcut-expanded,
@@ -2228,6 +2231,7 @@ html.low-perf body.has-image-bg .shortcut-expanded-subfolder-children,
 html.low-perf body.has-image-bg .settings-btn,
 html.low-perf body.has-image-bg .settings-panel,
 html.perf-low body.has-image-bg .search-box,
+html.perf-low body.has-image-bg .search-suggest,
 html.perf-low body.has-image-bg .shortcut-btn,
 html.perf-low body.has-image-bg .shortcut-folder-trigger,
 html.perf-low body.has-image-bg .shortcut-expanded-subfolder-children,
@@ -2240,22 +2244,26 @@ html.perf-low body.has-image-bg .settings-panel {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12) !important;
 }
 html[data-mode="light"].low-perf body.has-image-bg .search-box,
+html[data-mode="light"].low-perf body.has-image-bg .search-suggest,
 html[data-mode="light"].low-perf body.has-image-bg .shortcut-btn,
 html[data-mode="light"].low-perf body.has-image-bg .shortcut-folder-trigger,
 html[data-mode="light"].low-perf body.has-image-bg .settings-btn,
 html[data-mode="light"].low-perf body.has-image-bg .settings-panel,
 html[data-mode="light"].perf-low body.has-image-bg .search-box,
+html[data-mode="light"].perf-low body.has-image-bg .search-suggest,
 html[data-mode="light"].perf-low body.has-image-bg .shortcut-btn,
 html[data-mode="light"].perf-low body.has-image-bg .settings-btn,
 html[data-mode="light"].perf-low body.has-image-bg .settings-panel {
   background: #f5f0e8 !important;
 }
 html[data-mode="dark"].low-perf body.has-image-bg .search-box,
+html[data-mode="dark"].low-perf body.has-image-bg .search-suggest,
 html[data-mode="dark"].low-perf body.has-image-bg .shortcut-btn,
 html[data-mode="dark"].low-perf body.has-image-bg .shortcut-folder-trigger,
 html[data-mode="dark"].low-perf body.has-image-bg .settings-btn,
 html[data-mode="dark"].low-perf body.has-image-bg .settings-panel,
 html[data-mode="dark"].perf-low body.has-image-bg .search-box,
+html[data-mode="dark"].perf-low body.has-image-bg .search-suggest,
 html[data-mode="dark"].perf-low body.has-image-bg .shortcut-btn,
 html[data-mode="dark"].perf-low body.has-image-bg .settings-btn,
 html[data-mode="dark"].perf-low body.has-image-bg .settings-panel {

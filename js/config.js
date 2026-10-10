@@ -243,18 +243,25 @@ function saveTypeRoles(roles) {
   } catch (_) {}
 }
 
-// 搜索引擎配置
+// 搜索建议：https://github.com/lonely-4/search-suggestions
+const SEARCH_SUGGEST_ENDPOINT = 'https://search-sug.lonely.land/';
+const SEARCH_SUGGEST_KEY = 'moonfog_search_suggest';
+
+// 搜索引擎配置（suggest 为建议 API 的 with 参数；无此字段的引擎不请求建议）
 const SEARCH_ENGINES = {
   google: {
     name: 'Google',
+    suggest: 'google',
     getUrl: (query) => `https://www.google.com/search?q=${encodeURIComponent(query)}`
   },
   bing: {
     name: 'Bing',
+    suggest: 'bing',
     getUrl: (query) => `https://www.bing.com/search?q=${encodeURIComponent(query)}`
   },
   baidu: {
     name: '百度',
+    suggest: 'baidu',
     getUrl: (query) => `https://www.baidu.com/s?wd=${encodeURIComponent(query)}`
   },
   meta: {

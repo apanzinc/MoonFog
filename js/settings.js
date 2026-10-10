@@ -1657,6 +1657,29 @@ function initBgModeGridSelection() {
   }
 }
 
+const SETTINGS_BTN_PINNED_KEY = 'moonfog_settings_btn_pinned';
+
+function isSettingsBtnPinned() {
+  return getStorage(SETTINGS_BTN_PINNED_KEY, '1') !== '0';
+}
+
+function applySettingsBtnPinned(on) {
+  document.documentElement.classList.toggle('settings-btn-hover', !on);
+}
+
+function bindSettingsBtnPinnedToggle() {
+  const el = document.getElementById('settingsBtnPinnedToggle');
+  if (!el || el.dataset.bound) return;
+  el.dataset.bound = '1';
+  const on = isSettingsBtnPinned();
+  el.checked = on;
+  applySettingsBtnPinned(on);
+  el.addEventListener('change', () => {
+    setStorage(SETTINGS_BTN_PINNED_KEY, el.checked ? '1' : '0');
+    applySettingsBtnPinned(el.checked);
+  });
+}
+
 function bindDisplaySetting() {
   const bgSlider = document.getElementById('bgBlurSlider');
   const washSlider = document.getElementById('bgWashSlider');
@@ -2156,6 +2179,7 @@ function initSettings() {
   try { bindQuoteOptionsSetting(); } catch (_) {}
   try { bindBackgroundSetting(); } catch (_) {}
   try { bindDisplaySetting(); } catch (_) {}
+  try { bindSettingsBtnPinnedToggle(); } catch (_) {}
   try { bindThemeSetting(); } catch (_) {}
   try { bindFontSetting(); } catch (_) {}
   try { bindDataSettings(); } catch (_) {}
