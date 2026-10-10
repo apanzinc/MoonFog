@@ -74,16 +74,19 @@ jobs:
           pathlib.Path(os.environ["RUNNER_TEMP"]).joinpath("crx.pem").write_text(raw)
           PY
 
-      - name: Write manifest version
+      - name: Verify manifest version
         env:
           VERSION: ${{ steps.version.outputs.version }}
         run: |
           node --input-type=module <<'EOF'
-          import { readFileSync, writeFileSync } from 'node:fs';
-          const version = process.env.VERSION;
-          const manifest = JSON.parse(readFileSync('manifest.json', 'utf8'));
-          manifest.version = version;
-          writeFileSync('manifest.json', `${JSON.stringify(manifest, null, 2)}\n`);
+          import { readFileSync } from 'node:fs';
+          const want = process.env.VERSION;
+          const got = String(JSON.parse(readFileSync('manifest.json', 'utf8')).version || '');
+          if (got !== want) {
+            console.error(`manifest.json 当前是 ${got}，但本次要发布 ${want}。`);
+            console.error(`请先合并一个标题为 "chore: release v${want}" 的 PR 把 manifest.json 改成 ${want}，再重新运行本工作流。`);
+            process.exit(1);
+          }
           EOF
 
       - run: npm ci
@@ -93,20 +96,6 @@ jobs:
         env:
           VERSION: ${{ steps.version.outputs.version }}
         run: node scripts/pack-extension.mjs --key "$RUNNER_TEMP/crx.pem" --name "MoonFog-${VERSION}"
-
-      - name: Tag and push
-        env:
-          VERSION: ${{ steps.version.outputs.version }}
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add manifest.json
-          if git diff --cached --quiet; then
-            echo "manifest.json 已是 ${VERSION}"
-          else
-            git commit -m "chore: release v${VERSION}"
-          fi
-          git push origin "HEAD:${GITHUB_REF_NAME}"
 
       - name: Publish GitHub Release
         env:

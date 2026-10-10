@@ -3,7 +3,11 @@
   "private": true,
   "scripts": {
     "check": "node scripts/check.mjs",
-    "pack": "node scripts/pack-extension.mjs"
+    "pack": "node scripts/pack-extension.mjs",
+    "lint:repo": "node scripts/lint-repo.mjs",
+    "fix:repo": "node scripts/fix-repo.mjs",
+    "lint:commits": "node scripts/lint-commits.mjs",
+    "verify:version": "node scripts/verify-version.mjs"
   },
   "devDependencies": {
     "crx3": "2.0.0"
