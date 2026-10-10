@@ -4,7 +4,7 @@ on:
   pull_request:
 
 permissions:
-  actions: write
+  actions: read
   contents: write
   pull-requests: write
 
@@ -101,6 +101,7 @@ jobs:
           WORKFLOW_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           WORKFLOW_HEAD_BRANCH: ${{ github.event.pull_request.head.ref }}
           WORKFLOW_HEAD_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name }}
+          PULL_REQUEST_NUMBER: ${{ github.event.pull_request.number }}
           DEFAULT_BRANCH: ${{ github.event.pull_request.base.repo.default_branch }}
           GH_TOKEN: ${{ github.token }}
         run: node scripts/publish-preview.mjs

@@ -69,7 +69,7 @@ function gh(args, input) {
   return result.stdout;
 }
 
-function readPackedManifest(crxPath) {
+export function readPackedManifest(crxPath) {
   const script = `
 import json, struct, sys, zipfile, io
 data = open(sys.argv[1], 'rb').read()
@@ -86,7 +86,12 @@ with zipfile.ZipFile(io.BytesIO(data[12 + header_len:])) as zf:
   return JSON.parse(result.stdout);
 }
 
-function choosePullRequest(candidates) {
+export function choosePullRequest(candidates, prNumber) {
+  if (prNumber != null) {
+    const match = candidates.find((pr) => pr.number === prNumber);
+    if (!match) throw new Error(`PR #${prNumber} 与这次提交不匹配`);
+    return match;
+  }
   const open = candidates.filter((pr) => pr.state === 'open');
   const pool = open.length > 0 ? open : candidates;
   if (pool.length === 1) return pool[0];
@@ -116,9 +121,9 @@ function findPullRequest(repository, expected) {
     summaries = [];
   }
   const fromCommit = summaries.filter((pr) => pullRequestMatches(pr, expected));
-  if (fromCommit.length > 0) return choosePullRequest(fromCommit);
+  if (fromCommit.length > 0) return choosePullRequest(fromCommit, expected.number);
 
-  const query = `repo:${repository} is:pr sha:${expected.sha}`;
+  const query = `repo:${repository} is:pr ${expected.sha}`;
   const search = JSON.parse(gh([
     'api',
     `search/issues?q=${encodeURIComponent(query)}&per_page=20`,
@@ -131,7 +136,13 @@ function findPullRequest(repository, expected) {
   if (loaded.length === 0) {
     throw new Error(`找不到与 ${expected.sha} 对应的 PR`);
   }
-  return choosePullRequest(loaded);
+  return choosePullRequest(loaded, expected.number);
+}
+
+export function findPreviewComment(comments, marker) {
+  return comments.find((comment) => (
+    comment.user?.login === 'github-actions[bot]' && comment.body?.includes(marker)
+  ));
 }
 
 function releaseExists(repository, tag) {
@@ -176,7 +187,7 @@ function publishRelease({ repository, tag, sha, fileName, crxPath, notes, defaul
 function upsertComment(repository, number, sha, body) {
   const marker = `<!-- moonfog-preview:${sha} -->`;
   const comments = [];
-  for (let page = 1; page <= 20; page += 1) {
+  for (let page = 1; ; page += 1) {
     const batch = JSON.parse(gh([
       'api',
       `repos/${repository}/issues/${number}/comments?per_page=100&page=${page}`,
@@ -184,13 +195,19 @@ function upsertComment(repository, number, sha, body) {
     comments.push(...batch);
     if (batch.length < 100) break;
   }
-  const existing = comments.find((comment) => comment.body?.includes(marker));
+  const existing = findPreviewComment(comments, marker);
   const payload = JSON.stringify({ body });
   if (existing) {
     gh(['api', '--method', 'PATCH', `repos/${repository}/issues/comments/${existing.id}`, '--input', '-'], payload);
     return;
   }
   gh(['api', '--method', 'POST', `repos/${repository}/issues/${number}/comments`, '--input', '-'], payload);
+}
+
+function parsePullRequestNumber(raw) {
+  if (raw == null || raw === '') return null;
+  if (!/^[1-9][0-9]*$/.test(raw)) throw new Error(`无效的 PR 编号: ${raw}`);
+  return Number(raw);
 }
 
 function requiredEnv(name) {
@@ -219,7 +236,12 @@ export function main() {
     throw new Error(`version_name 必须是 preview-${sha}，实际是 ${manifest.version_name}`);
   }
 
-  const pr = findPullRequest(repository, { sha, branch, headRepository });
+  const pr = findPullRequest(repository, {
+    sha,
+    branch,
+    headRepository,
+    number: parsePullRequestNumber(process.env.PULL_REQUEST_NUMBER),
+  });
   const tag = `preview-${sha}`;
   const url = previewDownloadUrl(repository, sha, fileName);
   const sizeLabel = formatMegabytes(statSync(crxPath).size);
