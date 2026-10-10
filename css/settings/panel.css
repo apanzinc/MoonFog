@@ -34,13 +34,13 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid transparent;
+  border: 1px solid var(--border);
   border-radius: 50%;
   background: var(--card-bg);
   color: var(--text-primary);
   cursor: pointer;
-  opacity: 0;
-  pointer-events: none;
+  opacity: 1;
+  pointer-events: auto;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
   transition:
     opacity 0.18s ease,
@@ -51,9 +51,16 @@
   font-size: 18px;
 }
 
-/* 右下角热区悬停 / 键盘聚焦 / 面板打开时才显示 */
-.settings-wrapper:hover .settings-btn,
-.settings-btn:focus-visible,
+/* 关闭常显后：默认隐藏，悬停右下角 / 聚焦 / 面板打开时再出现 */
+html.settings-btn-hover .settings-btn {
+  opacity: 0;
+  pointer-events: none;
+  border-color: transparent;
+}
+
+html.settings-btn-hover .settings-wrapper:hover .settings-btn,
+html.settings-btn-hover .settings-btn:focus-visible,
+html.settings-btn-hover body.settings-open .settings-btn,
 body.settings-open .settings-btn {
   opacity: 1;
   pointer-events: auto;
@@ -92,15 +99,15 @@ body.has-image-bg.settings-open .settings-btn {
   );
 }
 
-/* 触屏没有 hover：保留弱可见，避免找不到设置 */
+/* 触屏没有 hover：关闭常显时仍留一点可见，避免找不到设置 */
 @media (hover: none) {
-  .settings-btn {
-    opacity: 0.55;
+  html.settings-btn-hover .settings-btn {
+    opacity: 0.72;
     pointer-events: auto;
   }
 
-  body.settings-open .settings-btn,
-  .settings-btn:focus-visible {
+  html.settings-btn-hover body.settings-open .settings-btn,
+  html.settings-btn-hover .settings-btn:focus-visible {
     opacity: 1;
   }
 }

@@ -677,8 +677,9 @@ function fitSubPanelWidth(panel) {
   const longest = Math.max(...chips.map(naturalChipWidth));
   const limit = folderPanelCap();
   let width = Math.round(Math.min(limit, longest + FOLDER_PANEL_PAD + 2));
-  panel.style.maxWidth = '';
+  panel.style.minWidth = '0px';
   panel.style.width = width + 'px';
+  panel.style.maxWidth = width + 'px';
   // 竖向滚动条会吃掉内容宽度，长标题再被挤出省略号；按实际差额补一轮
   const clip = chips.reduce((max, chip) => {
     const label = chip.querySelector('.shortcut-label');
@@ -688,6 +689,7 @@ function fitSubPanelWidth(panel) {
   if (clip > 0.5) {
     width = Math.round(Math.min(limit, width + clip));
     panel.style.width = width + 'px';
+    panel.style.maxWidth = width + 'px';
   }
   return width;
 }
