@@ -4,8 +4,9 @@ on:
   pull_request:
 
 permissions:
-  contents: read
   actions: write
+  contents: write
+  pull-requests: write
 
 concurrency:
   group: preview-pr-${{ github.event.pull_request.number }}
@@ -92,3 +93,14 @@ jobs:
           path: dist/MoonFog-preview-${{ github.event.pull_request.head.sha }}.crx
           if-no-files-found: error
           retention-days: 14
+
+      - name: Publish preview CRX and comment
+        if: github.event.pull_request.head.repo.full_name == github.repository
+        env:
+          PREVIEW_DIR: dist
+          WORKFLOW_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          WORKFLOW_HEAD_BRANCH: ${{ github.event.pull_request.head.ref }}
+          WORKFLOW_HEAD_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name }}
+          DEFAULT_BRANCH: ${{ github.event.pull_request.base.repo.default_branch }}
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/publish-preview.mjs
