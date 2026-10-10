@@ -48,6 +48,10 @@
           spellcheck="false"
           enterkeyhint="search"
           autofocus
+          role="combobox"
+          aria-autocomplete="list"
+          aria-controls="searchSuggest"
+          aria-expanded="false"
         >
         <button type="button" class="search-clear-btn" id="searchClearBtn" aria-label="清除" hidden>
           <span class="mgc_close_line" aria-hidden="true"></span>
@@ -56,6 +60,7 @@
           <span class="mgc_search_line" aria-hidden="true"></span>
         </button>
       </form>
+      <div class="search-suggest" id="searchSuggest" role="listbox" aria-label="搜索建议" hidden></div>
     </section>
 
     <!-- 快捷导航 -->
@@ -784,6 +789,22 @@
                   <span class="mgc_add_line" aria-hidden="true"></span>
                   <span>添加自定义</span>
                 </button>
+              </div>
+            </div>
+          </section>
+
+          <section class="settings-group">
+            <h5 class="settings-group-title">搜索建议</h5>
+            <div class="settings-card">
+              <div class="setting-item">
+                <div class="setting-label-row">
+                  <div class="setting-label">输入时显示搜索建议</div>
+                  <label class="switch">
+                    <input type="checkbox" id="searchSuggestToggle" checked>
+                    <span class="switch-slider"></span>
+                  </label>
+                </div>
+                <p class="setting-tip">适用于 Google、Bing、百度。输入时会把当前词发给 search-sug.lonely.land 换取建议，本扩展不保存查询词。秘塔、ChatGPT、Claude 与自定义引擎不请求建议。</p>
               </div>
             </div>
           </section>

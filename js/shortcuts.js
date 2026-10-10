@@ -609,12 +609,70 @@ function getFolderExpandDir() {
   return normalizeExpandDir(getStorage(FOLDER_EXPAND_DIR_KEY, ''));
 }
 
+const FOLDER_PANEL_MIN = 168;
+const FOLDER_PANEL_MAX = 480;
+const FOLDER_PANEL_PAD = 16;
+const FOLDER_PANEL_GAP = 6;
+
+function folderPanelCap(extraCap) {
+  const viewportCap = Math.min(window.innerWidth * 0.72, FOLDER_PANEL_MAX);
+  if (extraCap == null || !Number.isFinite(extraCap)) return viewportCap;
+  return Math.max(FOLDER_PANEL_MIN, Math.min(viewportCap, extraCap));
+}
+
+/** 胶囊被面板挤窄时，用 label 被裁掉的宽度补回自然宽度 */
+function naturalChipWidth(chip) {
+  const label = chip.querySelector('.shortcut-label');
+  // offsetWidth 不受展开前 scale(0.6) 影响；getBoundingClientRect 会把宽度量成 0.6 倍
+  const base = chip.offsetWidth;
+  if (!label) return base;
+  return Math.ceil(base + Math.max(0, label.scrollWidth - label.clientWidth));
+}
+
+/**
+ * 展开面板宽度：短列表贴内容，多枚胶囊在封顶内换行，而不是收成一列把标题截掉。
+ * @returns {number|undefined}
+ */
+function fitExpandedPanelWidth(panel, cap) {
+  if (!panel || panel.classList.contains('is-empty')) {
+    if (panel) panel.style.width = '';
+    return undefined;
+  }
+  const chips = [...panel.children].filter((el) =>
+    el.matches('.shortcut-btn, .shortcut-expanded-subfolder')
+  );
+  if (!chips.length) {
+    panel.style.width = '';
+    return undefined;
+  }
+  const widths = chips.map(naturalChipWidth);
+  const sum = widths.reduce((a, b) => a + b, 0) + FOLDER_PANEL_GAP * Math.max(0, widths.length - 1);
+  const content = sum + FOLDER_PANEL_PAD;
+  const limit = folderPanelCap(cap);
+  const width = Math.round(Math.min(limit, Math.max(FOLDER_PANEL_MIN, content)));
+  panel.style.width = width + 'px';
+  return width;
+}
+
+/** 面板比视口宽时向左收，避免贴在屏幕右侧被裁切。返回向左的像素，供缩放锚点补偿 */
+function placeExpandedPanelX(folder, expanded, width) {
+  const rect = folder.getBoundingClientRect();
+  const margin = 12;
+  const overflowRight = rect.left + width - (window.innerWidth - margin);
+  const shift = Math.max(0, Math.min(overflowRight, Math.max(0, rect.left - margin)));
+  expanded.style.left = shift ? (-shift) + 'px' : '0px';
+  return shift;
+}
+
 /**
  * 主面板展开布局：按设置方向决策展开侧、封顶高度、缩放锚点，并算出整页位移量
  * @returns {number} 展开侧为 up 时整页需要下移的像素，down 时为 0
  */
 function applyFolderExpandLayout(folder, expanded) {
   const dir = getFolderExpandDir();
+  const fitted = fitExpandedPanelWidth(expanded);
+  const panelWidth = fitted || expanded.offsetWidth;
+  const shiftX = placeExpandedPanelX(folder, expanded, panelWidth);
   expanded.style.maxHeight = '';
   const content = document.querySelector('.content');
   // .content 的 top 过渡期间 rect 是动画中的位置，先减掉当前生效的位移
@@ -650,8 +708,9 @@ function applyFolderExpandLayout(folder, expanded) {
   const originY = up
     ? expanded.offsetHeight + folder.offsetHeight / 2 + 8
     : -(folder.offsetHeight / 2 + 8);
+  const originX = folder.offsetWidth / 2 + shiftX;
   expanded.style.transformOrigin =
-    `${(folder.offsetWidth / 2).toFixed(1)}px ${originY.toFixed(1)}px`;
+    `${originX.toFixed(1)}px ${originY.toFixed(1)}px`;
   return shiftDown;
 }
 
@@ -908,13 +967,20 @@ function prepareSubPanel(subEl, panelEl) {
   const subW = subEl.offsetWidth;
   const subH = subEl.offsetHeight;
   const folderRect = folder.getBoundingClientRect();
-  // 限宽：右缘不超主面板（视觉对齐），不足 168px 时向左补足
+  // 限宽：右缘对齐主面板；宽度按内容撑开，避免子面板再收成单列截字
   const expanded = subEl.closest('.shortcut-expanded');
-  const avail = expanded
-    ? expanded.offsetWidth - ox - 12
-    : Math.min(window.innerWidth, 360) - ox - 12;
-  const leftPx = Math.round(ox + Math.min(0, avail - 168));
-  panelEl.style.maxWidth = Math.max(168, avail) + 'px';
+  const parentLeft = expanded ? expanded.offsetLeft : 0;
+  const parentRight = expanded
+    ? expanded.offsetLeft + expanded.offsetWidth
+    : Math.min(window.innerWidth, FOLDER_PANEL_MAX);
+  const parentWidth = Math.max(FOLDER_PANEL_MIN, parentRight - parentLeft);
+  const fitted = fitExpandedPanelWidth(panelEl, parentWidth);
+  const panelWidth = fitted || panelEl.offsetWidth || FOLDER_PANEL_MIN;
+  let leftPx = ox;
+  if (leftPx + panelWidth > parentRight - 8) leftPx = parentRight - 8 - panelWidth;
+  if (leftPx < parentLeft) leftPx = parentLeft;
+  leftPx = Math.round(leftPx);
+  panelEl.style.maxWidth = parentWidth + 'px';
   panelEl.style.left = leftPx + 'px';
   // 方向三态：优先按设置方向，该方向放不下时整页让位（整体上/下移），
   // 让位到极限（触发器不出屏顶、标签行不出屏底）仍放不下才自适应换边；

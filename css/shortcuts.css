@@ -388,9 +388,11 @@ html body.has-image-bg .shortcut-folder .subfolder-portal .shortcut-btn {
   transform: scale(0.6);
   transform-origin: top left;
   min-width: 168px;
-  max-width: min(72vw, 360px);
+  /* 绝对定位 + flex-wrap 的 shrink-to-fit 会收成单列。宽度由 JS 按内容写入，这里只封顶。 */
+  max-width: min(72vw, 480px);
   /* 封顶：body 不可滚动，面板自身限制高度 + 内部滚动，内容再多也不会被裁 */
   max-height: min(70vh, calc(100vh - 200px));
+  overflow-x: hidden;
   overflow-y: auto;
   background: color-mix(in srgb, var(--card-bg) 92%, transparent);
   border: 1px solid var(--border);
@@ -510,7 +512,9 @@ html body.has-image-bg .shortcut-folder .subfolder-portal .shortcut-btn {
 
 .shortcut-expanded .shortcut-label,
 .subfolder-portal .shortcut-label {
-  /* 允许收缩到面板宽度内，触发 label 自身的 max-width/overflow 省略号 */
+  /* 主页胶囊仍限 10rem；展开面板放宽，窄视口再收缩出省略号 */
+  flex-shrink: 1;
+  max-width: 26rem;
   min-width: 0;
 }
 
@@ -607,7 +611,7 @@ html body.has-image-bg .shortcut-folder .subfolder-portal .shortcut-btn {
   position: absolute;
   box-sizing: border-box;
   min-width: 168px;
-  max-width: min(72vw, 360px);
+  max-width: min(72vw, 480px);
   /* 封顶 + 内部滚动，与主页面板一致 */
   max-height: min(70vh, calc(100vh - 200px));
   overflow-y: auto;
@@ -1006,6 +1010,150 @@ html body.has-image-bg .shortcut-folder .subfolder-portal .shortcut-btn {
   opacity: 0.6;
 }
 
+/* 搜索建议：与搜索框同宽，开合曲线与文件夹面板一致 */
+.search-suggest {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: min(50vh, 360px);
+  overflow-x: hidden;
+  overflow-y: auto;
+  background: color-mix(in srgb, var(--card-bg) 92%, transparent);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: var(--shadow-hover);
+  backdrop-filter: blur(var(--search-blur, 16px)) saturate(var(--glass-saturate, 1.35));
+  -webkit-backdrop-filter: blur(var(--search-blur, 16px)) saturate(var(--glass-saturate, 1.35));
+  z-index: 40;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: scale(0.96);
+  transform-origin: top center;
+  transition:
+    opacity 0.18s cubic-bezier(0.4, 0, 1, 1),
+    visibility 0s linear 0.18s,
+    transform 0.18s cubic-bezier(0.4, 0, 1, 1);
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--text-primary) 20%, transparent) transparent;
+}
+
+.search-suggest.is-open {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: scale(1);
+  transition:
+    opacity 0.18s cubic-bezier(0.25, 1, 0.5, 1) 0s,
+    visibility 0s 0s,
+    transform 0.22s cubic-bezier(0.25, 1, 0.5, 1) 0s;
+}
+
+.search-suggest[hidden] {
+  display: none !important;
+}
+
+.search-suggest::-webkit-scrollbar {
+  width: 6px;
+}
+
+.search-suggest::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.search-suggest::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--text-primary) 18%, transparent);
+  border-radius: 3px;
+}
+
+.search-suggest-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 36px;
+  padding: 6px 10px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text-primary);
+  font-family: var(--font-search, var(--font));
+  font-weight: var(--weight-search, 400);
+  font-size: calc(0.9375rem * var(--size-search, 1));
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s var(--ease), color 0.15s var(--ease);
+}
+
+.search-suggest-item.is-active,
+.search-suggest-item:hover {
+  background: var(--settings-row-hover, var(--bg-warm-alt));
+}
+
+.search-suggest-item:focus-visible {
+  outline: 2px solid var(--accent, #4a90e2);
+  outline-offset: -2px;
+}
+
+.search-suggest-icon {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.search-suggest-copy {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.search-suggest-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.search-suggest-desc {
+  flex-shrink: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-tertiary);
+  font-size: 0.75rem;
+}
+
+body.has-image-bg .search-suggest-item,
+html.boot-has-image .search-suggest-item {
+  color: var(--img-chrome-text, var(--img-text, var(--text-primary)));
+}
+
+body.has-image-bg .search-suggest-desc,
+html.boot-has-image .search-suggest-desc {
+  color: var(--img-chrome-text-muted, var(--img-text-muted, var(--text-tertiary)));
+}
+
+body.has-image-bg .search-suggest-item.is-active,
+body.has-image-bg .search-suggest-item:hover,
+html.boot-has-image .search-suggest-item.is-active,
+html.boot-has-image .search-suggest-item:hover {
+  background: color-mix(in srgb, var(--img-chrome-text, #fff) 12%, transparent);
+  color: var(--img-chrome-text, var(--img-text, var(--text-primary)));
+}
+
 .search-btn:focus-visible,
 .search-clear-btn:focus-visible,
 .shortcut-expanded-add:focus-visible,
@@ -1035,7 +1183,9 @@ html body.has-image-bg .shortcut-folder .subfolder-portal .shortcut-btn {
   .shortcut-list-subfolder-header,
   .shortcut-list-edit,
   .shortcut-list-delete,
-  .search-box {
+  .search-box,
+  .search-suggest,
+  .search-suggest-item {
     transition-duration: 0.01ms !important;
     animation-duration: 0.01ms !important;
   }
