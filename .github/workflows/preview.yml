@@ -1,0 +1,94 @@
+name: Preview
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+  actions: write
+
+concurrency:
+  group: preview-pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  crx:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: refs/pull/${{ github.event.pull_request.number }}/head
+
+      - name: Require PR head
+        env:
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          actual="$(git rev-parse HEAD)"
+          if [ "$actual" != "$HEAD_SHA" ]; then
+            echo "检出的提交是 ${actual}，PR head 是 ${HEAD_SHA}" >&2
+            exit 1
+          fi
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Set preview version
+        env:
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          node --input-type=module <<'EOF'
+          import { readFileSync, writeFileSync } from 'node:fs';
+          const sha = process.env.HEAD_SHA || '';
+          if (!/^[0-9a-f]{40}$/.test(sha)) {
+            console.error(`无效的 commit: ${sha}`);
+            process.exit(1);
+          }
+          const manifest = JSON.parse(readFileSync('manifest.json', 'utf8'));
+          manifest.version = '0.0.1';
+          manifest.version_name = `preview-${sha}`;
+          writeFileSync('manifest.json', `${JSON.stringify(manifest, null, 2)}\n`);
+          EOF
+
+      - run: npm ci
+      - run: npm run check
+      - run: node --test scripts/publish-preview.test.mjs
+
+      - name: Pack CRX
+        env:
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: node scripts/pack-extension.mjs --name "MoonFog-preview-${HEAD_SHA}"
+
+      - name: Assert preview CRX
+        env:
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          python3 - <<'PY'
+          import io
+          import json
+          import os
+          import pathlib
+          import struct
+          import zipfile
+          sha = os.environ["HEAD_SHA"]
+          crx = pathlib.Path(f"dist/MoonFog-preview-{sha}.crx")
+          data = crx.read_bytes()
+          assert data[:4] == b"Cr24", data[:4]
+          assert struct.unpack("<I", data[4:8])[0] == 3
+          header_len = struct.unpack("<I", data[8:12])[0]
+          with zipfile.ZipFile(io.BytesIO(data[12 + header_len:])) as zf:
+              manifest = json.loads(zf.read("manifest.json"))
+          assert manifest["version"] == "0.0.1", manifest["version"]
+          assert manifest["version_name"] == f"preview-{sha}", manifest.get("version_name")
+          print(crx.name, len(data))
+          PY
+          test -z "$(find dist -name '*.pem' -print)"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: preview-crx
+          path: dist/MoonFog-preview-${{ github.event.pull_request.head.sha }}.crx
+          if-no-files-found: error
+          retention-days: 14
