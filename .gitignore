@@ -15,6 +15,7 @@ dist-web/
 .acl-recovery/
 .cdp-profile*/
 .cdp-test/
+.shots/
 
 # 本地文档，不纳入版本控制
 /AGENTS.md
