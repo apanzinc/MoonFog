@@ -7,8 +7,14 @@ Thumbs.db
 .idea/
 node_modules/
 dist/
+dist-web/
 *.pem
 *.crx
+
+# 本地调试/沙箱痕迹
+.acl-recovery/
+.cdp-profile*/
+.cdp-test/
 
 # 本地文档，不纳入版本控制
 /AGENTS.md

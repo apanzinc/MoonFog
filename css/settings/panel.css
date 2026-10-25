@@ -522,7 +522,8 @@ body.has-image-bg .mf-scrollbar.is-dragging .mf-scrollbar-thumb {
   background: transparent;
 }
 
-.settings-panel[data-view="page"] .settings-view-root {
+.settings-panel[data-view="page"] .settings-view-root,
+.settings-panel[data-view="sub"] .settings-view-root {
   opacity: 0;
   pointer-events: none;
 }
@@ -543,71 +544,55 @@ body.has-image-bg .mf-scrollbar.is-dragging .mf-scrollbar-thumb {
   pointer-events: auto;
 }
 
-/* 三级导航：二级↔三级内容滑动 */
-.settings-view-page[data-page-depth="2"] .settings-page {
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+/* 三级：与二级同款层；在二级之上再滑一层 */
+.settings-view-sub {
+  transform: translate3d(100%, 0, 0);
+  opacity: 1;
+  z-index: 3;
+  pointer-events: none;
+  background: transparent !important;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
-/* 三级→二级（返回）：旧内容从左滑入，新内容从右滑入 */
-.settings-view-page[data-page-depth="2"][data-slide="right"] .settings-page:not([hidden]) {
-  animation: settingsSlideInRight 0.3s cubic-bezier(0.4, 0, 0.2, 1) both;
+.settings-panel[data-view="sub"] .settings-view-sub {
+  transform: translate3d(0, 0, 0);
+  pointer-events: auto;
 }
 
-/* 二级→三级（前进）：旧内容向左滑出，新内容从右滑入 */
-.settings-view-page[data-page-depth="3"] .settings-page:not([hidden]) {
-  animation: settingsSlideInLeft 0.3s cubic-bezier(0.4, 0, 0.2, 1) both;
+/* 二级在三级之下：保持原位（视差可后续再调） */
+.settings-panel[data-view="sub"] .settings-view-page {
+  transform: translate3d(0, 0, 0);
+  pointer-events: none;
 }
 
-@keyframes settingsSlideInRight {
-  from {
-    transform: translate3d(-30%, 0, 0);
-    opacity: 0.6;
-  }
-  to {
-    transform: translate3d(0, 0, 0);
-    opacity: 1;
-  }
-}
-
-@keyframes settingsSlideInLeft {
-  from {
-    transform: translate3d(30%, 0, 0);
-    opacity: 0.6;
-  }
-  to {
-    transform: translate3d(0, 0, 0);
-    opacity: 1;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .settings-view-page[data-page-depth="2"] .settings-page,
-  .settings-view-page[data-page-depth="3"] .settings-page {
-    animation: none !important;
-    transition: none !important;
-  }
-}
+/* 页间滑动动画由 WAAPI (js/settings.js runSettingsPageSwap) 接管：
+ * 前进 = 新页 +30%→0 滑入、旧页 0→-30% 滑出；返回相反。
+ * JS 动画结束即还原内联样式，无需 CSS keyframes / 残留类。 */
 
 /*
  * 返回键悬停预览：
- * - 二级右滑 20%（仍占约 80%）
+ * - 当前层右滑 20%（仍占约 80%）
  * - 后面一级列表降低透明度（层次更清晰）
  * 移开回弹；点击从 20% 继续滑到 100%
  */
-.settings-panel[data-view="page"].settings-back-peek .settings-view-root {
+.settings-panel[data-view="page"].settings-back-peek .settings-view-root,
+.settings-panel[data-view="sub"].settings-back-peek .settings-view-root {
   opacity: 0.42;
   pointer-events: none;
   transition: opacity 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.settings-panel[data-view="page"].settings-back-peek .settings-view-page {
+.settings-panel[data-view="page"].settings-back-peek .settings-view-page,
+.settings-panel[data-view="sub"].settings-back-peek .settings-view-sub {
   transform: translate3d(20%, 0, 0);
   opacity: 1;
   pointer-events: none;
 }
 
 /* 从 peek 冻结 20% 帧（不依赖 data-view，避免切 root 时掉回 0） */
-.settings-panel.settings-back-from-peek .settings-view-page {
+.settings-panel.settings-back-from-peek .settings-view-page,
+.settings-panel.settings-back-from-peek .settings-view-sub {
   transform: translate3d(20%, 0, 0) !important;
   transition: none !important;
 }
@@ -619,7 +604,9 @@ body.has-image-bg .mf-scrollbar.is-dragging .mf-scrollbar-thumb {
 
 @media (prefers-reduced-motion: reduce) {
   .settings-panel[data-view="page"].settings-back-peek .settings-view-page,
-  .settings-panel.settings-back-from-peek .settings-view-page {
+  .settings-panel.settings-back-from-peek .settings-view-page,
+  .settings-panel[data-view="sub"].settings-back-peek .settings-view-sub,
+  .settings-panel.settings-back-from-peek .settings-view-sub {
     transform: translate3d(0, 0, 0) !important;
   }
   .settings-panel[data-view="page"].settings-back-peek .settings-view-root,
@@ -628,6 +615,7 @@ body.has-image-bg .mf-scrollbar.is-dragging .mf-scrollbar-thumb {
   }
 }
 .settings-view-root,
+.settings-view-sub,
 .settings-page {
   display: flex;
   flex-direction: column;
@@ -704,10 +692,10 @@ body.has-image-bg .mf-scrollbar.is-dragging .mf-scrollbar-thumb {
   display: grid;
   grid-template-columns: 32px 1fr;
   align-items: center;
-  column-gap: 10px;
+  column-gap: 12px;
   width: 100%;
-  min-height: 44px;
-  padding: 8px 10px;
+  min-height: 46px;
+  padding: 9px 10px;
   border: none;
   border-radius: 10px;
   background: transparent;
@@ -755,21 +743,21 @@ body.has-image-bg .mf-scrollbar.is-dragging .mf-scrollbar-thumb {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 1px;
+  gap: 3px;
   min-width: 0;
 }
 
 .settings-nav-title {
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   font-weight: 550;
   color: var(--text-primary);
-  line-height: 1.25;
+  line-height: 1.3;
 }
 
 .settings-nav-desc {
-  font-size: 0.6875rem;
+  font-size: 0.625rem;
   color: var(--text-tertiary);
-  line-height: 1.25;
+  line-height: 1.3;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -955,11 +943,14 @@ html.perf-balanced:not(.boot-ready) .settings-wrapper {
 }
 
 html.perf-balanced .settings-panel[data-view="page"].settings-back-peek .settings-view-page,
-html.perf-balanced .settings-panel.settings-back-from-peek .settings-view-page {
+html.perf-balanced .settings-panel[data-view="sub"].settings-back-peek .settings-view-sub,
+html.perf-balanced .settings-panel.settings-back-from-peek .settings-view-page,
+html.perf-balanced .settings-panel.settings-back-from-peek .settings-view-sub {
   transform: none !important;
 }
 
-html.perf-balanced .settings-panel[data-view="page"].settings-back-peek .settings-view-root {
+html.perf-balanced .settings-panel[data-view="page"].settings-back-peek .settings-view-root,
+html.perf-balanced .settings-panel[data-view="sub"].settings-back-peek .settings-view-root {
   opacity: 0 !important;
 }
 
@@ -1129,6 +1120,9 @@ html.low-perf .settings-reveal,
 html.low-perf .settings-view,
 html.low-perf .settings-view-root,
 html.low-perf .settings-view-page,
+html.low-perf .settings-view-sub,
+html.low-perf .settings-view-page .settings-page,
+html.low-perf .settings-view-sub .settings-page,
 html.low-perf .settings-panel,
 html.low-perf .settings-back-icon-btn,
 html.low-perf .greeting-title,
@@ -1173,12 +1167,17 @@ html.low-perf.boot-ready.boot-has-image .page-bg-image.is-active {
   transform: none !important;
 }
 
+/* balanced/low：页间滑动动画由 JS 侧 isSettingsPageAnimDisabled() 关闭，无需 CSS 规则 */
+
 html.low-perf .settings-panel[data-view="page"].settings-back-peek .settings-view-page,
-html.low-perf .settings-panel.settings-back-from-peek .settings-view-page {
+html.low-perf .settings-panel[data-view="sub"].settings-back-peek .settings-view-sub,
+html.low-perf .settings-panel.settings-back-from-peek .settings-view-page,
+html.low-perf .settings-panel.settings-back-from-peek .settings-view-sub {
   transform: none !important;
 }
 
-html.low-perf .settings-panel[data-view="page"].settings-back-peek .settings-view-root {
+html.low-perf .settings-panel[data-view="page"].settings-back-peek .settings-view-root,
+html.low-perf .settings-panel[data-view="sub"].settings-back-peek .settings-view-root {
   opacity: 0 !important;
 }
 

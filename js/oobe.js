@@ -53,14 +53,14 @@ const OOBE_STEPS = [
   },
   {
     id: 'settings',
-    kicker: '个性化',
+    kicker: '外观与主题',
     title: '更多选项在设置里',
     desc: '把鼠标移到页面右下角，点齿轮打开设置。之后可随时改外观、问候与数据。',
     points: [
-      { icon: 'mgc_palette_line', title: '外观与背景', tip: '主题、壁纸与明暗' },
-      { icon: 'mgc_emoji_line', title: '问候与文字', tip: '显示内容与字体' },
-      { icon: 'mgc_eye_line', title: '显示与效果', tip: '模糊强度与性能' },
-      { icon: 'mgc_folder_line', title: '数据管理', tip: '导出、导入与重置' }
+      { icon: 'mgc_palette_line', title: '外观与主题', tip: '背景、明暗、色调与问候字体' },
+      { icon: 'mgc_search_2_line', title: '搜索联想', tip: '引擎选择与输入建议' },
+      { icon: 'mgc_bookmark_line', title: '快捷导航', tip: '快捷方式、文件夹与书签同步' },
+      { icon: 'mgc_folder_line', title: '数据与备份', tip: '导出导入与重置' }
     ],
     pointsStyle: 'cards',
     pointsNoNum: true,

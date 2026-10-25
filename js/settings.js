@@ -3,19 +3,24 @@
  */
 
 const SETTINGS_PAGE_TITLES = {
+  appearance: '外观与主题',
+  'appearance-bg': '主题与背景',
   greeting: '问候区',
-  appearance: '背景与主题',
   type: '文字',
-  search: '搜索',
-  shortcuts: '收藏夹',
   display: '显示与效果',
-  data: '数据备份与导出',
-  about: '关于',
-   personalization: '个性化',
- };
+  search: '搜索联想',
+  navigation: '快捷导航',
+  shortcuts: '快捷方式',
+  'bookmark-sync': '导入与同步',
+  data: '数据与备份',
+  about: '关于朔雾',
+};
 
- // 三级导航：个性化子页面 → 详情页映射
- const PERSONALIZATION_CHILDREN = ['appearance', 'greeting', 'type', 'display'];
+ // 二级导航：一级页 → 子页映射（子页为三级详情页）
+ const SETTINGS_CHILDREN = {
+  appearance: ['appearance-bg', 'greeting', 'type', 'display'],
+  navigation: ['shortcuts', 'bookmark-sync'],
+ };
 
 /** 当前设置页：'root' | pageId */
 let currentSettingsPage = 'root';
@@ -41,9 +46,19 @@ function isSettingsOpen() {
 /** 返回动画时仍展示上一二级页内容，避免内容先被 hidden 闪没 */
 let lastSettingsPageId = '';
 
+/** 目标层解析：L2 菜单页→'page'，三级详情页/L1 单页→各自层 */
+function resolveSettingsLayer(pageId) {
+  if (!pageId || pageId === 'root') return 'root';
+  if (Object.prototype.hasOwnProperty.call(SETTINGS_CHILDREN, pageId)) return 'page';
+  const allChildPages = Object.values(SETTINGS_CHILDREN).flat();
+  if (allChildPages.includes(pageId)) return 'sub';
+  return 'page'; // L1 单页（search/data/about）直接走二级层
+}
+
+/** 在指定层内切换可见 .settings-page */
 function syncSettingsPageContent(pageView, isRoot, pageId) {
   if (!pageView) return;
-   // 返回二级时：动画中保留当前二级内容；结束后再清
+  // 返回上级时：动画中保留当前页内容；结束后再清
   if (isRoot) return;
   lastSettingsPageId = pageId || '';
   pageView.querySelectorAll('.settings-page').forEach((page) => {
@@ -51,41 +66,136 @@ function syncSettingsPageContent(pageView, isRoot, pageId) {
   });
 }
 
-function finishSettingsViewVisibility(panel, rootView, pageView, isRoot) {
-  if (!panel || !rootView || !pageView) return;
+function finishSettingsViewVisibility(panel, rootView, pageView, subView, view) {
+  if (!panel || !rootView || !pageView || !subView) return;
   panel.classList.remove('settings-animating');
   rootView.hidden = false;
-  pageView.hidden = isRoot;
-  rootView.setAttribute('aria-hidden', isRoot ? 'false' : 'true');
-  pageView.setAttribute('aria-hidden', isRoot ? 'true' : 'false');
-  rootView.style.pointerEvents = isRoot ? '' : 'none';
-  pageView.style.pointerEvents = isRoot ? 'none' : '';
-  if (isRoot) {
+  pageView.hidden = view === 'root';
+  subView.hidden = view !== 'sub';
+  rootView.setAttribute('aria-hidden', view === 'root' ? 'false' : 'true');
+  rootView.style.pointerEvents = view === 'root' ? '' : 'none';
+  pageView.style.pointerEvents = view === 'page' ? '' : 'none';
+  subView.style.pointerEvents = view === 'sub' ? '' : 'none';
+  if (view === 'root') {
     pageView.removeAttribute('data-page-depth');
-    pageView.removeAttribute('data-slide');
+    subView.removeAttribute('data-page-depth');
     pageView.querySelectorAll('.settings-page').forEach((page) => {
+      page.hidden = true;
+    });
+    subView.querySelectorAll('.settings-page').forEach((page) => {
       page.hidden = true;
     });
   }
 }
 
 /**
- * 切换设置视图：支持三级导航
- * 一级 root → 二级 personalization → 三级 detail page
+ * 页间过渡（WAAPI）：JS 精确控制，动画结束即还原，不留残留状态。
+ * - 前进：新页从右滑入(+30%)，旧页向左滑出(-30%)
+ * - 返回：新页从左滑入(-30%)，旧页向右滑出(+30%)
+ * 与面板级 root↔page 滑动方向一致。
+ */
+function restoreSettingsPageEl(el) {
+  if (!el) return;
+  el.style.position = '';
+  el.style.top = '';
+  el.style.left = '';
+  el.style.right = '';
+  el.style.zIndex = '';
+  el.style.pointerEvents = '';
+  el.style.overflow = '';
+  el.style.transform = '';
+  el.style.opacity = '';
+}
+
+/** 幂等清理：取消页间动画、还原内联样式（新导航开始前调用） */
+function clearSettingsPageTransition(pageView) {
+  if (!pageView) return;
+  pageView.querySelectorAll('.settings-page').forEach((el) => {
+    if (typeof el.getAnimations === 'function') {
+      el.getAnimations().forEach((a) => { try { a.cancel(); } catch (_) { /* noop */ } });
+    }
+    restoreSettingsPageEl(el);
+  });
+}
+
+/** 性能档：balanced/low 关闭页间滑动动画 */
+function isSettingsPageAnimDisabled() {
+  const cls = document.documentElement.classList;
+  return cls.contains('perf-balanced') || cls.contains('low-perf') || cls.contains('perf-low');
+}
+
+function runSettingsPageSwap(pageView, prevPageId, pageId, forward, token, animated) {
+  const prevPageEl = prevPageId ? pageView.querySelector(`.settings-page[data-page="${prevPageId}"]`) : null;
+  const nextPageEl = pageView.querySelector(`.settings-page[data-page="${pageId}"]`);
+  if (!nextPageEl) return;
+  if (!animated || !prevPageEl || typeof prevPageEl.animate !== 'function') return;
+
+  // 旧页绝对定位覆盖在新页上方，动画结束后还原为 hidden
+  prevPageEl.hidden = false;
+  prevPageEl.style.position = 'absolute';
+  prevPageEl.style.top = '0';
+  prevPageEl.style.left = '0';
+  prevPageEl.style.right = '0';
+  prevPageEl.style.zIndex = '2';
+  prevPageEl.style.pointerEvents = 'none';
+  prevPageEl.style.overflow = 'hidden';
+
+  const DURATION = 300;
+  const EASING = 'cubic-bezier(0.4, 0, 0.2, 1)';
+  const enterFrom = forward ? '30%' : '-30%';
+  const exitTo = forward ? '-30%' : '30%';
+
+  const enterAnim = nextPageEl.animate(
+    [
+      { transform: `translate3d(${enterFrom}, 0, 0)`, opacity: '0' },
+      { transform: 'translate3d(0, 0, 0)', opacity: '1' },
+    ],
+    { duration: DURATION, easing: EASING }
+  );
+  const exitAnim = prevPageEl.animate(
+    [
+      { transform: 'translate3d(0, 0, 0)', opacity: '1' },
+      { transform: `translate3d(${exitTo}, 0, 0)`, opacity: '0' },
+    ],
+    { duration: DURATION, easing: EASING }
+  );
+
+  let done = false;
+  const finish = () => {
+    if (done) return;
+    done = true;
+    // token 已变：新导航的 clearSettingsPageTransition 已接管清理，这里不动作
+    if (token !== settingsNavToken) return;
+    restoreSettingsPageEl(nextPageEl);
+    restoreSettingsPageEl(prevPageEl);
+    prevPageEl.hidden = true;
+  };
+  enterAnim.onfinish = finish;
+  exitAnim.onfinish = finish;
+  // 被新导航 cancel 时静默退出（oncancel 不挂回调，样式由统一清理负责）
+}
+
+/**
+ * 切换设置视图：三层导航
+ * 一级 root → 二级 group page（appearance/navigation 或 L1 单页）→ 三级 sub（详情页）
+ * 二级↔三级使用与 root↔page 相同的层滑动（data-view 驱动），层内页切换用 WAAPI。
  */
 function navigateSettings(pageId, options = {}) {
   const panel = getSettingsPanel();
   const rootView = document.getElementById('settingsViewRoot');
   const pageView = document.getElementById('settingsViewPage');
+  const subView = document.getElementById('settingsViewSub');
   const titleEl = document.getElementById('settingsPanelTitle');
   const backBtn = document.getElementById('settingsBackBtn');
-  if (!panel || !rootView || !pageView) return;
+  if (!panel || !rootView || !pageView || !subView) return;
 
   const goingBack = options.back === true;
+  const prevPageId = currentSettingsPage; // 页→页过渡需要旧页 id
+  const prevView = panel.dataset.view || 'root';
   const fromPeek =
     isRootPageId(pageId) &&
     panel.classList.contains('settings-back-peek') &&
-    (panel.dataset.view || 'root') === 'page';
+    (prevView === 'page' || prevView === 'sub');
   if (!fromPeek) {
     clearSettingsBackPeek();
     panel.classList.remove('settings-back-from-peek');
@@ -95,65 +205,70 @@ function navigateSettings(pageId, options = {}) {
     settingsNavCleanup();
     settingsNavCleanup = null;
   }
+  // 取消旧页间动画并还原所有页的内联样式（幂等，防残留）
+  clearSettingsPageTransition(pageView);
+  clearSettingsPageTransition(subView);
+
+  // 目标层
+  const nextView = resolveSettingsLayer(pageId);
+  const reduceMotion =
+    window.matchMedia &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const animate =
+    options.animate !== false && !reduceMotion && (prevView !== nextView || fromPeek);
 
   // 导航历史管理
   if (goingBack) {
     // 返回：弹出历史
     settingsNavHistory.pop();
   } else if (pageId && pageId !== 'root' && currentSettingsPage !== 'root') {
-    // 从二级→三级 或 三级→三级：推入历史
+    // 层间或层内下钻：推入历史
     settingsNavHistory.push(currentSettingsPage);
   } else if (pageId === 'root' || !pageId) {
     // 回一级：清空历史
     settingsNavHistory = [];
   }
 
-  const isRoot = !pageId || pageId === 'root';
-  const nextView = isRoot ? 'root' : 'page';
-  const prevView = panel.dataset.view || 'root';
-  const reduceMotion =
-    window.matchMedia &&
-    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const animate = options.animate !== false && !reduceMotion && prevView !== nextView;
   const token = ++settingsNavToken;
+  currentSettingsPage = isRootPageId(pageId) ? 'root' : pageId;
 
-  currentSettingsPage = isRoot ? 'root' : pageId;
-
-  // 进入二级：切换内容；返回：保留内容直到动画结束
+  // 进入下级：切换内容；返回上级：保留内容直到动画结束（见 finishSettingsViewVisibility）
   if (typeof closeMfColorPicker === 'function') closeMfColorPicker();
-  syncSettingsPageContent(pageView, isRoot, pageId);
 
-  // 三级导航：设置深度和滑动方向
-  const isPersonalization = pageId === 'personalization';
-  const isLevel3 = PERSONALIZATION_CHILDREN.includes(pageId);
-  if (!isRoot) {
-    pageView.setAttribute('data-page-depth', isLevel3 ? '3' : '2');
-    if (isLevel3) {
-      pageView.setAttribute('data-slide', 'left');
-    } else if (goingBack && isPersonalization) {
-      pageView.setAttribute('data-slide', 'right');
-    } else {
-      pageView.removeAttribute('data-slide');
-    }
-    // 动画结束后清除 data-slide
-    if (pageView.getAttribute('data-slide')) {
-      const activePage = pageView.querySelector(`.settings-page[data-page="${pageId}"]`);
-      if (activePage) {
-        const cleanupSlide = () => {
-          if (token !== settingsNavToken) return;
-          pageView.removeAttribute('data-slide');
-          activePage.removeEventListener('animationend', cleanupSlide);
-        };
-        activePage.addEventListener('animationend', cleanupSlide);
-        // 兜底：无动画时立即清除
-        setTimeout(cleanupSlide, 350);
-      }
+  // 层内页切换方向：进入更深层=前进，返回=后退
+  const allChildPages = Object.values(SETTINGS_CHILDREN).flat();
+  const isLevel3 = allChildPages.includes(pageId);
+  const prevIsLevel3 = allChildPages.includes(prevPageId);
+  const sameLayerSwap =
+    nextView !== 'root' && nextView === prevView && prevPageId !== pageId && prevPageId !== 'root';
+  const forward = goingBack
+    ? false
+    : nextView !== prevView
+      ? !isRootPageId(pageId) // root→page/sub 前进，page/sub→root 后退
+      : isLevel3 && !prevIsLevel3;
+
+  // 目标层内容切换 + 层内滑动（仅同层页切换时）
+  const targetViewEl = nextView === 'sub' ? subView : pageView;
+  if (!isRootPageId(pageId)) {
+    targetViewEl.setAttribute('data-page-depth', nextView === 'sub' ? '3' : '2');
+    syncSettingsPageContent(targetViewEl, false, pageId);
+    if (sameLayerSwap) {
+      runSettingsPageSwap(
+        targetViewEl,
+        prevPageId,
+        pageId,
+        forward,
+        token,
+        options.animate !== false && !reduceMotion && !isSettingsPageAnimDisabled()
+      );
     }
   } else {
     pageView.removeAttribute('data-page-depth');
-    pageView.removeAttribute('data-slide');
+    subView.removeAttribute('data-page-depth');
+    syncSettingsPageContent(pageView, true, pageId);
+    syncSettingsPageContent(subView, true, pageId);
   }
-  if (isRoot && lastSettingsPageId) {
+  if (isRootPageId(pageId) && lastSettingsPageId) {
     pageView.querySelectorAll('.settings-page').forEach((page) => {
       page.hidden = page.dataset.page !== lastSettingsPageId;
     });
@@ -161,9 +276,9 @@ function navigateSettings(pageId, options = {}) {
 
   const headerEl = panel.querySelector('.settings-header');
   const backLabel = document.getElementById('settingsBackLabel');
-  if (headerEl) headerEl.dataset.level = isRoot ? 'root' : 'page';
+  if (headerEl) headerEl.dataset.level = isRootPageId(pageId) ? 'root' : 'page';
   if (titleEl) {
-    if (isRoot) titleEl.textContent = '设置';
+    if (isRootPageId(pageId)) titleEl.textContent = '设置';
     else titleEl.textContent = getSettingsPageTitle(pageId);
   }
   if (backLabel) {
@@ -177,46 +292,33 @@ function navigateSettings(pageId, options = {}) {
       cancelAnimationFrame(backBtn._backAnimRaf);
       backBtn._backAnimRaf = null;
     }
-    if (isRoot) {
+    if (isRootPageId(pageId)) {
       // 退出：去掉 is-shown 并过渡到收起
       backBtn.classList.remove('is-shown');
       backBtn.setAttribute('aria-hidden', 'true');
       backBtn.setAttribute('tabindex', '-1');
       backBtn.hidden = false;
     } else {
-      // 进入：先锁收起态再加 is-shown，保证 transition 能跑
+      // 进入：直接显示（层滑动动画由面板层负责，返回键无需二次动画）
       backBtn.hidden = false;
       backBtn.setAttribute('aria-hidden', 'false');
       backBtn.setAttribute('tabindex', '0');
-      if (reduceMotion || !animate) {
-        backBtn.classList.add('is-shown');
-      } else if (!backBtn.classList.contains('is-shown')) {
-        backBtn.classList.remove('is-shown');
-        void backBtn.offsetWidth;
-        backBtn._backAnimRaf = requestAnimationFrame(() => {
-          backBtn._backAnimRaf = requestAnimationFrame(() => {
-            backBtn._backAnimRaf = null;
-            if (currentSettingsPage === 'root') return;
-            backBtn.classList.add('is-shown');
-          });
-        });
-      } else {
-        backBtn.classList.add('is-shown');
-      }
+      backBtn.classList.add('is-shown');
     }
   }
 
-  if (!isRoot && pageId === 'greeting') {
+  if (!isRootPageId(pageId) && pageId === 'greeting') {
     if (typeof updateCustomTextCount === 'function') updateCustomTextCount();
     if (typeof updateGreetingSettingsVisibility === 'function') updateGreetingSettingsVisibility();
     if (typeof updateGreetingPreview === 'function') updateGreetingPreview();
   }
 
-  if (!isRoot) pageView.scrollTop = 0;
-  else rootView.scrollTop = 0;
+  if (nextView === 'root') rootView.scrollTop = 0;
+  else targetViewEl.scrollTop = 0;
   if (typeof initOverlayScrollbars === 'function') {
     initOverlayScrollbars(panel);
     if (pageView && pageView._mfScrollbar) pageView._mfScrollbar.update();
+    if (subView && subView._mfScrollbar) subView._mfScrollbar.update();
     if (rootView && rootView._mfScrollbar) rootView._mfScrollbar.update();
   }
 
@@ -226,35 +328,38 @@ function navigateSettings(pageId, options = {}) {
     panel.classList.remove('settings-back-peek', 'settings-back-from-peek');
     rootView.hidden = false;
     pageView.hidden = false;
+    subView.hidden = false;
     panel.dataset.view = nextView;
     void panel.offsetWidth;
-    finishSettingsViewVisibility(panel, rootView, pageView, isRoot);
+    finishSettingsViewVisibility(panel, rootView, pageView, subView, nextView);
     panel.classList.remove('settings-no-anim');
   } else {
-    // 两层都显示：root 垫底，page 从右滑入/滑出
+    // 两层都显示：底层垫底，上层从右滑入/滑出（data-view 驱动 CSS transition）
     panel.classList.add('settings-animating');
     rootView.hidden = false;
     pageView.hidden = false;
-    rootView.setAttribute('aria-hidden', isRoot ? 'false' : 'true');
-    pageView.setAttribute('aria-hidden', isRoot ? 'true' : 'false');
+    subView.hidden = false;
+    rootView.setAttribute('aria-hidden', 'true');
     rootView.style.pointerEvents = 'none';
     pageView.style.pointerEvents = 'none';
+    subView.style.pointerEvents = 'none';
 
-    if (fromPeek && isRoot) {
+    if (fromPeek && isRootPageId(pageId)) {
       // 1) 冻结 20%（不依赖 data-view）
       panel.classList.add('settings-back-from-peek');
       panel.classList.remove('settings-back-peek');
-      pageView.style.transition = 'none';
-      pageView.style.transform = 'translate3d(20%, 0, 0)';
+      const leaveEl = prevView === 'sub' ? subView : pageView;
+      leaveEl.style.transition = 'none';
+      leaveEl.style.transform = 'translate3d(20%, 0, 0)';
       rootView.style.transition = 'none';
       rootView.style.opacity = '0.42';
-      void pageView.offsetWidth;
-      // 2) 下一帧放开，从 20% 过渡度100%
+      void leaveEl.offsetWidth;
+      // 2) 下一帧放开，从 20% 过渡到 100%
       requestAnimationFrame(() => {
         if (token !== settingsNavToken) return;
         panel.classList.remove('settings-back-from-peek');
-        pageView.style.transition = '';
-        pageView.style.transform = '';
+        leaveEl.style.transition = '';
+        leaveEl.style.transform = '';
         rootView.style.transition = '';
         rootView.style.opacity = '';
         panel.dataset.view = 'root';
@@ -274,6 +379,8 @@ function navigateSettings(pageId, options = {}) {
       });
     }
 
+    const enterEl = nextView === 'sub' ? subView : pageView;
+    const leaveEl = prevView === 'sub' ? subView : pageView;
     let settled = false;
     const onDone = () => {
       if (settled || token !== settingsNavToken) return;
@@ -281,34 +388,38 @@ function navigateSettings(pageId, options = {}) {
       panel.classList.remove('settings-back-peek', 'settings-back-from-peek');
       pageView.style.transition = '';
       pageView.style.transform = '';
+      subView.style.transition = '';
+      subView.style.transform = '';
       rootView.style.transition = '';
       rootView.style.opacity = '';
-      pageView.removeAttribute('data-slide');
-      finishSettingsViewVisibility(panel, rootView, pageView, isRoot);
+      finishSettingsViewVisibility(panel, rootView, pageView, subView, nextView);
       settingsNavCleanup = null;
     };
 
     const onTransitionEnd = (e) => {
-      if (e.target !== pageView) return;
+      if (e.target !== enterEl && e.target !== leaveEl) return;
       if (e.propertyName !== 'transform') return;
-      pageView.removeEventListener('transitionend', onTransitionEnd);
+      enterEl.removeEventListener('transitionend', onTransitionEnd);
+      leaveEl.removeEventListener('transitionend', onTransitionEnd);
       clearTimeout(fallbackTimer);
       onDone();
     };
 
-    pageView.addEventListener('transitionend', onTransitionEnd);
+    enterEl.addEventListener('transitionend', onTransitionEnd);
+    leaveEl.addEventListener('transitionend', onTransitionEnd);
     const fallbackTimer = setTimeout(onDone, 380);
 
     settingsNavCleanup = () => {
-      pageView.removeEventListener('transitionend', onTransitionEnd);
+      enterEl.removeEventListener('transitionend', onTransitionEnd);
+      leaveEl.removeEventListener('transitionend', onTransitionEnd);
       clearTimeout(fallbackTimer);
     };
   }
 
-  if (!isRoot) {
+  if (!isRootPageId(pageId)) {
     requestAnimationFrame(() => {
       if (token !== settingsNavToken) return;
-      const activePage = pageView.querySelector(`.settings-page[data-page="${pageId}"]`);
+      const activePage = targetViewEl.querySelector(`.settings-page[data-page="${pageId}"]`);
       const focusable = activePage && activePage.querySelector(
         'button:not([hidden]):not([disabled]), input:not([hidden]):not([disabled]), [tabindex]:not([tabindex="-1"])'
       );
@@ -333,8 +444,9 @@ function setSettingsBackPeek(enabled) {
     panel.classList.remove('settings-back-peek');
     return;
   }
-  // 仅二级页、非导航动画时
-  if ((panel.dataset.view || 'root') !== 'page') {
+  // 仅下级页（二级/三级）、非导航动画时
+  const view = panel.dataset.view || 'root';
+  if (view !== 'page' && view !== 'sub') {
     panel.classList.remove('settings-back-peek');
     return;
   }
@@ -381,7 +493,8 @@ function bindSettingsNavigation() {
     // pointerdown 先锁定 peek，避免 click 前的 leave 把预览清除
     backBtn.addEventListener('pointerdown', () => {
       if (!backBtn.classList.contains('is-shown')) return;
-      if ((panel.dataset.view || 'root') !== 'page') return;
+      const view = panel.dataset.view || 'root';
+      if (view !== 'page' && view !== 'sub') return;
       if (isSettingsBackPeeking()) {
         panel.dataset.backCommit = '1';
       }
@@ -402,7 +515,8 @@ function bindSettingsNavigation() {
     // 悬停预览：二级右度20%；移开回弹（点击返回时不回弹）
     backBtn.addEventListener('pointerenter', () => {
       if (!backBtn.classList.contains('is-shown')) return;
-      if ((panel.dataset.view || 'root') !== 'page') return;
+      const view = panel.dataset.view || 'root';
+      if (view !== 'page' && view !== 'sub') return;
       if (panel.classList.contains('settings-animating')) return;
       setSettingsBackPeek(true);
     });
@@ -609,7 +723,6 @@ function syncSettingsPanel() {
 
 try { renderCustomEngines(); } catch (_) {}
    initCardSelection('greetingModeGrid', 'moonfog_greeting_mode', DEFAULT_GREETING_MODE);
-   // bgModeGrid 有 image 选项，当实际模式为 local/bing 时显示"图片"为激活
    initBgModeGridSelection();
    try { if (typeof syncGrainSettingsUI === 'function') syncGrainSettingsUI(); } catch (_) {}
   initCardSelection('themeGrid', 'moonfog_tone', DEFAULT_TONE);
@@ -1552,17 +1665,6 @@ function bindGrainSettings() {
 
 function bindBackgroundSetting() {
    initCardClick('bgModeGrid', BG_MODE_KEY, (value) => {
-if (value === 'image') {
-        const subSelect = document.getElementById('bgImageSubSelect');
-        if (subSelect) setSettingsReveal(subSelect, true);
-        const grainGroup = document.getElementById('bgGrainGroup');
-        if (grainGroup) setSettingsReveal(grainGroup, false);
-        applyBackgroundMode('local');
-        initBgModeGridSelection();
-        return;
-      }
-     const subSelect = document.getElementById('bgImageSubSelect');
-     if (subSelect) setSettingsReveal(subSelect, false);
      applyBackgroundMode(value);
    });
 
@@ -1570,31 +1672,7 @@ if (value === 'image') {
    const bgLocalInput = document.getElementById('bgLocalInput');
    const bgLocalClear = document.getElementById('bgLocalClear');
    const bgLocalTip = document.getElementById('bgLocalTip');
-   const bgSubLocal = document.getElementById('bgImageSubSelect')?.querySelector('[data-value="local"]');
-   const bgSubBing = document.getElementById('bgImageSubSelect')?.querySelector('[data-value="bing"]');
    bindGrainSettings();
-
-   if (bgSubLocal) {
-     bgSubLocal.addEventListener('click', () => {
-       const subSelect = document.getElementById('bgImageSubSelect');
-       if (subSelect) {
-         subSelect.querySelectorAll('.bg-sub-item').forEach((b) => b.classList.remove('active'));
-         bgSubLocal.classList.add('active');
-       }
-       applyBackgroundMode('local');
-     });
-   }
-   if (bgSubBing) {
-     bgSubBing.addEventListener('click', () => {
-       const subSelect = document.getElementById('bgImageSubSelect');
-       if (subSelect) {
-         subSelect.querySelectorAll('.bg-sub-item').forEach((b) => b.classList.remove('active'));
-         bgSubBing.classList.add('active');
-       }
-       applyBackgroundMode('bing');
-       initBgModeGridSelection();
-     });
-   }
 
    if (bgLocalPick && bgLocalInput) {
      bgLocalPick.addEventListener('click', () => bgLocalInput.click());
@@ -1644,17 +1722,10 @@ function initBgModeGridSelection() {
   const grid = document.getElementById('bgModeGrid');
   if (!grid) return;
   const savedValue = localStorage.getItem(BG_MODE_KEY) || DEFAULT_BG_MODE;
-  const isImageMode = savedValue === 'local' || savedValue === 'bing';
   grid.querySelectorAll('[data-value]').forEach((item) => {
-    item.classList.toggle('active', item.dataset.value === (isImageMode ? 'image' : savedValue));
+    item.classList.toggle('active', item.dataset.value === savedValue);
   });
   syncRadioSelection(grid);
-  const subSelect = document.getElementById('bgImageSubSelect');
-  if (subSelect) {
-    setSettingsReveal(subSelect, isImageMode);
-    const subItems = subSelect.querySelectorAll('.bg-sub-item');
-    subItems.forEach((b) => b.classList.toggle('active', b.dataset.value === savedValue));
-  }
 }
 
 const SETTINGS_BTN_PINNED_KEY = 'moonfog_settings_btn_pinned';
@@ -2236,13 +2307,11 @@ function updateAboutBannerBg() {
 /**
  * 更新设置页顶部横幅：复用关于页横幅逻辑 */
 function updateSettingsBannerBg() {
-  const banner = document.getElementById('settingsBanner');
-  const imageEl = document.getElementById('settingsBannerImage');
-  const overlayEl = document.getElementById('settingsBannerOverlay');
-  if (!banner || !imageEl) return;
-
-  imageEl.style.cssText = '';
-  if (overlayEl) overlayEl.style.cssText = '';
+  const imageEls = [
+    document.getElementById('settingsBannerImage'),
+    document.getElementById('settingsBannerSubImage'),
+  ].filter(Boolean);
+  if (!imageEls.length) return;
 
   // 始终使用必应每日一图
   let imgUrl = '';
@@ -2255,9 +2324,12 @@ function updateSettingsBannerBg() {
   }
 
   if (imgUrl) {
-    imageEl.style.backgroundImage = 'url("' + imgUrl + '")';
-    imageEl.style.backgroundSize = 'cover';
-    imageEl.style.backgroundPosition = 'center';
+    imageEls.forEach((imageEl) => {
+      imageEl.style.cssText = '';
+      imageEl.style.backgroundImage = 'url("' + imgUrl + '")';
+      imageEl.style.backgroundSize = 'cover';
+      imageEl.style.backgroundPosition = 'center';
+    });
     return;
   }
 
@@ -2265,12 +2337,13 @@ function updateSettingsBannerBg() {
     .then(r => r.json())
     .then(data => {
       const relativeUrl = data?.images?.[0]?.url;
-      if (relativeUrl) {
-        const url = 'https://www.bing.com' + relativeUrl;
+      if (!relativeUrl) return;
+      const url = 'https://www.bing.com' + relativeUrl;
+      imageEls.forEach((imageEl) => {
         imageEl.style.backgroundImage = 'url("' + url + '")';
         imageEl.style.backgroundSize = 'cover';
         imageEl.style.backgroundPosition = 'center';
-      }
+      });
     })
     .catch(() => {});
 }

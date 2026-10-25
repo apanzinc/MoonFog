@@ -119,3 +119,12 @@ jobs:
             --target "$(git rev-parse HEAD)" \
             --title "MoonFog v${VERSION}" \
             --generate-notes
+
+      - name: Upload to Edge Add-ons
+        env:
+          EDGE_PRODUCT_ID: ${{ secrets.EDGE_PRODUCT_ID }}
+          EDGE_CLIENT_ID: ${{ secrets.EDGE_CLIENT_ID }}
+          EDGE_API_KEY: ${{ secrets.EDGE_API_KEY }}
+          EDGE_PACKAGE: dist/MoonFog-${{ steps.version.outputs.version }}.zip
+          VERSION: ${{ steps.version.outputs.version }}
+        run: node scripts/publish-edge.mjs

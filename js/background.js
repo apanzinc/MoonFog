@@ -598,15 +598,12 @@ function updateBgSettingsUI() {
   const isSolid = effectiveMode === 'solid';
 
 // 条件启用：本地图 / 模糊仅图片；必应信息单独区域；色调仅纯色（进出动画镜像）
-   const imageSubSelect = document.getElementById('bgImageSubSelect');
-   const isImage = isLocal || isBing;
    if (typeof setSettingsReveal === 'function') {
      setSettingsReveal(localActions, isLocal);
      setSettingsReveal(grainGroup, isGrain);
      if (imageOptions) setSettingsReveal(imageOptions, false);
      if (typeof syncSurfaceBlurAvailability === 'function') syncSurfaceBlurAvailability();
      setSettingsReveal(bingGroup, isBing);
-     setSettingsReveal(imageSubSelect, isImage);
      if (clearBtn) clearBtn.hidden = !(isLocal && !!localBgDataUrl);
    } else {
      if (localActions) localActions.hidden = !isLocal;
@@ -614,7 +611,6 @@ function updateBgSettingsUI() {
      if (imageOptions) imageOptions.hidden = true;
      if (typeof syncSurfaceBlurAvailability === 'function') syncSurfaceBlurAvailability();
      if (bingGroup) bingGroup.hidden = !isBing;
-     if (imageSubSelect) imageSubSelect.hidden = !isImage;
      if (clearBtn) clearBtn.hidden = !(isLocal && !!localBgDataUrl);
    }
   if (isGrain && typeof syncGrainSettingsUI === 'function') {

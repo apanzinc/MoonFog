@@ -150,34 +150,39 @@
             </svg>
         </div>
         <nav class="settings-nav" aria-label="设置导航">
+          <button class="settings-nav-item" type="button" data-settings-page="appearance">
+            <span class="settings-nav-icon" aria-hidden="true"><span class="mgc_palette_fill"></span></span>
+            <span class="settings-nav-text">
+              <span class="settings-nav-title">外观与主题</span>
+              <span class="settings-nav-desc">背景、明暗、色调与问候字体</span>
+            </span>
+          </button>
           <button class="settings-nav-item" type="button" data-settings-page="search">
             <span class="settings-nav-icon" aria-hidden="true"><span class="mgc_search_2_fill"></span></span>
             <span class="settings-nav-text">
-              <span class="settings-nav-title">搜索</span>
+              <span class="settings-nav-title">搜索联想</span>
+              <span class="settings-nav-desc">引擎选择与输入建议</span>
             </span>
           </button>
-          <button class="settings-nav-item" type="button" data-settings-page="shortcuts">
+          <button class="settings-nav-item" type="button" data-settings-page="navigation">
             <span class="settings-nav-icon" aria-hidden="true"><span class="mgc_bookmark_fill"></span></span>
             <span class="settings-nav-text">
-              <span class="settings-nav-title">收藏夹</span>
-            </span>
-          </button>
-          <button class="settings-nav-item" type="button" data-settings-page="personalization">
-            <span class="settings-nav-icon" aria-hidden="true"><span class="mgc_palette_fill"></span></span>
-            <span class="settings-nav-text">
-              <span class="settings-nav-title">个性化</span>
+              <span class="settings-nav-title">快捷导航</span>
+              <span class="settings-nav-desc">快捷方式、文件夹与书签同步</span>
             </span>
           </button>
           <button class="settings-nav-item" type="button" data-settings-page="data">
             <span class="settings-nav-icon" aria-hidden="true"><span class="mgc_folder_2_fill"></span></span>
             <span class="settings-nav-text">
-              <span class="settings-nav-title">数据备份与导出</span>
+              <span class="settings-nav-title">数据与备份</span>
+              <span class="settings-nav-desc">导出导入与重置</span>
             </span>
           </button>
           <button class="settings-nav-item" type="button" data-settings-page="about">
             <span class="settings-nav-icon" aria-hidden="true"><span class="mgc_information_fill"></span></span>
             <span class="settings-nav-text">
-              <span class="settings-nav-title">关于</span>
+              <span class="settings-nav-title">关于朔雾</span>
+              <span class="settings-nav-desc">版本、开源许可与致谢</span>
             </span>
           </button>
         </nav>
@@ -185,14 +190,13 @@
 
       <!-- 二级：详情页 -->
       <div class="settings-view settings-view-page" id="settingsViewPage" data-settings-view="page">
-        <!-- 个性化：二级导航页 -->
-        <section class="settings-page" data-page="personalization" hidden aria-labelledby="sec-personalization">
-          <h4 class="settings-section-title" id="sec-personalization" hidden>个性化</h4>
-          <nav class="settings-nav" aria-label="个性化子菜单">
-            <button class="settings-nav-item" type="button" data-settings-page="appearance">
+<section class="settings-page" data-page="appearance" hidden aria-labelledby="sec-appearance">
+          <h4 class="settings-section-title" id="sec-appearance" hidden>外观</h4>
+          <nav class="settings-nav" aria-label="外观子菜单">
+            <button class="settings-nav-item" type="button" data-settings-page="appearance-bg">
               <span class="settings-nav-icon" aria-hidden="true"><span class="mgc_palette_fill"></span></span>
               <span class="settings-nav-text">
-                <span class="settings-nav-title">背景与主题</span>
+                <span class="settings-nav-title">主题与背景</span>
                 <span class="settings-nav-desc">背景、色调与明暗</span>
               </span>
             </button>
@@ -206,7 +210,7 @@
             <button class="settings-nav-item" type="button" data-settings-page="type">
               <span class="settings-nav-icon" aria-hidden="true"><span class="mgc_font_fill"></span></span>
               <span class="settings-nav-text">
-                <span class="settings-nav-title">字体</span>
+                <span class="settings-nav-title">文字</span>
                 <span class="settings-nav-desc">字体与粗细</span>
               </span>
             </button>
@@ -219,8 +223,37 @@
             </button>
           </nav>
         </section>
+<section class="settings-page" data-page="navigation" hidden aria-labelledby="sec-navigation">
+          <h4 class="settings-section-title" id="sec-navigation" hidden>导航</h4>
+          <nav class="settings-nav" aria-label="导航子菜单">
+            <button class="settings-nav-item" type="button" data-settings-page="shortcuts">
+              <span class="settings-nav-icon" aria-hidden="true"><span class="mgc_bookmark_fill"></span></span>
+              <span class="settings-nav-text">
+                <span class="settings-nav-title">快捷方式</span>
+                <span class="settings-nav-desc">主页入口与列表</span>
+              </span>
+            </button>
+            <button class="settings-nav-item" type="button" data-settings-page="bookmark-sync">
+              <span class="settings-nav-icon" aria-hidden="true"><span class="mgc_link_2_fill"></span></span>
+              <span class="settings-nav-text">
+                <span class="settings-nav-title">导入与同步</span>
+                <span class="settings-nav-desc">书签导入与同步</span>
+              </span>
+            </button>
+          </nav>
+        </section>
+      </div>
 
-        <!-- 问候区 -->
+      <!-- 三级：详情页（独立层，与二级同款滑动/预返回） -->
+      <div class="settings-view settings-view-sub" id="settingsViewSub" data-settings-view="sub" hidden>
+        <!-- 三级页顶部横幅（与一级同款必应每日图） -->
+        <div class="settings-banner" id="settingsBannerSub" aria-hidden="true">
+          <div class="settings-banner-image" id="settingsBannerSubImage"></div>
+          <div class="settings-banner-overlay" id="settingsBannerSubOverlay"></div>
+          <svg class="settings-banner-logo" viewBox="0 0 915.343994140625 191" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <path fill="#fff" d="M106.51921,0.16237259C102.6485,-0.53281784,98.719345,1.0395393,96.420563,4.2036362C94.12175,7.3677311,93.862823,11.559906,95.755035,14.978334C106.68314,34.688805,103.16405,59.184593,87.119583,75.087967C71.075134,90.991348,46.362061,94.479523,26.476746,83.647514C23.028,81.771957,18.798645,82.028595,15.606491,84.307182C12.414337,86.585762,10.828033,90.480354,11.529373,94.317032C12.806976,101.27815,15.006012,108.04168,18.069489,114.43235C19.763443,117.9577,23.353577,120.20151,27.292999,120.19691L156.38116,120.19691C160.32063,120.20151,163.91075,117.9577,165.60472,114.43235C188.60736,66.351936,159.33734,9.7296448,106.52943,0.15225601L106.51921,0.16237259ZM0,140.43361C0,134.84819,4.5680389,130.32033,10.202988,130.32033L173.45082,130.32033C179.0858,130.32033,183.65382,134.84819,183.65382,140.43361C183.65382,146.01903,179.0858,150.54686,173.45082,150.54686L10.202988,150.54686C4.5680389,150.54686,0,146.01903,0,140.43361ZM30.608963,180.88672C30.608963,175.30132,35.177002,170.77348,40.811951,170.77348L142.84187,170.77348C148.47679,170.77348,153.04486,175.30132,153.04486,180.88672C153.04486,186.47214,148.47679,191,142.84187,191L40.811951,191C35.177002,191,30.608963,186.47214,30.608963,180.88672ZM259.13599,152.87999L233.216,152.87999L233.216,36.23999L256.97601,36.23999L293.552,90.959991L294.41602,90.959991L330.992,36.23999L354.75201,36.23999L354.75201,152.87999L328.832,152.87999L328.832,85.919991L327.96802,85.919991L304.064,120.19199L283.90399,120.19199L260,86.495987L259.13599,86.495987L259.13599,152.87999ZM410.91199,154.89598Q397.95197,154.89598,388.37598,149.35199Q378.79999,143.80798,373.68799,133.51198Q368.57599,123.21599,368.57599,109.24799Q368.57599,95.423988,373.68799,85.127991Q378.79999,74.831985,388.37598,69.287987Q397.95197,63.743988,410.91199,63.743988Q423.87198,63.743988,433.448,69.287987Q443.02399,74.831985,448.13599,85.127991Q453.24799,95.423988,453.24799,109.24799Q453.24799,123.21599,448.13599,133.51198Q443.02399,143.80798,433.448,149.35199Q423.87198,154.89598,410.91199,154.89598ZM410.91199,130.41599Q418.25598,130.41599,422.50397,124.72798Q426.75198,119.03999,426.75198,109.24799Q426.75198,99.455986,422.50397,93.839989Q418.25598,88.223984,410.91199,88.223984Q403.56799,88.223984,399.31998,93.839989Q395.07199,99.455986,395.07199,109.24799Q395.07199,119.03999,399.31998,124.72798Q403.56799,130.41599,410.91199,130.41599ZM504.79999,154.89598Q491.84,154.89598,482.26398,149.35199Q472.68799,143.80798,467.57599,133.51198Q462.46399,123.21599,462.46399,109.24799Q462.46399,95.423988,467.57599,85.127991Q472.68799,74.831985,482.26398,69.287987Q491.84,63.743988,504.79999,63.743988Q517.76001,63.743988,527.336,69.287987Q536.91199,74.831985,542.02399,85.127991Q547.13599,95.423988,547.13599,109.24799Q547.13599,123.21599,542.02399,133.51198Q536.91199,143.80798,527.336,149.35199Q517.76001,154.89598,504.79999,154.89598ZM504.79999,130.41599Q512.14398,130.41599,516.39197,124.72798Q520.64001,119.03999,520.64001,109.24799Q520.64001,99.455986,516.39197,93.839989Q512.14398,88.223984,504.79999,88.223984Q497.45599,88.223984,493.20798,93.839989Q488.95999,99.455986,488.95999,109.24799Q488.95999,119.03999,493.20798,124.72798Q497.45599,130.41599,504.79999,130.41599ZM559.80798,152.87999L559.80798,65.759987L585.72803,65.759987L585.72803,76.991989L586.448,76.991989Q590.19202,70.655991,596.23999,67.199989Q602.28796,63.743988,610.35199,63.743988Q623.31201,63.743988,630.36798,72.095985Q637.42395,80.44799,637.42395,95.855988L637.42395,152.87999L611.50403,152.87999L611.50403,101.90399Q611.50403,95.567986,608.40796,91.967987Q605.31201,88.367989,599.83997,88.367989Q593.35999,88.367989,589.54395,92.399986Q585.72803,96.431992,585.72803,103.48799L585.72803,152.87999L559.80798,152.87999ZM680.62402,110.39999L680.62402,152.87999L653.83997,152.87999L653.83997,36.23999L730.01599,36.23999L730.01599,61.29599L680.62402,61.29599L680.62402,85.343987L726.56,85.343987L726.56,110.39999L680.62402,110.39999ZM780.27197,154.89598Q767.31201,154.89598,757.73602,149.35199Q748.15997,143.80798,743.04797,133.51198Q737.93597,123.21599,737.93597,109.24799Q737.93597,95.423988,743.04797,85.127991Q748.15997,74.831985,757.73602,69.287987Q767.31201,63.743988,780.27197,63.743988Q793.23199,63.743988,802.80798,69.287987Q812.38403,74.831985,817.49597,85.127991Q822.60803,95.423988,822.60803,109.24799Q822.60803,123.21599,817.49597,133.51198Q812.38403,143.80798,802.80798,149.35199Q793.23199,154.89598,780.27197,154.89598ZM780.27197,130.41599Q787.61603,130.41599,791.86401,124.72798Q796.112,119.03999,796.112,109.24799Q796.112,99.455986,791.86401,93.839989Q787.61603,88.223984,780.27197,88.223984Q772.92798,88.223984,768.67999,93.839989Q764.43201,99.455986,764.43201,109.24799Q764.43201,119.03999,768.67999,124.72798Q772.92798,130.41599,780.27197,130.41599ZM874.448,190.89598Q859.47198,190.89598,848.81598,184.34398Q838.15997,177.79198,833.84003,166.41599L855.87201,157.34398Q858.46399,162.95998,863,166.12798Q867.53601,169.29599,873.58398,169.29599Q880.92798,169.29599,885.17603,164.68799Q889.42401,160.07999,889.42401,152.44798L889.42401,141.35999L888.56,141.35999Q885.39203,147.11998,879.84802,150.28798Q874.30402,153.45598,867.96802,153.45598Q857.02399,153.45598,848.81598,147.91199Q840.60803,142.36798,836.216,132.07199Q831.82397,121.77599,831.82397,107.80798Q831.82397,94.415985,836.07202,84.479988Q840.32001,74.543991,848.16803,69.14399Q856.01599,63.743988,866.52802,63.743988Q873.44,63.743988,879.20001,66.911987Q884.96002,70.079987,888.56,75.839989L889.42401,75.839989L889.42401,65.759987L915.34399,65.759987L915.34399,148.27199Q915.34399,161.08798,910.52002,170.73598Q905.69598,180.38399,896.47998,185.63998Q887.26398,190.89598,874.448,190.89598ZM874.448,129.26399Q881.64801,129.26399,885.82397,123.71999Q890,118.17599,890,108.67198Q890,99.167984,885.67999,93.551987Q881.35999,87.935989,873.87201,87.935989Q866.81598,87.935989,862.56799,93.551987Q858.32001,99.167984,858.32001,108.67198Q858.32001,118.17599,862.64001,123.71999Q866.96002,129.26399,874.448,129.26399Z"/>
+            </svg>
+        </div>
         <section class="settings-page" data-page="greeting" hidden aria-labelledby="sec-greeting">
           <h4 class="settings-section-title" id="sec-greeting" hidden>问候区</h4>
 
@@ -344,9 +377,8 @@
           </section>
         </section>
 
-        <!-- 背景与主题 -->
-                        <section class="settings-page" data-page="appearance" hidden aria-labelledby="sec-appearance">
-          <h4 class="settings-section-title" id="sec-appearance" hidden>背景与主题</h4>
+<section class="settings-page" data-page="appearance-bg" hidden aria-labelledby="sec-appearance-bg">
+          <h4 class="settings-section-title" id="sec-appearance-bg" hidden>主题与背景</h4>
 
           <section class="settings-group">
             <h5 class="settings-group-title">界面明暗</h5>
@@ -384,19 +416,18 @@
                     <span class="bg-mode-icon" aria-hidden="true"><span class="mgc_sparkles_fill"></span></span>
                     <span class="bg-mode-name">流光渐变</span>
                   </button>
-                  <button class="bg-mode-item" data-value="image" type="button" role="radio" aria-checked="false">
+                  <button class="bg-mode-item" data-value="local" type="button" role="radio" aria-checked="false">
                     <span class="bg-mode-icon" aria-hidden="true"><span class="mgc_pic_2_fill"></span></span>
-                    <span class="bg-mode-name">图片</span>
+                    <span class="bg-mode-name">本地图片</span>
+                  </button>
+                  <button class="bg-mode-item" data-value="bing" type="button" role="radio" aria-checked="false">
+                    <span class="bg-mode-icon" aria-hidden="true"><span class="mgc_image_fill"></span></span>
+                    <span class="bg-mode-name">必应每日壁纸</span>
                   </button>
                 </div>
               </div>
 
-              <div class="setting-item bg-extra-field settings-reveal" id="bgImageSubSelect" hidden>
-                <div class="bg-image-sub-row" role="radiogroup" aria-label="图片来源">
-                  <button class="bg-sub-item active" data-value="local" type="button" role="radio" aria-checked="true">本地图片</button>
-                  <button class="bg-sub-item" data-value="bing" type="button" role="radio" aria-checked="false">在线图片</button>
-                </div>
-              </div>
+
 
               <div class="setting-item bg-extra-field settings-reveal" id="bgLocalActions" hidden>
                 <div class="bg-local-actions-row">
@@ -657,8 +688,7 @@
           </section>
         </section>
 
-        <!-- 文字 -->
-        <section class="settings-page" data-page="type" hidden aria-labelledby="sec-type">
+<section class="settings-page" data-page="type" hidden aria-labelledby="sec-type">
           <h4 class="settings-section-title" id="sec-type" hidden>文字</h4>
           <section class="settings-group">
             <h5 class="settings-group-title">问候主文案</h5>
@@ -743,9 +773,8 @@
           </section>
         </section>
 
-        <!-- 搜索 -->
-        <section class="settings-page" data-page="search" hidden aria-labelledby="sec-search">
-          <h4 class="settings-section-title" id="sec-search" hidden>搜索</h4>
+<section class="settings-page" data-page="search" hidden aria-labelledby="sec-search">
+          <h4 class="settings-section-title" id="sec-search" hidden>搜索联想</h4>
 
           <section class="settings-group">
             <h5 class="settings-group-title">搜索引擎</h5>
@@ -810,9 +839,8 @@
           </section>
         </section>
 
-        <!-- 快捷导航 -->
-        <section class="settings-page" data-page="shortcuts" hidden aria-labelledby="sec-shortcuts">
-          <h4 class="settings-section-title" id="sec-shortcuts" hidden>收藏夹与导航</h4>
+<section class="settings-page" data-page="shortcuts" hidden aria-labelledby="sec-shortcuts">
+          <h4 class="settings-section-title" id="sec-shortcuts" hidden>快捷方式</h4>
 
           <section class="settings-group">
             <h5 class="settings-group-title">主页显示</h5>
@@ -855,6 +883,12 @@
             </div>
           </section>
 
+
+        </section>
+
+<section class="settings-page" data-page="bookmark-sync" hidden aria-labelledby="sec-bookmark-sync">
+          <h4 class="settings-section-title" id="sec-bookmark-sync" hidden>导入与同步</h4>
+
           <section class="settings-group">
             <h5 class="settings-group-title">收藏夹管理</h5>
             <div class="settings-card">
@@ -895,8 +929,7 @@
           </section>
         </section>
 
-        <!-- 显示与效果 -->
-        <section class="settings-page" data-page="display" hidden aria-labelledby="sec-display">
+<section class="settings-page" data-page="display" hidden aria-labelledby="sec-display">
           <h4 class="settings-section-title" id="sec-display" hidden>显示与效果</h4>
 
           <section class="settings-group">
@@ -979,8 +1012,9 @@
             </div>
           </section>
         </section>
-        <section class="settings-page" data-page="about" hidden aria-labelledby="sec-about">
-          <h4 class="settings-section-title" id="sec-about" hidden>关于</h4>
+
+<section class="settings-page" data-page="about" hidden aria-labelledby="sec-about">
+          <h4 class="settings-section-title" id="sec-about" hidden>关于朔雾</h4>
 
           <!-- 横幅区域：每日一图 -->
           <div class="about-banner" id="aboutBanner" aria-hidden="true">
@@ -1065,8 +1099,7 @@
 
         </section>
 
-        <!-- 数据 -->
-        <section class="settings-page" data-page="data" hidden aria-labelledby="sec-data">
+<section class="settings-page" data-page="data" hidden aria-labelledby="sec-data">
           <h4 class="settings-section-title" id="sec-data" hidden>数据</h4>
 
           <section class="settings-group">
