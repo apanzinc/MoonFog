@@ -2290,18 +2290,13 @@ function updateAboutBannerBg() {
     return;
   }
 
-  // 网页版无跨域代理时必应接口不可达：跳过请求，横幅保留默认渐变背景
-  const bingApi = window.MoonFogEnv && window.MoonFogEnv.applyCorsProxy
-    ? window.MoonFogEnv.applyCorsProxy('https://www.bing.com/HPImageArchive.aspx?format=js&idx=0&n=1&mkt=zh-CN')
-    : 'https://www.bing.com/HPImageArchive.aspx?format=js&idx=0&n=1&mkt=zh-CN';
-  if (!bingApi) return;
-
-  fetch(bingApi)
-    .then(r => r.json())
+  // 网页版经 background.js 的镜像链获取（官方接口无跨域头）；无链路可用时静默保留默认背景
+  if (typeof fetchBingDailyMeta !== 'function') return;
+  fetchBingDailyMeta()
     .then(data => {
       const relativeUrl = data?.images?.[0]?.url;
       if (relativeUrl) {
-        const url = 'https://www.bing.com' + relativeUrl;
+        const url = relativeUrl.startsWith('http') ? relativeUrl : 'https://www.bing.com' + relativeUrl;
         imageEl.style.backgroundImage = 'url("' + url + '")';
         imageEl.style.backgroundSize = 'cover';
         imageEl.style.backgroundPosition = 'center';
@@ -2339,18 +2334,13 @@ function updateSettingsBannerBg() {
     return;
   }
 
-  // 网页版无跨域代理时必应接口不可达：跳过请求，横幅保留默认渐变背景
-  const bingApi = window.MoonFogEnv && window.MoonFogEnv.applyCorsProxy
-    ? window.MoonFogEnv.applyCorsProxy('https://www.bing.com/HPImageArchive.aspx?format=js&idx=0&n=1&mkt=zh-CN')
-    : 'https://www.bing.com/HPImageArchive.aspx?format=js&idx=0&n=1&mkt=zh-CN';
-  if (!bingApi) return;
-
-  fetch(bingApi)
-    .then(r => r.json())
+  // 网页版经 background.js 的镜像链获取（官方接口无跨域头）；无链路可用时静默保留默认背景
+  if (typeof fetchBingDailyMeta !== 'function') return;
+  fetchBingDailyMeta()
     .then(data => {
       const relativeUrl = data?.images?.[0]?.url;
       if (!relativeUrl) return;
-      const url = 'https://www.bing.com' + relativeUrl;
+      const url = relativeUrl.startsWith('http') ? relativeUrl : 'https://www.bing.com' + relativeUrl;
       imageEls.forEach((imageEl) => {
         imageEl.style.backgroundImage = 'url("' + url + '")';
         imageEl.style.backgroundSize = 'cover';

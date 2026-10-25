@@ -2745,22 +2745,72 @@ async function fetchBingImagePool(force) {
     `https://cn.bing.com/HPImageArchive.aspx?format=js&idx=0&n=${n}&mkt=zh-CN`
   ];
 
-  // 网页版：必应接口不带跨域头，直连必然失败；统一走 MoonFogEnv.applyCorsProxy
-  // （扩展环境原样返回；网页版经 web-config.js 的 corsProxy 转发，未配置时返回 ''，
-  // 过滤后为空数组 → 直接走下方错误分支，前端显示跨域提示）。
-  const proxiedEndpoints = endpoints
-    .map((u) => (window.MoonFogEnv && window.MoonFogEnv.applyCorsProxy ? window.MoonFogEnv.applyCorsProxy(u) : u))
-    .filter(Boolean);
+  // 网页版：必应官方接口不带跨域头，直连必然失败。
+  // 1) 配置了 web-config.js 的 corsProxy → 经用户自建转发（零第三方依赖，优先）；
+  // 2) 未配置 → 回退公共镜像（实测带跨域头、国内可达）：
+  //    - api.codelife.cc/api/bing：返回 data.fullSrc 指向必应官方 CDN（th?id 带 ACAO:*，
+  //      图片可 fetch → 取色/离线缓存全链路可用）；仅当日 1 条
+  //    - peapix.com/bing/feed：返回近 7 日数组（仅显示可用，其图床不带跨域头）
+  // 镜像响应统一映射为官方 JSON 形状（{images:[{url, copyright, ...}]}），下游零改动。
+  // 扩展环境有 host_permissions，只直连官方接口。
+  const isWeb = window.MoonFogEnv && window.MoonFogEnv.isWeb;
+  let candidates = []; // [{ endpoint, base, adapter }]
+  if (isWeb && window.MoonFogEnv.applyCorsProxy) {
+    const proxied = endpoints
+      .map((u) => window.MoonFogEnv.applyCorsProxy(u))
+      .filter(Boolean);
+    if (proxied.length) {
+      candidates = proxied.map((endpoint) => ({
+        endpoint,
+        base: endpoint.includes('cn.bing.com') ? 'https://cn.bing.com' : 'https://www.bing.com',
+        adapter: null
+      }));
+    }
+  } else if (!isWeb) {
+    candidates = endpoints.map((endpoint) => ({
+      endpoint,
+      base: endpoint.includes('cn.bing.com') ? 'https://cn.bing.com' : 'https://www.bing.com',
+      adapter: null
+    }));
+  }
+  if (isWeb) {
+    // 镜像 1：codelife（当日，官方 CDN 图源，支持取色）
+    candidates.push({
+      endpoint: 'https://api.codelife.cc/api/bing?lang=cn',
+      base: 'https://cn.bing.com',
+      adapter: (data) => ({
+        images: data && data.data && data.data.fullSrc
+          ? [{
+              url: data.data.fullSrc,
+              copyright: data.data.copyright || '',
+              copyrightlink: data.data.copyrightlink || ''
+            }]
+          : []
+      })
+    });
+    // 镜像 2：peapix（近 7 日，图床直出，仅显示）
+    candidates.push({
+      endpoint: 'https://peapix.com/bing/feed?country=cn',
+      base: 'https://www.bing.com',
+      adapter: (data) => ({
+        images: (Array.isArray(data) ? data : []).map((item) => ({
+          url: item.fullUrl || item.imageUrl || '',
+          copyright: item.title ? `${item.title} (${item.copyright || ''})` : (item.copyright || ''),
+          startdate: item.enddate || ''
+        })).filter((image) => image.url)
+      })
+    });
+  }
 
   let lastError = null;
-  for (const endpoint of proxiedEndpoints) {
+  for (const candidate of candidates) {
+    const { endpoint, base, adapter } = candidate;
     try {
       const res = await fetch(endpoint, { cache: 'no-cache' });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
-      const images = data && data.images;
+      const images = adapter ? (adapter(data).images || []) : (data && data.images);
       if (!images || !images.length) throw new Error('Invalid Bing pool');
-      const base = endpoint.includes('cn.bing.com') ? 'https://cn.bing.com' : 'https://www.bing.com';
       const items = [];
       const seen = new Set();
       images.forEach((image, i) => {
@@ -2811,6 +2861,37 @@ async function fetchBingImagePool(force) {
     return cachedPool;
   }
   throw lastError || new Error('Failed to load Bing pool');
+}
+
+/**
+ * 轻量获取「今日」必应图元数据（供设置横幅等场景复用，不写缓存、不建池）。
+ * 复用 fetchBingImagePool 的端点链（扩展直连官方 / 网页版走代理或公共镜像）。
+ * 返回官方形状的 { images: [...] } 或抛错。
+ */
+async function fetchBingDailyMeta() {
+  if (typeof readBingCache === 'function') {
+    const cached = readBingCache();
+    const dayKey = getDayKey();
+    if (cached && cached.dayKey === dayKey && cached.imageUrl) {
+      return {
+        images: [{
+          url: cached.imageUrl,
+          copyright: cached.copyright || '',
+          copyrightlink: cached.copyrightlink || ''
+        }]
+      };
+    }
+  }
+  const pool = await fetchBingImagePool(true);
+  const current = (pool.items && (pool.items[pool.cursor] || pool.items[0])) || null;
+  if (!current) throw new Error('No Bing image');
+  return {
+    images: [{
+      url: current.imageUrl,
+      copyright: current.copyright || '',
+      copyrightlink: current.copyrightlink || ''
+    }]
+  };
 }
 
 /**
