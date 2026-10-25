@@ -3,7 +3,9 @@
   "private": true,
   "scripts": {
     "check": "node scripts/check.mjs",
-    "pack": "node scripts/pack-extension.mjs"
+    "pack": "node scripts/pack-extension.mjs",
+    "pack:firefox": "node scripts/pack-extension.mjs --target firefox",
+    "build:web": "node scripts/build-web.mjs"
   },
   "devDependencies": {
     "crx3": "2.0.0"

@@ -1,5 +1,5 @@
 import { createRequire } from 'node:module';
-import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -20,7 +20,7 @@ function takeValue(argv, index, flag) {
 }
 
 function parseArgs(argv) {
-  const args = { key: '', out: 'dist', name: '', keepKey: false };
+  const args = { key: '', out: 'dist', name: '', keepKey: false, target: 'chrome' };
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
     if (arg === '--key') {
@@ -32,16 +32,33 @@ function parseArgs(argv) {
     } else if (arg === '--name') {
       args.name = takeValue(argv, i, arg);
       i += 1;
+    } else if (arg === '--target') {
+      args.target = takeValue(argv, i, arg);
+      if (args.target !== 'chrome' && args.target !== 'firefox') {
+        throw new Error(`--target 仅支持 chrome / firefox: ${args.target}`);
+      }
+      i += 1;
     } else if (arg === '--keep-key') args.keepKey = true;
     else throw new Error(`未知参数: ${arg}`);
   }
   return args;
 }
 
+// Firefox 目标调整：Firefox 没有 fontSettings API（代码里已回退到内置字体清单），
+// 打包时去掉该权限，避免 AMO 校验警告。
+function manifestForTarget(manifest, target) {
+  if (target !== 'firefox') return manifest;
+  const clone = JSON.parse(JSON.stringify(manifest));
+  if (Array.isArray(clone.permissions)) {
+    clone.permissions = clone.permissions.filter((p) => p !== 'fontSettings');
+  }
+  return clone;
+}
+
 const args = parseArgs(process.argv.slice(2));
 const manifest = JSON.parse(readFileSync(path.join(root, 'manifest.json'), 'utf8'));
 const version = String(manifest.version || '');
-const base = args.name || `MoonFog-${version}`;
+const base = args.name || (args.target === 'firefox' ? `MoonFog-${version}-firefox` : `MoonFog-${version}`);
 const outDir = path.resolve(args.out);
 mkdirSync(outDir, { recursive: true });
 
@@ -68,11 +85,23 @@ try {
     });
   }
 
+  if (args.target === 'firefox') {
+    writeFileSync(
+      path.join(stage, 'manifest.json'),
+      `${JSON.stringify(manifestForTarget(manifest, args.target), null, 2)}\n`,
+    );
+  }
+
   await crx3([stage], {
     keyPath,
     crxPath: path.join(outDir, `${base}.crx`),
     zipPath: path.join(outDir, `${base}.zip`),
   });
+
+  if (args.target === 'firefox') {
+    // Firefox 走 AMO 分发，只需要 zip；crx3 顺带生成的 crx/key 不保留
+    rmSync(path.join(outDir, `${base}.crx`), { force: true });
+  }
 } finally {
   rmSync(stage, { recursive: true, force: true });
   if (generatedKey && !args.keepKey) {
@@ -80,5 +109,7 @@ try {
   }
 }
 
-console.log(`${path.join(outDir, `${base}.crx`)}`);
+if (args.target !== 'firefox') {
+  console.log(`${path.join(outDir, `${base}.crx`)}`);
+}
 console.log(`${path.join(outDir, `${base}.zip`)}`);

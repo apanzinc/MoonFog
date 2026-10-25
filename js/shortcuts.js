@@ -2210,6 +2210,14 @@ function setBookmarkSyncEnabled(enabled) {
 function updateBookmarkSyncUI() {
   const toggle = document.getElementById('bookmarkSyncPermissionToggle');
   const statusEl = document.getElementById('bookmarkSyncStatus');
+  const env = window.MoonFogEnv || {};
+  // 网页版：没有浏览器书签 API，隐藏直接同步开关，仅保留 HTML 文件导入
+  if (env.isWeb) {
+    const syncItem = document.getElementById('bookmarkSyncPermissionSetting');
+    if (syncItem) syncItem.hidden = true;
+    if (toggle) toggle.checked = false;
+    return;
+  }
   if (toggle) {
     toggle.checked = isBookmarkSyncEnabled();
   }

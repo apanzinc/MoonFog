@@ -72,6 +72,25 @@ if (!locale) {
   }
 }
 
+// Firefox / Safari 适配：browser_specific_settings（Chrome 会忽略该键）
+const gecko = manifest.browser_specific_settings?.gecko;
+if (gecko) {
+  const id = String(gecko.id || '');
+  const isEmailLike = /^[a-zA-Z0-9-._]*@[a-zA-Z0-9-._]+$/.test(id);
+  const isGuid = /^\{[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\}$/.test(id);
+  if (!isEmailLike && !isGuid) {
+    fail(`browser_specific_settings.gecko.id 必须是邮箱样式或 GUID: ${id || '(空)'}`);
+  }
+  const required = gecko.data_collection_permissions?.required;
+  if (!Array.isArray(required) || !required.includes('none')) {
+    fail('browser_specific_settings.gecko.data_collection_permissions.required 必须包含 "none"（AMO 2025-11 起新提交必填）');
+  }
+  const min = String(gecko.strict_min_version || '');
+  if (min && (min.includes('*') || !/^\d+(\.\d+)*$/.test(min))) {
+    fail(`browser_specific_settings.gecko.strict_min_version 不允许 "*" 且需为版本号: ${min}`);
+  }
+}
+
 if (errors.length > 0) {
   console.error(errors.join('\n'));
   process.exit(1);
