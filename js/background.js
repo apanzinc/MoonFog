@@ -2640,7 +2640,11 @@ async function applyBackgroundMode(mode, options = {}) {
       lastDominant = null;
       if (!options.silent) {
         const title = document.getElementById('bgBingTitle');
-        if (title) title.textContent = '今日壁纸加载失败，请稍后重试';
+        if (title) {
+          title.textContent = (typeof window !== 'undefined' && window.MoonFogEnv && window.MoonFogEnv.isWeb)
+            ? '网页版暂无法获取必应每日一图（接口跨域限制），可改用本地图 / 流光 / 纯色'
+            : '今日壁纸加载失败，请稍后重试';
+        }
       }
     }
   }
@@ -2741,8 +2745,16 @@ async function fetchBingImagePool(force) {
     `https://cn.bing.com/HPImageArchive.aspx?format=js&idx=0&n=${n}&mkt=zh-CN`
   ];
 
+  // 网页版：必应接口不带跨域头，直连必然失败。
+  // 若网页构建配置了 bingApiProxy（如自建 Cloudflare Worker），则经其转发；支持 {url} 占位符。
+  const webCfg = (typeof window !== 'undefined' && window.MoonFogWebConfig) || null;
+  const bingProxy = webCfg && typeof webCfg.bingApiProxy === 'string' ? webCfg.bingApiProxy : '';
+  const proxiedEndpoints = bingProxy
+    ? endpoints.map((u) => (bingProxy.includes('{url}') ? bingProxy.replace('{url}', encodeURIComponent(u)) : bingProxy + encodeURIComponent(u)))
+    : endpoints;
+
   let lastError = null;
-  for (const endpoint of endpoints) {
+  for (const endpoint of proxiedEndpoints) {
     try {
       const res = await fetch(endpoint, { cache: 'no-cache' });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);

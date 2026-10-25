@@ -2,7 +2,42 @@
 
 ![MoonFog banner](assets/banner.png)
 
-月雾之间，新页初启。MoonFog 是一款基于 Manifest V3 的 Chrome 扩展，把浏览器默认新标签页替换成安静、可定制的起始页。
+月雾之间，新页初启。MoonFog 是一款把浏览器默认新标签页替换成安静、可定制起始页的开源项目：
+
+- **扩展版**：Manifest V3，Chrome / Edge 开箱即用，兼容 Firefox（AMO 分发），Safari 可经官方转换工具打包
+- **网页版**：同一份页面的纯静态站点（`npm run build:web` → `dist-web/`），任何浏览器把网址设为主页 / 新标签页即可使用，可部署到 GitHub Pages
+
+## 网页版（全浏览器通用）
+
+```bash
+node scripts/build-web.mjs   # 或 npm run build:web
+cd dist-web && npx serve .   # 本地预览
+```
+
+推送到 `main` 分支会自动经 `.github/workflows/pages.yml` 部署到 GitHub Pages。
+
+各浏览器把网页版变成「新标签页 / 主页」的方法：
+
+| 浏览器 | 设置路径 |
+| --- | --- |
+| Chrome | 设置 → 外观 → 显示「主页」按钮（可填网址）；新标签页由扩展接管，建议直接使用扩展版 |
+| Edge | 设置 → 开始、主页和新建标签页；同上，新标签页建议使用扩展版 |
+| Firefox | 设置 → 主页 → 新窗口和新标签页 → 自定义网址（原生支持网页版直达） |
+| Safari | 设置 → 通用 → 「新窗口打开方式 / 新标签页打开方式」选「主页」，主页填网页版地址 |
+
+已知限制：
+
+- **必应每日一图**：接口不带跨域头，网页版无法直连。构建产物里提供 `web-config.js` 的 `bingApiProxy` 配置位——自建转发（如 Cloudflare Worker）后填入地址即可恢复；留空时自动降级并提示。
+- 一言（hitokoto）、搜索联想（search-sug.lonely.land）已验证支持跨域，网页版功能完整。
+
+## 扩展版支持矩阵
+
+| 浏览器 | 分发方式 | 说明 |
+| --- | --- | --- |
+| Chrome | `npm run pack` 产出 CRX / zip，Chrome Web Store | 原生支持 |
+| Edge | 同上 zip，经 `scripts/publish-edge.mjs` 发布到 Edge Add-ons | 原生支持 |
+| Firefox | `npm run pack:firefox` 产出 AMO zip | MV3；`host_permissions` 由用户按需授权（首次使用必应壁纸时允许站点访问）；不含 `fontSettings`（Firefox 无此 API，字体列表自动回退内置清单） |
+| Safari | `xcrun safari-web-extension-converter` 转换 Xcode 工程后打包 | Safari 不支持替换新标签页，建议 Safari 用户使用网页版 |
 
 ## 功能
 
@@ -24,7 +59,7 @@
 
 | 权限 | 用途 |
 | --- | --- |
-| `fontSettings` | 读取系统字体设置 |
+| `fontSettings` | 读取系统字体设置（仅 Chromium 内核；Firefox 打包版不含该权限，字体列表自动回退内置清单） |
 | `www.bing.com` / `cn.bing.com` | 获取每日一图与图片署名 |
 | `hitokoto.cn` / `hitokoto.c0ffee.space` | 一言问候文案 |
 | `www.google.com` / `icons.duckduckgo.com` | 站点图标抓取（搜索本身是页面跳转，不使用主机权限） |
@@ -41,6 +76,7 @@ newtab.html          入口页面（设置面板与主页同页）
 manifest.json        MV3 清单
 css/                 样式（含 settings/ 子目录）
 js/
+  env.js             运行环境检测（Chrome / Edge / Firefox / Safari 扩展 vs 网页版）
   background.js      壁纸/流光渲染、必应图与一言缓存（页面脚本）
   theme-manager.js   主题引擎（含图片模式色板）
   theme.js / color-utils.js / material-color-utilities.js
@@ -50,6 +86,8 @@ js/
 icons/               扩展图标与内置搜索引擎图标
 fonts/               内置思源宋体
 assets/              README 配图（banner、logo）
+scripts/             构建与发布工具（check / pack-extension / build-web / publish-edge）
+dist-web/            网页版构建产物（构建生成，不入库）
 ```
 
 ## 许可
