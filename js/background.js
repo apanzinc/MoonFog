@@ -2745,13 +2745,12 @@ async function fetchBingImagePool(force) {
     `https://cn.bing.com/HPImageArchive.aspx?format=js&idx=0&n=${n}&mkt=zh-CN`
   ];
 
-  // 网页版：必应接口不带跨域头，直连必然失败。
-  // 若网页构建配置了 bingApiProxy（如自建 Cloudflare Worker），则经其转发；支持 {url} 占位符。
-  const webCfg = (typeof window !== 'undefined' && window.MoonFogWebConfig) || null;
-  const bingProxy = webCfg && typeof webCfg.bingApiProxy === 'string' ? webCfg.bingApiProxy : '';
-  const proxiedEndpoints = bingProxy
-    ? endpoints.map((u) => (bingProxy.includes('{url}') ? bingProxy.replace('{url}', encodeURIComponent(u)) : bingProxy + encodeURIComponent(u)))
-    : endpoints;
+  // 网页版：必应接口不带跨域头，直连必然失败；统一走 MoonFogEnv.applyCorsProxy
+  // （扩展环境原样返回；网页版经 web-config.js 的 corsProxy 转发，未配置时返回 ''，
+  // 过滤后为空数组 → 直接走下方错误分支，前端显示跨域提示）。
+  const proxiedEndpoints = endpoints
+    .map((u) => (window.MoonFogEnv && window.MoonFogEnv.applyCorsProxy ? window.MoonFogEnv.applyCorsProxy(u) : u))
+    .filter(Boolean);
 
   let lastError = null;
   for (const endpoint of proxiedEndpoints) {

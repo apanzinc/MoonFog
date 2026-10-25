@@ -27,7 +27,7 @@ cd dist-web && npx serve .   # 本地预览
 
 已知限制：
 
-- **必应每日一图**：接口不带跨域头，网页版无法直连。构建产物里提供 `web-config.js` 的 `bingApiProxy` 配置位——自建转发（如 Cloudflare Worker）后填入地址即可恢复；留空时自动降级并提示。
+- **必应每日一图 / 快捷方式图标取色缓存**：必应接口与 Google favicon 服务不带跨域头，网页版无法直连。所有此类请求已统一收口到 `MoonFogEnv.applyCorsProxy`：构建产物里提供 `web-config.js` 的 `corsProxy` 配置位——自建转发（如 Cloudflare Worker）后填入地址即可完整恢复；留空时静默跳过（不发注定失败的请求，控制台保持干净）。快捷方式图标本身用 `<img>` 显示，不受影响；仅「图标本地缓存 / 圆角检测」在这两种情况下停用。
 - 一言（hitokoto）、搜索联想（search-sug.lonely.land）已验证支持跨域，网页版功能完整。
 
 ## 扩展版支持矩阵

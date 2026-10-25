@@ -37,9 +37,15 @@ function getUrlKey(url) {
   }
 }
 
-/** 扩展环境 fetch 图片与blob（host_permissions 已授权跨域） */
+/** fetch 图片为 blob（扩展经 host_permissions 跨域直连；网页版跨源经可选代理，未配置则跳过） */
 function fetchImageBlob(src) {
-  return fetch(src, { mode: 'cors', credentials: 'omit', cache: 'no-cache' })
+  let target = src;
+  if (window.MoonFogEnv && window.MoonFogEnv.applyCorsProxy) {
+    target = window.MoonFogEnv.applyCorsProxy(src);
+    // 网页版无代理时跨源图不可 fetch：返回 null 静默降级（<img> 显示不受影响）
+    if (!target) return Promise.resolve(null);
+  }
+  return fetch(target, { mode: 'cors', credentials: 'omit', cache: 'no-cache' })
     .then(res => res.ok ? res.blob() : null)
     .catch(() => null);
 }

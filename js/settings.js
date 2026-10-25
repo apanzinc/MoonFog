@@ -2290,7 +2290,13 @@ function updateAboutBannerBg() {
     return;
   }
 
-  fetch('https://www.bing.com/HPImageArchive.aspx?format=js&idx=0&n=1&mkt=zh-CN')
+  // 网页版无跨域代理时必应接口不可达：跳过请求，横幅保留默认渐变背景
+  const bingApi = window.MoonFogEnv && window.MoonFogEnv.applyCorsProxy
+    ? window.MoonFogEnv.applyCorsProxy('https://www.bing.com/HPImageArchive.aspx?format=js&idx=0&n=1&mkt=zh-CN')
+    : 'https://www.bing.com/HPImageArchive.aspx?format=js&idx=0&n=1&mkt=zh-CN';
+  if (!bingApi) return;
+
+  fetch(bingApi)
     .then(r => r.json())
     .then(data => {
       const relativeUrl = data?.images?.[0]?.url;
@@ -2333,7 +2339,13 @@ function updateSettingsBannerBg() {
     return;
   }
 
-  fetch('https://www.bing.com/HPImageArchive.aspx?format=js&idx=0&n=1&mkt=zh-CN')
+  // 网页版无跨域代理时必应接口不可达：跳过请求，横幅保留默认渐变背景
+  const bingApi = window.MoonFogEnv && window.MoonFogEnv.applyCorsProxy
+    ? window.MoonFogEnv.applyCorsProxy('https://www.bing.com/HPImageArchive.aspx?format=js&idx=0&n=1&mkt=zh-CN')
+    : 'https://www.bing.com/HPImageArchive.aspx?format=js&idx=0&n=1&mkt=zh-CN';
+  if (!bingApi) return;
+
+  fetch(bingApi)
     .then(r => r.json())
     .then(data => {
       const relativeUrl = data?.images?.[0]?.url;

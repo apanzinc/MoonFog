@@ -46,7 +46,7 @@ for (const item of WEB_PATHS) {
 }
 
 // 扩展入口 newtab.html 在网页版即站点首页。
-// 同时注入 web-config.js：网页版专用配置（必应接口代理等），扩展包不含此文件。
+// 同时注入 web-config.js：网页版专用配置（跨域代理等），扩展包不含此文件。
 const indexHtml = readFileSync(path.join(root, 'newtab.html'), 'utf8');
 const webConfigTag = '<script src="web-config.js"></script>\n  ';
 const anchor = '<script src="js/env.js"></script>';
@@ -58,12 +58,13 @@ writeFileSync(
   path.join(OUT_DIR, 'web-config.js'),
   [
     '/* MoonFog 网页版配置（构建产物，扩展包不含此文件）',
-    ' * bingApiProxy: 必应壁纸接口在网页版受跨域限制。',
-    ' * 如自建转发服务（如 Cloudflare Worker），填入地址即可恢复「必应每日一图」：',
-    ' *   - 追加式: "https://your-worker.example.com/?url=" （自动拼接 encodeURIComponent(接口地址)）',
+    ' * corsProxy: 网页版跨域转发。必应壁纸接口、Google/必应 favicon 服务等不带跨域头，',
+    ' * 直连必然失败（已由 MoonFogEnv.applyCorsProxy 统一静默降级）。如自建转发服务',
+    ' * （如 Cloudflare Worker），填入地址即可恢复这些功能：',
+    ' *   - 追加式: "https://your-worker.example.com/?url=" （自动拼接 encodeURIComponent(目标地址)）',
     ' *   - 占位式: "https://your-worker.example.com/fetch/{url}"',
-    ' * 留空表示不启用（网页版必应模式将显示降级提示）。 */',
-    'window.MoonFogWebConfig = { bingApiProxy: "" };',
+    ' * 留空表示不启用（不发出注定失败的请求，控制台保持干净）。 */',
+    'window.MoonFogWebConfig = { corsProxy: "" };',
     '',
   ].join('\n'),
 );
