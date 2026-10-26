@@ -513,13 +513,13 @@ body.has-image-bg .mf-scrollbar.is-dragging .mf-scrollbar-thumb {
   transition: none !important;
 }
 
-/* 一级：始终垫底不位移；进入二级时淡出，返回时淡回 */
+/* 一级：始终垫底不位移；进入二级时淡出，返回时淡回。
+ * 层本身透明——毛玻璃只在 .settings-panel 本体一层，避免多层白底叠加。 */
 .settings-view-root {
   transform: translate3d(0, 0, 0);
   opacity: 1;
   z-index: 1;
   pointer-events: auto;
-  background: transparent;
 }
 
 .settings-panel[data-view="page"] .settings-view-root,
@@ -534,9 +534,6 @@ body.has-image-bg .mf-scrollbar.is-dragging .mf-scrollbar-thumb {
   opacity: 1;
   z-index: 2;
   pointer-events: none;
-  background: transparent !important;
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
 }
 
 .settings-panel[data-view="page"] .settings-view-page {
@@ -544,15 +541,12 @@ body.has-image-bg .mf-scrollbar.is-dragging .mf-scrollbar-thumb {
   pointer-events: auto;
 }
 
-/* 三级：与二级同款层；在二级之上再滑一层 */
+/* 三级：与二级同款层；在二级之上再滑一层（同样透明，透出面板毛玻璃） */
 .settings-view-sub {
   transform: translate3d(100%, 0, 0);
   opacity: 1;
   z-index: 3;
   pointer-events: none;
-  background: transparent !important;
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
 }
 
 .settings-panel[data-view="sub"] .settings-view-sub {
@@ -560,9 +554,10 @@ body.has-image-bg .mf-scrollbar.is-dragging .mf-scrollbar-thumb {
   pointer-events: auto;
 }
 
-/* 二级在三级之下：保持原位（视差可后续再调） */
+/* 二级在三级之下：原位逐渐淡出（返回时逐渐淡回），与一级层淡入淡出同款 */
 .settings-panel[data-view="sub"] .settings-view-page {
   transform: translate3d(0, 0, 0);
+  opacity: 0;
   pointer-events: none;
 }
 
@@ -570,50 +565,6 @@ body.has-image-bg .mf-scrollbar.is-dragging .mf-scrollbar-thumb {
  * 前进 = 新页 +30%→0 滑入、旧页 0→-30% 滑出；返回相反。
  * JS 动画结束即还原内联样式，无需 CSS keyframes / 残留类。 */
 
-/*
- * 返回键悬停预览：
- * - 当前层右滑 20%（仍占约 80%）
- * - 后面一级列表降低透明度（层次更清晰）
- * 移开回弹；点击从 20% 继续滑到 100%
- */
-.settings-panel[data-view="page"].settings-back-peek .settings-view-root,
-.settings-panel[data-view="sub"].settings-back-peek .settings-view-root {
-  opacity: 0.42;
-  pointer-events: none;
-  transition: opacity 0.22s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.settings-panel[data-view="page"].settings-back-peek .settings-view-page,
-.settings-panel[data-view="sub"].settings-back-peek .settings-view-sub {
-  transform: translate3d(20%, 0, 0);
-  opacity: 1;
-  pointer-events: none;
-}
-
-/* 从 peek 冻结 20% 帧（不依赖 data-view，避免切 root 时掉回 0） */
-.settings-panel.settings-back-from-peek .settings-view-page,
-.settings-panel.settings-back-from-peek .settings-view-sub {
-  transform: translate3d(20%, 0, 0) !important;
-  transition: none !important;
-}
-
-.settings-panel.settings-back-from-peek .settings-view-root {
-  opacity: 0.42 !important;
-  transition: none !important;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .settings-panel[data-view="page"].settings-back-peek .settings-view-page,
-  .settings-panel.settings-back-from-peek .settings-view-page,
-  .settings-panel[data-view="sub"].settings-back-peek .settings-view-sub,
-  .settings-panel.settings-back-from-peek .settings-view-sub {
-    transform: translate3d(0, 0, 0) !important;
-  }
-  .settings-panel[data-view="page"].settings-back-peek .settings-view-root,
-  .settings-panel.settings-back-from-peek .settings-view-root {
-    opacity: 0 !important;
-  }
-}
 .settings-view-root,
 .settings-view-sub,
 .settings-page {
@@ -942,18 +893,6 @@ html.perf-balanced:not(.boot-ready) .settings-wrapper {
   animation: none !important;
 }
 
-html.perf-balanced .settings-panel[data-view="page"].settings-back-peek .settings-view-page,
-html.perf-balanced .settings-panel[data-view="sub"].settings-back-peek .settings-view-sub,
-html.perf-balanced .settings-panel.settings-back-from-peek .settings-view-page,
-html.perf-balanced .settings-panel.settings-back-from-peek .settings-view-sub {
-  transform: none !important;
-}
-
-html.perf-balanced .settings-panel[data-view="page"].settings-back-peek .settings-view-root,
-html.perf-balanced .settings-panel[data-view="sub"].settings-back-peek .settings-view-root {
-  opacity: 0 !important;
-}
-
 /* —— 极致：关毛玻璃 + 动画 + 壁纸 blur —— */
 html.low-perf .settings-panel,
 html.low-perf .search-box,
@@ -1168,18 +1107,6 @@ html.low-perf.boot-ready.boot-has-image .page-bg-image.is-active {
 }
 
 /* balanced/low：页间滑动动画由 JS 侧 isSettingsPageAnimDisabled() 关闭，无需 CSS 规则 */
-
-html.low-perf .settings-panel[data-view="page"].settings-back-peek .settings-view-page,
-html.low-perf .settings-panel[data-view="sub"].settings-back-peek .settings-view-sub,
-html.low-perf .settings-panel.settings-back-from-peek .settings-view-page,
-html.low-perf .settings-panel.settings-back-from-peek .settings-view-sub {
-  transform: none !important;
-}
-
-html.low-perf .settings-panel[data-view="page"].settings-back-peek .settings-view-root,
-html.low-perf .settings-panel[data-view="sub"].settings-back-peek .settings-view-root {
-  opacity: 0 !important;
-}
 
 html.low-perf .greeting-title.is-quote-loading,
 html.low-perf .greeting-title.is-quote-seeking-swap {

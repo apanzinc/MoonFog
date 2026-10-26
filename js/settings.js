@@ -46,13 +46,13 @@ function isSettingsOpen() {
 /** 返回动画时仍展示上一二级页内容，避免内容先被 hidden 闪没 */
 let lastSettingsPageId = '';
 
-/** 目标层解析：L2 菜单页→'page'，三级详情页/L1 单页→各自层 */
+/** 目标层解析：L2 菜单页→'page'，其余（三级详情页 + L1 单页）→'sub'
+ *  注意：search/data/about 的 section 物理上位于 settingsViewSub 内，
+ *  必须返回 'sub' 才能让 syncSettingsPageContent 找到并显示对应页面。 */
 function resolveSettingsLayer(pageId) {
   if (!pageId || pageId === 'root') return 'root';
   if (Object.prototype.hasOwnProperty.call(SETTINGS_CHILDREN, pageId)) return 'page';
-  const allChildPages = Object.values(SETTINGS_CHILDREN).flat();
-  if (allChildPages.includes(pageId)) return 'sub';
-  return 'page'; // L1 单页（search/data/about）直接走二级层
+  return 'sub';
 }
 
 /** 在指定层内切换可见 .settings-page */
@@ -70,7 +70,9 @@ function finishSettingsViewVisibility(panel, rootView, pageView, subView, view) 
   if (!panel || !rootView || !pageView || !subView) return;
   panel.classList.remove('settings-animating');
   rootView.hidden = false;
-  pageView.hidden = view === 'root';
+  // page 层仅在 'page' 视图可见：在 sub 视图里隐藏，避免三级页透出二级菜单；
+  // 但动画期间由 navigateSettings 先全部 unhide，transitionend 后才走这里。
+  pageView.hidden = view !== 'page';
   subView.hidden = view !== 'sub';
   rootView.setAttribute('aria-hidden', view === 'root' ? 'false' : 'true');
   rootView.style.pointerEvents = view === 'root' ? '' : 'none';
@@ -192,14 +194,6 @@ function navigateSettings(pageId, options = {}) {
   const goingBack = options.back === true;
   const prevPageId = currentSettingsPage; // 页→页过渡需要旧页 id
   const prevView = panel.dataset.view || 'root';
-  const fromPeek =
-    isRootPageId(pageId) &&
-    panel.classList.contains('settings-back-peek') &&
-    (prevView === 'page' || prevView === 'sub');
-  if (!fromPeek) {
-    clearSettingsBackPeek();
-    panel.classList.remove('settings-back-from-peek');
-  }
 
   if (typeof settingsNavCleanup === 'function') {
     settingsNavCleanup();
@@ -215,7 +209,7 @@ function navigateSettings(pageId, options = {}) {
     window.matchMedia &&
     window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const animate =
-    options.animate !== false && !reduceMotion && (prevView !== nextView || fromPeek);
+    options.animate !== false && !reduceMotion && prevView !== nextView;
 
   // 导航历史管理
   if (goingBack) {
@@ -325,7 +319,6 @@ function navigateSettings(pageId, options = {}) {
   if (!animate) {
     panel.classList.add('settings-no-anim');
     panel.classList.remove('settings-animating');
-    panel.classList.remove('settings-back-peek', 'settings-back-from-peek');
     rootView.hidden = false;
     pageView.hidden = false;
     subView.hidden = false;
@@ -344,40 +337,18 @@ function navigateSettings(pageId, options = {}) {
     pageView.style.pointerEvents = 'none';
     subView.style.pointerEvents = 'none';
 
-    if (fromPeek && isRootPageId(pageId)) {
-      // 1) 冻结 20%（不依赖 data-view）
-      panel.classList.add('settings-back-from-peek');
-      panel.classList.remove('settings-back-peek');
-      const leaveEl = prevView === 'sub' ? subView : pageView;
-      leaveEl.style.transition = 'none';
-      leaveEl.style.transform = 'translate3d(20%, 0, 0)';
-      rootView.style.transition = 'none';
-      rootView.style.opacity = '0.42';
-      void leaveEl.offsetWidth;
-      // 2) 下一帧放开，从 20% 过渡到 100%
+    panel.classList.add('settings-no-anim');
+    // 落到起始态（无过渡）
+    panel.dataset.view = prevView;
+    void pageView.offsetWidth;
+    panel.classList.remove('settings-no-anim');
+    requestAnimationFrame(() => {
+      if (token !== settingsNavToken) return;
       requestAnimationFrame(() => {
         if (token !== settingsNavToken) return;
-        panel.classList.remove('settings-back-from-peek');
-        leaveEl.style.transition = '';
-        leaveEl.style.transform = '';
-        rootView.style.transition = '';
-        rootView.style.opacity = '';
-        panel.dataset.view = 'root';
+        panel.dataset.view = nextView;
       });
-    } else {
-      panel.classList.add('settings-no-anim');
-      // 落到起始态（无过渡）
-      panel.dataset.view = prevView;
-      void pageView.offsetWidth;
-      panel.classList.remove('settings-no-anim');
-      requestAnimationFrame(() => {
-        if (token !== settingsNavToken) return;
-        requestAnimationFrame(() => {
-          if (token !== settingsNavToken) return;
-          panel.dataset.view = nextView;
-        });
-      });
-    }
+    });
 
     const enterEl = nextView === 'sub' ? subView : pageView;
     const leaveEl = prevView === 'sub' ? subView : pageView;
@@ -385,7 +356,6 @@ function navigateSettings(pageId, options = {}) {
     const onDone = () => {
       if (settled || token !== settingsNavToken) return;
       settled = true;
-      panel.classList.remove('settings-back-peek', 'settings-back-from-peek');
       pageView.style.transition = '';
       pageView.style.transform = '';
       subView.style.transition = '';
@@ -432,50 +402,6 @@ function isRootPageId(pageId) {
   return !pageId || pageId === 'root';
 }
 
-/**
- * 返回键悬停预览：二级仍占 80%，左侧露度20% 一级列度 */
-function setSettingsBackPeek(enabled) {
-  const panel = getSettingsPanel();
-  if (!panel) return;
-  const reduce =
-    window.matchMedia &&
-    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  if (reduce || !enabled) {
-    panel.classList.remove('settings-back-peek');
-    return;
-  }
-  // 仅下级页（二级/三级）、非导航动画时
-  const view = panel.dataset.view || 'root';
-  if (view !== 'page' && view !== 'sub') {
-    panel.classList.remove('settings-back-peek');
-    return;
-  }
-  if (
-    panel.classList.contains('settings-animating') ||
-    panel.classList.contains('settings-no-anim') ||
-    panel.classList.contains('settings-back-from-peek')
-  ) {
-    return;
-  }
-  // 确保一级层可绘制（opacity 动画可见）
-  const rootView = document.getElementById('settingsViewRoot');
-  if (rootView) {
-    rootView.hidden = false;
-    rootView.setAttribute('aria-hidden', 'true');
-  }
-  panel.classList.add('settings-back-peek');
-}
-
-function clearSettingsBackPeek() {
-  const panel = getSettingsPanel();
-  if (panel) panel.classList.remove('settings-back-peek');
-}
-
-function isSettingsBackPeeking() {
-  const panel = getSettingsPanel();
-  return !!(panel && panel.classList.contains('settings-back-peek'));
-}
-
 function bindSettingsNavigation() {
   const panel = getSettingsPanel();
   const backBtn = document.getElementById('settingsBackBtn');
@@ -483,54 +409,18 @@ function bindSettingsNavigation() {
 
   panel.querySelectorAll('[data-settings-page]').forEach((btn) => {
     btn.addEventListener('click', () => {
-      clearSettingsBackPeek();
       const pageId = btn.getAttribute('data-settings-page');
       if (pageId) navigateSettings(pageId);
     });
   });
 
   if (backBtn) {
-    // pointerdown 先锁定 peek，避免 click 前的 leave 把预览清除
-    backBtn.addEventListener('pointerdown', () => {
-      if (!backBtn.classList.contains('is-shown')) return;
-      const view = panel.dataset.view || 'root';
-      if (view !== 'page' && view !== 'sub') return;
-      if (isSettingsBackPeeking()) {
-        panel.dataset.backCommit = '1';
-      }
-    });
-
     backBtn.addEventListener('click', (e) => {
       if (!backBtn.classList.contains('is-shown')) return;
       e.preventDefault();
-      if (panel.dataset.backCommit === '1' && !isSettingsBackPeeking()) {
-        setSettingsBackPeek(true);
-      }
       // 有历史则回到上一页，否则回一级
       const prevPage = settingsNavHistory.length > 0 ? settingsNavHistory[settingsNavHistory.length - 1] : 'root';
       navigateSettings(prevPage, { back: true });
-      delete panel.dataset.backCommit;
-    });
-
-    // 悬停预览：二级右度20%；移开回弹（点击返回时不回弹）
-    backBtn.addEventListener('pointerenter', () => {
-      if (!backBtn.classList.contains('is-shown')) return;
-      const view = panel.dataset.view || 'root';
-      if (view !== 'page' && view !== 'sub') return;
-      if (panel.classList.contains('settings-animating')) return;
-      setSettingsBackPeek(true);
-    });
-    backBtn.addEventListener('pointerleave', () => {
-      // 即将点击返回 / 已在动画中：不要清 peek
-      if (panel.dataset.backCommit === '1') return;
-      if (panel.classList.contains('settings-animating')) return;
-      if (panel.classList.contains('settings-back-from-peek')) return;
-      clearSettingsBackPeek();
-    });
-    backBtn.addEventListener('blur', () => {
-      if (panel.dataset.backCommit === '1') return;
-      if (panel.classList.contains('settings-animating')) return;
-      clearSettingsBackPeek();
     });
   }
 }
@@ -2310,7 +2200,6 @@ function updateAboutBannerBg() {
 function updateSettingsBannerBg() {
   const imageEls = [
     document.getElementById('settingsBannerImage'),
-    document.getElementById('settingsBannerSubImage'),
   ].filter(Boolean);
   if (!imageEls.length) return;
 
