@@ -1356,7 +1356,7 @@ function renderShortcuts() {
     wrapper.appendChild(btn);
     row.appendChild(wrapper);
     bindShortcutsExpandToggle();
-    applyShortcutsCollapse();
+    applyShortcutsCollapse({ animate: true });
     return;
   }
 
@@ -1526,7 +1526,7 @@ function renderShortcuts() {
 
   // 展开开关已移到 HTML 模板顶部，单独一行
   bindShortcutsExpandToggle();
-  applyShortcutsCollapse();
+  applyShortcutsCollapse({ animate: true });
 }
 
 /**
