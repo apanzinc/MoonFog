@@ -55,14 +55,22 @@ function resolveSettingsLayer(pageId) {
   return 'sub';
 }
 
-/** 在指定层内切换可见 .settings-page */
-function syncSettingsPageContent(pageView, isRoot, pageId) {
+/** 在指定层内切换可见 .settings-page
+ * @param {boolean} prepareOnly - 仅准备内容（不显示），用于避免层过渡前闪现
+ */
+function syncSettingsPageContent(pageView, isRoot, pageId, prepareOnly = false) {
   if (!pageView) return;
   // 返回上级时：动画中保留当前页内容；结束后再清
   if (isRoot) return;
   lastSettingsPageId = pageId || '';
   pageView.querySelectorAll('.settings-page').forEach((page) => {
-    page.hidden = page.dataset.page !== pageId;
+    const shouldShow = page.dataset.page === pageId;
+    if (prepareOnly) {
+      // 准备阶段：确保正确的页已就绪，但保持隐藏
+      page.hidden = true;
+    } else {
+      page.hidden = !shouldShow;
+    }
   });
 }
 
@@ -244,7 +252,11 @@ function navigateSettings(pageId, options = {}) {
   const targetViewEl = nextView === 'sub' ? subView : pageView;
   if (!isRootPageId(pageId)) {
     targetViewEl.setAttribute('data-page-depth', nextView === 'sub' ? '3' : '2');
-    syncSettingsPageContent(targetViewEl, false, pageId);
+    // 前进时：先准备内容但不显示，避免层过渡前内容闪现
+    // 后退时：目标内容已在父层可见，无需准备
+    if (forward) {
+      syncSettingsPageContent(targetViewEl, false, pageId, true); // prepareOnly = true
+    }
     if (sameLayerSwap) {
       runSettingsPageSwap(
         targetViewEl,
@@ -336,9 +348,14 @@ function navigateSettings(pageId, options = {}) {
     // 修复：前进时直接设置目标视图，避免先闪现 prevView 再过渡的问题
     // 后退时需要先显示 prevView 再过渡到 nextView（旧层滑出、新层淡入）
     if (!forward) {
-      // 后退：先落到 prevView 态（无过渡），再过渡到 nextView
+      // 后退：先落到 prevView 态（无过渡），并显示目标层内容，再过渡到 nextView
       panel.dataset.view = prevView;
       void pageView.offsetWidth;
+      // 显示目标层(nextView)的内容，以便过渡时可见
+      const targetViewEl = nextView === 'sub' ? subView : pageView;
+      targetViewEl.querySelectorAll('.settings-page').forEach((page) => {
+        page.hidden = page.dataset.page !== pageId;
+      });
     }
     // 前进：直接从初始态过渡到 nextView（root->page: root淡出+page滑入；page->sub: page淡出+sub滑入）
     panel.classList.remove('settings-no-anim');
@@ -347,6 +364,13 @@ function navigateSettings(pageId, options = {}) {
       requestAnimationFrame(() => {
         if (token !== settingsNavToken) return;
         panel.dataset.view = nextView;
+        // 过渡开始：显示目标层的准备好的内容
+        if (!isRootPageId(pageId)) {
+          const targetViewEl = nextView === 'sub' ? subView : pageView;
+          targetViewEl.querySelectorAll('.settings-page').forEach((page) => {
+            page.hidden = page.dataset.page !== pageId;
+          });
+        }
       });
     });
 
