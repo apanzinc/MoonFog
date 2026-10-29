@@ -246,6 +246,8 @@ function saveTypeRoles(roles) {
 // 搜索建议：https://github.com/lonely-4/search-suggestions
 const SEARCH_SUGGEST_ENDPOINT = 'https://search-sug.lonely.land/';
 const SEARCH_SUGGEST_KEY = 'moonfog_search_suggest';
+// 快捷方式联想：输入时优先匹配本地快捷方式（收藏夹），命中则直达网址
+const SHORTCUT_SUGGEST_KEY = 'moonfog_shortcut_suggest';
 
 // 搜索引擎配置（suggest 为建议 API 的 with 参数；无此字段的引擎不请求建议）
 const SEARCH_ENGINES = {

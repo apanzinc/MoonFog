@@ -107,11 +107,101 @@ body.has-image-bg.img-ui-dark .icon-mono {
   justify-content: flex-start;
 }
 
+/* ============================================
+   快捷标签折叠：默认最多两行，展开开关解除
+   ============================================ */
+/* 两行高度：标签 32px × 2 + 行距 6px = 70px */
+.shortcuts-row {
+  transition: max-height 0.32s var(--ease);
+}
+
+/* 折叠不再用 overflow 裁剪（裁剪会切掉展开中的文件夹面板）：
+   行仍限高两行以稳定布局，超出的标签改为原位淡出（.is-folded），
+   面板、子菜单等绝对定位内容永远不被裁剪 */
+.shortcuts-row.is-collapsed {
+  max-height: 70px;
+  overflow: visible;
+}
+
+/* 折叠时超出的标签：淡出并移出交互/Tab 序（wrapper 为 display:contents，作用于内部胶囊） */
+.shortcuts-row .shortcut-drag-wrapper > .shortcut-btn,
+.shortcuts-row .shortcut-drag-wrapper > .shortcut-folder,
+.shortcuts-row > .shortcuts-expand {
+  transition:
+    background 0.18s var(--ease),
+    color 0.18s var(--ease),
+    filter 0.18s var(--ease),
+    opacity 0.24s var(--ease),
+    visibility 0s;
+}
+
+.shortcuts-row .shortcut-drag-wrapper.is-folded > .shortcut-btn,
+.shortcuts-row .shortcut-drag-wrapper.is-folded > .shortcut-folder,
+.shortcuts-row > .shortcuts-expand.is-folded {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    background 0.18s var(--ease),
+    color 0.18s var(--ease),
+    filter 0.18s var(--ease),
+    opacity 0.24s var(--ease),
+    visibility 0s linear 0.24s;
+}
+
+/* 非动画落位（初始化/重渲染）：跳过淡入淡出，直接到终态 */
+.shortcuts-row.is-instant .shortcut-drag-wrapper > .shortcut-btn,
+.shortcuts-row.is-instant .shortcut-drag-wrapper > .shortcut-folder,
+.shortcuts-row.is-instant > .shortcuts-expand {
+  transition: none !important;
+}
+
+/*
+ * 展开开关：行内最后一个"特殊标签"，胶囊外观走共享规则（.shortcut-btn 列表），
+ * 间距由 .shortcuts-row 的 flex gap 控制，这里只负责角标与箭头
+ */
+.shortcuts-expand-count {
+  min-width: 16px;
+  height: 16px;
+  padding: 0 5px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.625rem;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--text-secondary);
+  background: color-mix(in srgb, currentColor 14%, transparent);
+  font-variant-numeric: tabular-nums;
+}
+
+.shortcuts-expand .mgc_arrow_down_line {
+  font-size: 14px;
+  line-height: 1;
+  transition: transform 0.22s var(--ease);
+}
+
+/* 展开按钮单独一行，下置间隔 */
+.shortcuts-expand {
+  margin-top: 6px;
+}
+
+/* 隐藏箭头 */
+.shortcuts-expand .mgc_arrow_down_line {
+  display: none;
+}
+
+.shortcuts-expand.is-expanded .mgc_arrow_down_line {
+  transform: rotate(180deg);
+}
+
 /*
  * 统一标签：链接 / 文件夹触发器 / 展开项 同一套胶囊
  */
 .shortcut-btn,
-.shortcut-folder-trigger {
+.shortcut-folder-trigger,
+.shortcuts-expand {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -136,13 +226,15 @@ body.has-image-bg.img-ui-dark .icon-mono {
 }
 
 .shortcut-btn:focus-visible,
-.shortcut-folder-trigger:focus-visible {
+.shortcut-folder-trigger:focus-visible,
+.shortcuts-expand:focus-visible {
   outline: 2px solid var(--accent, #4a90e2);
   outline-offset: 2px;
 }
 
 .shortcut-btn:hover,
 .shortcut-folder-trigger:hover,
+.shortcuts-expand:hover,
 .shortcut-folder.open .shortcut-folder-trigger {
   border-color: var(--border);
   background: color-mix(in srgb, var(--bg-warm-alt) 88%, var(--card-bg));
@@ -150,7 +242,8 @@ body.has-image-bg.img-ui-dark .icon-mono {
 }
 
 .shortcut-btn:active,
-.shortcut-folder-trigger:active {
+.shortcut-folder-trigger:active,
+.shortcuts-expand:active {
   transform: none;
 }
 
@@ -165,7 +258,8 @@ body.has-image-bg.img-ui-dark .icon-mono {
 }
 
 [data-mode="dark"] .shortcut-btn,
-[data-mode="dark"] .shortcut-folder-trigger {
+[data-mode="dark"] .shortcut-folder-trigger,
+[data-mode="dark"] .shortcuts-expand {
   background: rgba(255, 255, 255, 0.08);
   border-color: rgba(255, 255, 255, 0.14);
   color: var(--text-primary);
@@ -173,6 +267,7 @@ body.has-image-bg.img-ui-dark .icon-mono {
 
 [data-mode="dark"] .shortcut-btn:hover,
 [data-mode="dark"] .shortcut-folder-trigger:hover,
+[data-mode="dark"] .shortcuts-expand:hover,
 [data-mode="dark"] .shortcut-folder.open .shortcut-folder-trigger {
   background: rgba(255, 255, 255, 0.14);
   border-color: rgba(255, 255, 255, 0.14);
@@ -181,17 +276,21 @@ body.has-image-bg.img-ui-dark .icon-mono {
 /* 图片模式：背景/边框/模糊由 base.css 统一毛玻璃配方负责，这里只锁字色 */
 html[data-mode] body.has-image-bg .shortcut-btn,
 html[data-mode] body.has-image-bg .shortcut-folder-trigger,
+html[data-mode] body.has-image-bg .shortcuts-expand,
 body.has-image-bg .shortcut-btn,
-body.has-image-bg .shortcut-folder-trigger {
+body.has-image-bg .shortcut-folder-trigger,
+body.has-image-bg .shortcuts-expand {
   color: var(--img-chrome-text, var(--img-text, var(--text-primary))) !important;
   text-shadow: none !important;
 }
 
 html[data-mode] body.has-image-bg .shortcut-btn:hover,
 html[data-mode] body.has-image-bg .shortcut-folder-trigger:hover,
+html[data-mode] body.has-image-bg .shortcuts-expand:hover,
 html[data-mode] body.has-image-bg .shortcut-folder.open .shortcut-folder-trigger,
 body.has-image-bg .shortcut-btn:hover,
 body.has-image-bg .shortcut-folder-trigger:hover,
+body.has-image-bg .shortcuts-expand:hover,
 body.has-image-bg .shortcut-folder.open .shortcut-folder-trigger {
   color: var(--img-chrome-text, var(--img-text, var(--text-primary))) !important;
 }

@@ -66,7 +66,16 @@
 
     <!-- 快捷导航 -->
     <section class="shortcuts-section" id="shortcutsSection">
-      <div class="shortcuts-row" id="shortcutsRow"></div>
+      <!-- 快捷方式列表 -->
+      <div class="shortcuts-row" id="shortcutsRow">
+        <!-- chips go here -->
+      </div>
+      <!-- 展开开关：单独一行（放在标签下方） -->
+      <button class="shortcuts-expand" id="shortcutsExpand" type="button" hidden aria-expanded="false">
+        <span class="shortcuts-expand-text shortcut-label">展开</span>
+        <span class="shortcuts-expand-count" hidden></span>
+        <span class="mgc_arrow_down_line" aria-hidden="true"></span>
+      </button>
     </section>
   </main>
 
@@ -118,7 +127,7 @@
   </div>
 
   <!-- 设置面板：澎湃 OS 风格分组列表 -->
-  <aside class="settings-panel" id="settingsPanel" role="dialog" aria-modal="true" aria-labelledby="settingsPanelTitle" aria-hidden="true" inert data-view="root">
+  <aside class="settings-panel" id="settingsPanel" role="dialog" aria-modal="true" aria-label="设置" aria-hidden="true" inert data-view="root">
     <div class="settings-header" data-level="root">
       <!--
         一级：  (设置)                         (关闭)   —— 无返回键
@@ -134,9 +143,6 @@
         <button class="close-btn" id="closeBtn" type="button" aria-label="关闭设置">
           <span class="mgc_close_line" aria-hidden="true"></span>
         </button>
-      </div>
-      <div class="settings-header-title">
-        <h3 id="settingsPanelTitle">设置</h3>
       </div>
     </div>
     <div class="settings-body">
@@ -193,6 +199,13 @@
       <div class="settings-view settings-view-page" id="settingsViewPage" data-settings-view="page">
 <section class="settings-page" data-page="appearance" hidden aria-labelledby="sec-appearance">
           <h4 class="settings-section-title" id="sec-appearance" hidden>外观</h4>
+          <div class="settings-page-head">
+            <span class="settings-nav-icon" aria-hidden="true"><span class="mgc_palette_fill"></span></span>
+            <div class="settings-page-head-text">
+              <div class="settings-page-head-title">外观与主题</div>
+              <div class="settings-page-head-desc">背景、明暗、色调与问候字体</div>
+            </div>
+          </div>
           <nav class="settings-nav" aria-label="外观子菜单">
             <button class="settings-nav-item" type="button" data-settings-page="appearance-bg">
               <span class="settings-nav-icon" aria-hidden="true"><span class="mgc_palette_fill"></span></span>
@@ -226,6 +239,13 @@
         </section>
 <section class="settings-page" data-page="navigation" hidden aria-labelledby="sec-navigation">
           <h4 class="settings-section-title" id="sec-navigation" hidden>导航</h4>
+          <div class="settings-page-head">
+            <span class="settings-nav-icon" aria-hidden="true"><span class="mgc_bookmark_fill"></span></span>
+            <div class="settings-page-head-text">
+              <div class="settings-page-head-title">快捷导航</div>
+              <div class="settings-page-head-desc">快捷方式、文件夹与书签同步</div>
+            </div>
+          </div>
           <nav class="settings-nav" aria-label="导航子菜单">
             <button class="settings-nav-item" type="button" data-settings-page="shortcuts">
               <span class="settings-nav-icon" aria-hidden="true"><span class="mgc_bookmark_fill"></span></span>
@@ -768,6 +788,13 @@
 
 <section class="settings-page" data-page="search" hidden aria-labelledby="sec-search">
           <h4 class="settings-section-title" id="sec-search" hidden>搜索联想</h4>
+          <div class="settings-page-head">
+            <span class="settings-nav-icon" aria-hidden="true"><span class="mgc_search_2_fill"></span></span>
+            <div class="settings-page-head-text">
+              <div class="settings-page-head-title">搜索联想</div>
+              <div class="settings-page-head-desc">引擎选择与输入建议</div>
+            </div>
+          </div>
 
           <section class="settings-group">
             <h5 class="settings-group-title">搜索引擎</h5>
@@ -827,6 +854,16 @@
                   </label>
                 </div>
                 <p class="setting-tip">仅 Google、Bing、百度；启用时查询词会发送至 search-sug.lonely.land，不保存在本地</p>
+              </div>
+              <div class="setting-item">
+                <div class="setting-label-row">
+                  <div class="setting-label">快捷方式联想</div>
+                  <label class="switch">
+                    <input type="checkbox" id="shortcutSuggestToggle" checked>
+                    <span class="switch-slider"></span>
+                  </label>
+                </div>
+                <p class="setting-tip">输入时优先匹配收藏夹里的快捷方式，命中显示在建议最前，回车直达网址</p>
               </div>
             </div>
           </section>
@@ -1008,6 +1045,13 @@
 
 <section class="settings-page" data-page="about" hidden aria-labelledby="sec-about">
           <h4 class="settings-section-title" id="sec-about" hidden>关于朔雾</h4>
+          <div class="settings-page-head">
+            <span class="settings-nav-icon" aria-hidden="true"><span class="mgc_information_fill"></span></span>
+            <div class="settings-page-head-text">
+              <div class="settings-page-head-title">关于朔雾</div>
+              <div class="settings-page-head-desc">版本、开源许可与致谢</div>
+            </div>
+          </div>
 
           <!-- 横幅区域：每日一图 -->
           <div class="about-banner" id="aboutBanner" aria-hidden="true">
@@ -1094,6 +1138,13 @@
 
 <section class="settings-page" data-page="data" hidden aria-labelledby="sec-data">
           <h4 class="settings-section-title" id="sec-data" hidden>数据</h4>
+          <div class="settings-page-head">
+            <span class="settings-nav-icon" aria-hidden="true"><span class="mgc_folder_2_fill"></span></span>
+            <div class="settings-page-head-text">
+              <div class="settings-page-head-title">数据与备份</div>
+              <div class="settings-page-head-desc">导出导入与重置</div>
+            </div>
+          </div>
 
           <section class="settings-group">
             <h5 class="settings-group-title">备份与恢复</h5>

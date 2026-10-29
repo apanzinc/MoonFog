@@ -151,6 +151,8 @@ L1（5 项，含副文本）      L2（二级页）                页内卡片
 卡片 B｜搜索建议
   「输入时显示搜索建议」开关
   tip：仅 Google / Bing / 百度 生效；词发至 search-sug.lonely.land，本地不存
+  「快捷方式联想」开关（moonfog_shortcut_suggest，默认开）
+  tip：输入时优先匹配收藏夹里的快捷方式，命中显示在建议最前，回车直达网址
 ```
 
 ---

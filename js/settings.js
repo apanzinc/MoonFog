@@ -187,7 +187,6 @@ function navigateSettings(pageId, options = {}) {
   const rootView = document.getElementById('settingsViewRoot');
   const pageView = document.getElementById('settingsViewPage');
   const subView = document.getElementById('settingsViewSub');
-  const titleEl = document.getElementById('settingsPanelTitle');
   const backBtn = document.getElementById('settingsBackBtn');
   if (!panel || !rootView || !pageView || !subView) return;
 
@@ -271,10 +270,6 @@ function navigateSettings(pageId, options = {}) {
   const headerEl = panel.querySelector('.settings-header');
   const backLabel = document.getElementById('settingsBackLabel');
   if (headerEl) headerEl.dataset.level = isRootPageId(pageId) ? 'root' : 'page';
-  if (titleEl) {
-    if (isRootPageId(pageId)) titleEl.textContent = '设置';
-    else titleEl.textContent = getSettingsPageTitle(pageId);
-  }
   if (backLabel) {
     // 三级页面显示父级名称，二级显示"设置"
     const parentPage = settingsNavHistory.length > 0 ? settingsNavHistory[settingsNavHistory.length - 1] : null;

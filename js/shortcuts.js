@@ -83,7 +83,20 @@ function loadImage(src) {
 
 /** 将图标URL 转为 dataURL 用于本地缓存（离线可用） */
 function iconToDataURL(src) {
-  return fetchImageBlob(src).then(blob => blob ? blobToDataURL(blob) : '');
+  // 使用 loadImageCrossOrigin（Image() 加载，CORS-free）绕过 fetch CORS 限制；
+  // 失败返回 ''（<img> 显示不受影响，静默降级）
+  return loadImageCrossOrigin(src).then(img => {
+    if (!img) return '';
+    // canvas 读取会因 CORS 而失败，但 Image 对象已成功加载，
+    // 通过其 naturalWidth/naturalHeight 确认是有效图片
+    const canvas = document.createElement('canvas');
+    canvas.width = img.naturalWidth;
+    canvas.height = img.naturalHeight;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return '';
+    ctx.drawImage(img, 0, 0);
+    return canvas.toDataURL();
+  });
 }
 
 /** 对比两个图标是否不同（用尺寸简易判断） */
@@ -94,42 +107,49 @@ function areIconsDifferent(cachedSrc, newSrc) {
     .catch(() => true);
 }
 
+/** 通过 Image() 加载任意 src，不受 CORS 限制（失败静默，返回 null）*/
+function loadImageCrossOrigin(src) {
+  return new Promise(resolve => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = () => resolve(null);
+    img.src = src;
+  });
+}
+
 /** 检测图标是否本身已是圆角（四角是否有足够透明像素）*/
-function detectIconHasRoundedCorners(src) {
-  return fetchImageBlob(src)
-    .then(blob => blob ? loadImageFromBlob(blob) : null)
-    .then(img => {
-      if (!img) return false;
-      const w = img.naturalWidth || 1;
-      const h = img.naturalHeight || 1;
-      const canvas = document.createElement('canvas');
-      canvas.width = w;
-      canvas.height = h;
-      const ctx = canvas.getContext('2d', { willReadFrequently: true });
-      if (!ctx) return false;
-      ctx.drawImage(img, 0, 0, w, h);
-      // 取四角4x4 区域的平均透明度
-      const sampleSize = Math.max(2, Math.floor(Math.min(w, h) / 16));
-      const corners = [
-        [0, 0], [w - sampleSize, 0],
-        [0, h - sampleSize], [w - sampleSize, h - sampleSize]
-      ];
-      let totalAlpha = 0;
-      let totalPixels = 0;
-      corners.forEach(([cx, cy]) => {
-        try {
-          const data = ctx.getImageData(cx, cy, sampleSize, sampleSize).data;
-          for (let i = 3; i < data.length; i += 4) {
-            totalAlpha += data[i];
-            totalPixels++;
-          }
-        } catch (_) {}
-      });
-      if (!totalPixels) return false;
-      // 平均透明度< 0.9 认为有圆角（有透明像素）
-      return (totalAlpha / totalPixels / 255) < 0.9;
-    })
-    .catch(() => false);
+async function detectIconHasRoundedCorners(src) {
+  // 使用 Image() 加载，绕过 CORS 限制；失败返回 null
+  const img = await loadImageCrossOrigin(src);
+  if (!img) return false;
+  const w = img.naturalWidth || 1;
+  const h = img.naturalHeight || 1;
+  const canvas = document.createElement('canvas');
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  if (!ctx) return false;
+  ctx.drawImage(img, 0, 0, w, h);
+  // 取四角 2x2 区域的平均透明度
+  const sampleSize = Math.max(1, Math.floor(Math.min(w, h) / 16));
+  const corners = [
+    [0, 0], [w - sampleSize, 0],
+    [0, h - sampleSize], [w - sampleSize, h - sampleSize]
+  ];
+  let totalAlpha = 0;
+  let totalPixels = 0;
+  corners.forEach(([cx, cy]) => {
+    try {
+      const data = ctx.getImageData(cx, cy, sampleSize, sampleSize).data;
+      for (let i = 3; i < data.length; i += 4) {
+        totalAlpha += data[i];
+        totalPixels++;
+      }
+    } catch (_) {}
+  });
+  if (!totalPixels) return false;
+  // 平均透明度< 0.9 认为有圆角（有透明像素）
+  return (totalAlpha / totalPixels / 255) < 0.9;
 }
 
 const DEFAULT_SHORTCUTS = [
@@ -236,6 +256,175 @@ function saveShortcuts(shortcuts) {
 }
 
 const SHORTCUTS_VISIBLE_KEY = 'moonfog_shortcuts_visible';
+
+/** 快捷标签折叠：始终折叠（不记忆用户习惯），高度一行 */
+const SHORTCUTS_EXPANDED_KEY = 'moonfog_shortcuts_expanded';
+const SHORTCUTS_COLLAPSE_HEIGHT = 38; // 一行：标签 32px + 行距 6px
+let shortcutsExpandTimer = null;
+
+// 页面首次加载且 localStorage 没有记录时，默认折叠（写 '0'）；
+// toggle 时传入真实的 next 值来同步 localStorage。
+function isShortcutsExpanded() {
+  try {
+    return localStorage.getItem(SHORTCUTS_EXPANDED_KEY) === '1';
+  } catch (_) {
+    return false;
+  }
+}
+
+function setShortcutsExpanded(expanded) {
+  try {
+    localStorage.setItem(SHORTCUTS_EXPANDED_KEY, expanded ? '1' : '0');
+  } catch (_) {}
+}
+
+/**
+ * 折叠/展开应用：
+ * - 自然高度超过两行 → 显示「展开」开关（带隐藏数量角标）
+ * - 折叠时行限高两行，但不裁剪内容：超出标签加 .is-folded 原位淡出，
+ *   文件夹展开面板/子菜单等绝对定位内容不会被裁断
+ * - 展开时 body.shortcuts-expanded 让内容上移，搜索框随之上移
+ * - animate: 点击切换时走 max-height 过渡 + 标签淡入淡出；渲染/初始化时直接落位不动画
+ * 每次渲染后调用，行数变化时自动收敛（不足两行时移除开关与展开态）
+ */
+function applyShortcutsCollapse(opts = {}) {
+  const animate = !!opts.animate;
+  const section = document.getElementById('shortcutsSection');
+  const row = document.getElementById('shortcutsRow');
+  const btn = document.getElementById('shortcutsExpand');
+  if (!section || !row || !btn) return;
+  const countEl = btn.querySelector('.shortcuts-expand-count');
+  const wrappers = Array.from(row.querySelectorAll('.shortcut-drag-wrapper'));
+
+  const setFolded = (wrapper, folded) => {
+    wrapper.classList.toggle('is-folded', folded);
+  };
+  const unfoldAll = () => wrappers.forEach((w) => setFolded(w, false));
+
+  const clearTimer = () => {
+    if (shortcutsExpandTimer) {
+      clearTimeout(shortcutsExpandTimer);
+      shortcutsExpandTimer = null;
+    }
+  };
+
+  // 开关按钮是行内一员但永不淡出：折叠时换行到两行外也要保持可见（唯一入口），
+  // 其占位通过折叠限高延伸（见下方 collapsedMax）保证完整显示
+  const setBtnFolded = () => {
+    btn.classList.remove('is-folded');
+  };
+
+  const overflow = row.scrollHeight > SHORTCUTS_COLLAPSE_HEIGHT + 1;
+  if (!overflow) {
+    clearTimer();
+    row.classList.remove('is-collapsed', 'is-instant');
+    row.style.maxHeight = '';
+    unfoldAll();
+    setBtnFolded();
+    section.classList.remove('is-expanded');
+    document.body.classList.remove('shortcuts-expanded');
+    btn.hidden = true;
+    btn.setAttribute('aria-expanded', 'false');
+    btn.classList.remove('is-expanded');
+    if (countEl) countEl.hidden = true;
+    setShortcutsExpanded(false);
+    return;
+  }
+
+  const expanded = isShortcutsExpanded();
+
+  // 数量角标：折叠时显示，展开时隐藏（始终在折叠态显示，不受 hiddenCount 影响）
+  if (countEl) {
+    let hiddenCount = 0;
+    const rowTop = row.getBoundingClientRect().top;
+    wrappers.forEach((w) => {
+      const chip = w.firstElementChild;
+      if (!chip) return;
+      if (chip.getBoundingClientRect().top - rowTop >= SHORTCUTS_COLLAPSE_HEIGHT) hiddenCount++;
+    });
+    countEl.textContent = hiddenCount > 0 ? hiddenCount : '';
+    countEl.hidden = expanded;
+  }
+
+  const setWithoutAnim = (fn) => {
+    row.classList.add('is-instant');
+    row.style.transition = 'none';
+    fn();
+    void row.offsetHeight; // 强制重排后再恢复过渡
+    row.classList.remove('is-instant');
+    row.style.transition = '';
+  };
+
+  if (expanded) {
+    if (animate) {
+      // 展开动画：淡入标签，max-height 折叠高 → 自然高度，结束后解除限高
+      unfoldAll();
+      setBtnFolded();
+      row.classList.add('is-collapsed');
+      row.style.maxHeight = row.scrollHeight + 'px';
+      clearTimer();
+      shortcutsExpandTimer = setTimeout(() => {
+        shortcutsExpandTimer = null;
+        row.classList.remove('is-collapsed');
+        row.style.maxHeight = '';
+      }, 360);
+    } else {
+      clearTimer();
+      setWithoutAnim(() => {
+        row.classList.remove('is-collapsed');
+        row.style.maxHeight = '';
+      });
+      unfoldAll();
+    }
+  } else {
+    clearTimer();
+    // 折叠时超出两行的标签淡出；展开开关已移到行外单独一行，并不参与折叠
+    const rowTop = row.getBoundingClientRect().top;
+    wrappers.forEach((w) => {
+      const chip = w.firstElementChild;
+      if (!chip) return;
+      setFolded(w, chip.getBoundingClientRect().top - rowTop >= SHORTCUTS_COLLAPSE_HEIGHT);
+    });
+    if (animate) {
+      // 收起动画：自然高度 → 38px 一行限高（标签同步淡出）
+      row.classList.remove('is-collapsed');
+      row.style.maxHeight = row.scrollHeight + 'px';
+      void row.offsetHeight;
+      row.classList.add('is-collapsed');
+      row.style.maxHeight = SHORTCUTS_COLLAPSE_HEIGHT + 'px';
+      // 动画结束后不再清除 max-height，保持 38px 限高，防止展开时高度突变
+      shortcutsExpandTimer = setTimeout(() => {
+        shortcutsExpandTimer = null;
+        // 保持 38px 限高，不再恢复成空，让下一次展开能从正确的高度起跳
+      }, 360);
+    } else {
+      setWithoutAnim(() => {
+        row.classList.add('is-collapsed');
+        row.style.maxHeight = SHORTCUTS_COLLAPSE_HEIGHT + 'px';
+      });
+    }
+  }
+
+  section.classList.toggle('is-expanded', expanded);
+  document.body.classList.toggle('shortcuts-expanded', expanded);
+  btn.hidden = false;
+  btn.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+  btn.classList.toggle('is-expanded', expanded);
+  const text = btn.querySelector('.shortcuts-expand-text');
+  if (text) text.textContent = expanded ? '收起' : '展开';
+}
+
+function bindShortcutsExpandToggle() {
+  const btn = document.getElementById('shortcutsExpand');
+  if (!btn || btn.dataset.bound) return;
+  btn.dataset.bound = '1';
+  btn.addEventListener('click', () => {
+    const section = document.getElementById('shortcutsSection');
+    const next = !(section && section.classList.contains('is-expanded'));
+    setShortcutsExpanded(next);
+    applyShortcutsCollapse({ animate: true });
+  });
+}
 
 /** 收藏夹开关：无 key 或非 '0' 即显示 */
 function isShortcutsVisible() {
@@ -1140,6 +1329,8 @@ function renderFolderChildrenExpanded(container, children, folderIndex, path, po
 function renderShortcuts() {
   const row = document.getElementById('shortcutsRow');
   if (!row) return;
+  // 保留展开开关（行内最后一个"特殊标签"），清空只针对标签 wrapper
+  const expandBtn = document.getElementById('shortcutsExpand');
   row.innerHTML = '';
   applyShortcutsVisibility();
   if (!isShortcutsVisible()) return;
@@ -1164,6 +1355,8 @@ function renderShortcuts() {
     btn.addEventListener('click', () => openShortcutModal(-1, null, 'item'));
     wrapper.appendChild(btn);
     row.appendChild(wrapper);
+    bindShortcutsExpandToggle();
+    applyShortcutsCollapse();
     return;
   }
 
@@ -1330,6 +1523,10 @@ function renderShortcuts() {
   ) {
     applyShortcutContrastInline(lastPalette);
   }
+
+  // 展开开关已移到 HTML 模板顶部，单独一行
+  bindShortcutsExpandToggle();
+  applyShortcutsCollapse();
 }
 
 /**

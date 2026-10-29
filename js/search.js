@@ -86,6 +86,72 @@ function isSearchSuggestEnabled() {
   return getStorageTyped(SEARCH_SUGGEST_KEY, true, 'boolean');
 }
 
+/** 快捷方式联想开关（默认开） */
+function isShortcutSuggestEnabled() {
+  if (typeof getStorageTyped !== 'function') return true;
+  return getStorageTyped(SHORTCUT_SUGGEST_KEY, true, 'boolean');
+}
+
+/** 收集本地快捷方式（含文件夹内）为 { name, url } 列表 */
+function collectShortcutEntries() {
+  if (typeof getShortcuts !== 'function') return [];
+  const out = [];
+  const walk = (list) => {
+    (Array.isArray(list) ? list : []).forEach((item) => {
+      if (!item) return;
+      if (item.type === 'folder') {
+        walk(item.children);
+        return;
+      }
+      if (item.name && item.url) out.push({ name: String(item.name), url: String(item.url) });
+    });
+  };
+  walk(getShortcuts());
+  return out;
+}
+
+const SHORTCUT_SUGGEST_MAX = 3;
+
+/** 输入词匹配本地快捷方式：全等 > 前缀 > 包含，最多 3 条，附带 favicon */
+function getLocalShortcutMatches(query) {
+  const q = String(query || '').trim().toLowerCase();
+  if (!q) return [];
+  return collectShortcutEntries()
+    .map((entry) => {
+      const name = entry.name.toLowerCase();
+      let rank = -1;
+      if (name === q) rank = 0;
+      else if (name.startsWith(q)) rank = 1;
+      else if (name.includes(q)) rank = 2;
+      return rank >= 0 ? { rank, name: entry.name, url: entry.url } : null;
+    })
+    .filter(Boolean)
+    .sort((a, b) => a.rank - b.rank)
+    .slice(0, SHORTCUT_SUGGEST_MAX)
+    .map((entry) => {
+      // 图标交给渲染层的 fetchFavicon（Image 加载 + 三级回退 + 缓存），
+      // 不要用 google s2 直链：重定向后的站点 favicon 无 CORS 头，扩展页加载失败
+      let initial = (String(entry.name || '').trim().charAt(0) || '?').toUpperCase();
+      return {
+        text: entry.name,
+        desc: '快捷方式',
+        image: '',
+        initial,
+        url: entry.url
+      };
+    });
+}
+
+/** 本地快捷方式排前，与同名网页建议去重 */
+function mergeShortcutSuggest(local, webItems) {
+  if (!local || !local.length) return webItems;
+  const names = new Set(local.map((item) => item.text.toLowerCase()));
+  const filtered = (webItems || []).filter(
+    (item) => !item || !names.has(String(item.text || '').trim().toLowerCase())
+  );
+  return local.concat(filtered);
+}
+
 function currentSuggestProvider() {
   const engineKey = localStorage.getItem('moonfog_engine') || DEFAULT_ENGINE;
   const custom = typeof getCustomEngines === 'function' ? getCustomEngines() : {};
@@ -103,16 +169,30 @@ function suggestLocale() {
 
 function bindSearchSuggestToggle() {
   const el = document.getElementById('searchSuggestToggle');
-  if (!el || el.dataset.bound) return;
-  el.dataset.bound = '1';
-  el.checked = isSearchSuggestEnabled();
-  el.addEventListener('change', () => {
-    if (typeof setStorageTyped === 'function') {
-      setStorageTyped(SEARCH_SUGGEST_KEY, !!el.checked, 'boolean');
-    }
-    if (!el.checked) closeSearchSuggest();
-    else scheduleSearchSuggest();
-  });
+  if (el && !el.dataset.bound) {
+    el.dataset.bound = '1';
+    el.checked = isSearchSuggestEnabled();
+    el.addEventListener('change', () => {
+      if (typeof setStorageTyped === 'function') {
+        setStorageTyped(SEARCH_SUGGEST_KEY, !!el.checked, 'boolean');
+      }
+      if (!el.checked) closeSearchSuggest();
+      else scheduleSearchSuggest();
+    });
+  }
+
+  const shortcutEl = document.getElementById('shortcutSuggestToggle');
+  if (shortcutEl && !shortcutEl.dataset.bound) {
+    shortcutEl.dataset.bound = '1';
+    shortcutEl.checked = isShortcutSuggestEnabled();
+    shortcutEl.addEventListener('change', () => {
+      if (typeof setStorageTyped === 'function') {
+        setStorageTyped(SHORTCUT_SUGGEST_KEY, !!shortcutEl.checked, 'boolean');
+      }
+      if (!shortcutEl.checked) closeSearchSuggest();
+      else scheduleSearchSuggest();
+    });
+  }
 }
 
 function scheduleSearchSuggest() {
@@ -120,7 +200,9 @@ function scheduleSearchSuggest() {
   if (searchSuggestComposing) return;
   const input = document.getElementById('searchInput');
   const query = input ? input.value.trim() : '';
-  if (!isSearchSuggestEnabled() || !query || !currentSuggestProvider()) {
+  const hasWeb = isSearchSuggestEnabled() && !!currentSuggestProvider();
+  const hasLocal = isShortcutSuggestEnabled();
+  if (!query || (!hasWeb && !hasLocal)) {
     closeSearchSuggest();
     return;
   }
@@ -133,8 +215,15 @@ function fetchSearchSuggest() {
   if (!input || !panel) return;
   const query = input.value.trim();
   const provider = currentSuggestProvider();
-  if (!isSearchSuggestEnabled() || !query || !provider) {
+  const hasWeb = isSearchSuggestEnabled() && !!provider;
+  const local = isShortcutSuggestEnabled() ? getLocalShortcutMatches(query) : [];
+  if (!query || (!hasWeb && !local.length)) {
     closeSearchSuggest();
+    return;
+  }
+  // 关闭网页建议或当前引擎不支持时：仅显示本地快捷方式命中
+  if (!hasWeb) {
+    renderSearchSuggest(panel, input, local);
     return;
   }
   if (searchSuggestAbort) searchSuggestAbort.abort();
@@ -152,12 +241,15 @@ function fetchSearchSuggest() {
     .then((data) => {
       if (seq !== searchSuggestSeq) return;
       if (input.value.trim() !== query) return;
-      renderSearchSuggest(panel, input, Array.isArray(data) ? data : []);
+      const webItems = Array.isArray(data) ? data : [];
+      renderSearchSuggest(panel, input, mergeShortcutSuggest(local, webItems));
     })
     .catch((err) => {
       if (err && err.name === 'AbortError') return;
       if (seq !== searchSuggestSeq) return;
-      closeSearchSuggest();
+      // 网页建议失败：仍有本地命中就不关闭
+      if (local.length) renderSearchSuggest(panel, input, local);
+      else closeSearchSuggest();
     });
 }
 
@@ -166,7 +258,9 @@ function renderSearchSuggest(panel, input, items) {
     .map((item) => ({
       text: item && typeof item.text === 'string' ? item.text.trim() : '',
       desc: item && typeof item.desc === 'string' ? item.desc.trim() : '',
-      image: item && typeof item.image === 'string' ? item.image.trim() : ''
+      image: item && typeof item.image === 'string' ? item.image.trim() : '',
+      initial: item && typeof item.initial === 'string' ? item.initial.trim() : '',
+      url: item && typeof item.url === 'string' ? item.url : ''
     }))
     .filter((item) => item.text)
     .slice(0, SEARCH_SUGGEST_LIMIT);
@@ -184,6 +278,10 @@ function renderSearchSuggest(panel, input, items) {
     btn.id = 'searchSuggestOpt' + index;
     btn.setAttribute('role', 'option');
     btn.setAttribute('aria-selected', 'false');
+    if (item.url) {
+      btn.dataset.targetUrl = item.url;
+      btn.classList.add('is-local-shortcut');
+    }
 
     if (/^https:\/\//i.test(item.image)) {
       const img = document.createElement('img');
@@ -195,6 +293,28 @@ function renderSearchSuggest(panel, input, items) {
       img.addEventListener('error', () => img.remove());
       img.src = item.image;
       btn.appendChild(img);
+    } else if (item.url) {
+      // 本地快捷方式：走 fetchFavicon（Image 加载 + duckduckgo/站点回退 + 缓存），
+      // 避免直链 favicon 的 CORS 失败；失败时退回首字母占位
+      const img = document.createElement('img');
+      img.className = 'search-suggest-icon';
+      img.alt = '';
+      img.width = 16;
+      img.height = 16;
+      img.referrerPolicy = 'no-referrer';
+      const fallbackInitial = item.initial || (item.text.trim().charAt(0) || '?').toUpperCase();
+      img.addEventListener('error', () => fallbackIcon(img, fallbackInitial));
+      btn.appendChild(img);
+      if (typeof fetchFavicon === 'function') {
+        Promise.resolve(fetchFavicon(item.url))
+          .then((src) => {
+            if (src) img.src = src;
+            else fallbackIcon(img, fallbackInitial);
+          })
+          .catch(() => fallbackIcon(img, fallbackInitial));
+      } else {
+        fallbackIcon(img, fallbackInitial);
+      }
     }
 
     const copy = document.createElement('span');
@@ -212,7 +332,7 @@ function renderSearchSuggest(panel, input, items) {
     btn.appendChild(copy);
 
     btn.addEventListener('mousedown', (e) => e.preventDefault());
-    btn.addEventListener('click', () => chooseSearchSuggest(item.text));
+    btn.addEventListener('click', () => chooseSearchSuggest(item.text, item.url || ''));
     btn.addEventListener('pointerenter', () => setSearchSuggestActive(index));
     panel.appendChild(btn);
   });
@@ -301,12 +421,16 @@ function takeActiveSuggestion() {
   return title ? title.textContent : '';
 }
 
-function chooseSearchSuggest(text) {
+function chooseSearchSuggest(text, targetUrl) {
   const input = document.getElementById('searchInput');
   const clearBtn = document.getElementById('searchClearBtn');
   if (input) input.value = text;
   if (clearBtn) clearBtn.hidden = !text;
   closeSearchSuggest();
+  if (targetUrl) {
+    window.location.href = targetUrl;
+    return;
+  }
   performSearch(text);
 }
 
@@ -332,10 +456,11 @@ function onSearchSuggestKeydown(e) {
     return;
   }
   if (e.key === 'Enter' && open && searchSuggestActive >= 0) {
+    const activeItem = panel.querySelectorAll('.search-suggest-item')[searchSuggestActive];
     const picked = takeActiveSuggestion();
     if (picked) {
       e.preventDefault();
-      chooseSearchSuggest(picked);
+      chooseSearchSuggest(picked, activeItem ? activeItem.dataset.targetUrl || '' : '');
     }
   }
 }
