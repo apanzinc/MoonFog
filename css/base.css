@@ -917,8 +917,8 @@ body.has-image-bg.img-scene-dark .shortcut-btn,
 body.has-image-bg.img-scene-dark .shortcut-folder-trigger,
 body.has-image-bg.img-scene-dark .shortcut-expanded,
 body.has-image-bg.img-scene-dark .settings-btn {
-  --glass-fill: 38%;
-  --glass-fill-hover: 48%;
+  --glass-fill: 78%;
+  --glass-fill-hover: 88%;
   --glass-border: 22%;
 }
 
@@ -928,8 +928,8 @@ body.has-image-bg.img-scene-light .shortcut-btn,
 body.has-image-bg.img-scene-light .shortcut-folder-trigger,
 body.has-image-bg.img-scene-light .shortcut-expanded,
 body.has-image-bg.img-scene-light .settings-btn {
-  --glass-fill: 48%;
-  --glass-fill-hover: 58%;
+  --glass-fill: 78%;
+  --glass-fill-hover: 88%;
   --glass-border: 20%;
 }
 

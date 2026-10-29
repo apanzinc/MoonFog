@@ -2422,9 +2422,10 @@ function applyImagePalette(palette) {
   root.style.setProperty('--img-chrome-text-secondary', chromeTextLight ? 'rgba(255,255,255,0.75)' : 'rgba(26,26,26,0.65)');
   root.style.setProperty('--img-chrome-text-muted', chromeTextLight ? 'rgba(255,255,255,0.5)' : 'rgba(26,26,26,0.45)');
 
-  // 控件表面：跟 UI 模式
-  root.style.setProperty('--img-surface', chromeTextLight ? 'rgba(255,255,255,0.80)' : 'rgba(255,255,255,0.85)');
-  root.style.setProperty('--img-surface-hover', chromeTextLight ? 'rgba(255,255,255,0.88)' : 'rgba(255,255,255,0.90)');
+  // 控件表面：跟 UI 模式 - 改为与快捷标签一致的样式
+  // 快捷标签使用: color-mix(in srgb, var(--card-bg) 78%, transparent)
+  root.style.setProperty('--img-surface', 'var(--card-bg)');
+  root.style.setProperty('--img-surface-hover', 'var(--card-bg)');
   root.style.setProperty('--img-chip', palette.chip || 'transparent');
   root.style.setProperty('--img-border', chromeTextLight ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.12)');
   root.style.setProperty('--img-shadow', chromeTextLight ? '0 4px 20px rgba(0,0,0,0.3)' : '0 4px 20px rgba(0,0,0,0.08)');
