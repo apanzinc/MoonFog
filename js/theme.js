@@ -280,7 +280,7 @@ function beginThemeTransition() {
   themeAnimTimer = setTimeout(() => {
     el.classList.remove('theme-animating');
     themeAnimTimer = null;
-  }, 420);
+  }, 360);
 }
 
 function getModePref() {

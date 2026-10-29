@@ -70,8 +70,8 @@ html.theme-animating .bing-credit {
     color 0.36s var(--ease),
     border-color 0.36s var(--ease),
     box-shadow 0.36s var(--ease),
-    opacity 0.28s var(--ease),
-    filter 0.28s var(--ease) !important;
+    opacity 0.36s var(--ease) !important,
+    filter 0.36s var(--ease) !important;
 }
 
 /* 明暗切换时禁止改动定位相关属性，保证控件“原地”变色 */
