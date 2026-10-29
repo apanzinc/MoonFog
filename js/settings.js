@@ -333,9 +333,14 @@ function navigateSettings(pageId, options = {}) {
     subView.style.pointerEvents = 'none';
 
     panel.classList.add('settings-no-anim');
-    // 落到起始态（无过渡）
-    panel.dataset.view = prevView;
-    void pageView.offsetWidth;
+    // 修复：前进时直接设置目标视图，避免先闪现 prevView 再过渡的问题
+    // 后退时需要先显示 prevView 再过渡到 nextView（旧层滑出、新层淡入）
+    if (!forward) {
+      // 后退：先落到 prevView 态（无过渡），再过渡到 nextView
+      panel.dataset.view = prevView;
+      void pageView.offsetWidth;
+    }
+    // 前进：直接从初始态过渡到 nextView（root->page: root淡出+page滑入；page->sub: page淡出+sub滑入）
     panel.classList.remove('settings-no-anim');
     requestAnimationFrame(() => {
       if (token !== settingsNavToken) return;
