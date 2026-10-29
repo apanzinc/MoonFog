@@ -23,3 +23,6 @@ dist-web/
 /CHANGELOG.md
 /HANDOVER.md
 /SETTINGS-REDESIGN.md
+
+# 本地基准快照，不纳入版本控制
+/.turn16-baseline/
