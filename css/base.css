@@ -1029,10 +1029,25 @@ body.has-image-bg .shortcut-expanded-item {
   color: var(--img-chrome-text, var(--img-text, var(--text-primary)));
 }
 
-body.has-image-bg .shortcut-expanded-empty,
+/* 图片背景模式：空文件夹卡片改用图片取色的文字/底色，避免灰阶在照片上糊成一片 */
 body.has-image-bg .shortcut-expanded-empty p,
+body.has-image-bg .shortcut-expanded-empty-icon,
 body.has-image-bg .shortcut-expanded-add {
-  color: var(--img-text-secondary, var(--text-secondary));
+  color: var(--img-chrome-text-secondary, var(--img-text-secondary, var(--text-secondary)));
+}
+
+body.has-image-bg .shortcut-expanded-empty-icon {
+  background: color-mix(in srgb, #fff 10%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, #fff 15%, transparent);
+}
+
+body.has-image-bg .shortcut-expanded-add {
+  background: color-mix(in srgb, #fff 10%, transparent);
+}
+
+body.has-image-bg .shortcut-expanded-add:hover {
+  background: color-mix(in srgb, #fff 18%, transparent);
+  color: var(--img-chrome-text, var(--img-text, var(--text-primary)));
 }
 
 .content {

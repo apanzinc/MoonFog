@@ -673,9 +673,17 @@ body.has-image-bg .folder-scrollbar.is-dragging .folder-scrollbar-thumb {
   bottom: -10px;
 }
 
-.shortcut-expanded.is-empty {
-  min-width: 140px;
-  padding: 8px 10px;
+/* 空文件夹：方正的矩形卡片（主面板 / 子面板共用同一套尺寸）
+   只放「图标 + 状态字 + 实底按钮」，没有说明文字、没有虚线；
+   固定内容不需要滚动，直接 overflow:hidden（也顺手裁掉 .is-up 时挂在面板下沿的 ::before 热区桥） */
+.shortcut-expanded.is-empty,
+.shortcut-expanded-subfolder-children.is-empty {
+  min-width: 188px;
+  max-width: 216px;
+  min-height: 168px;
+  padding: 14px;
+  border-radius: 12px;
+  overflow: hidden;
 }
 
 .shortcut-expanded-item {
@@ -709,48 +717,74 @@ body.has-image-bg .folder-scrollbar.is-dragging .folder-scrollbar-thumb {
   padding-right: 8px;
 }
 
-/* 空文件夹占位：纵向堆叠的提示文案 + 虚线添加按钮（与设置页 add-engine-btn 同族） */
+/* 空文件夹占位：方正卡片里的「图标 + 状态字 + 实底按钮」，纵向撑满后居中 */
 .shortcut-expanded-empty {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
-  padding: 12px 10px;
+  justify-content: center;
+  gap: 12px;
   width: 100%;
-  white-space: nowrap;
+  min-height: 140px;
+  text-align: center;
 }
 
-.shortcut-expanded-empty p {
-  font-size: 0.75rem;
+.shortcut-expanded-empty-icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--text-primary) 6%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--text-primary) 8%, transparent);
   color: var(--text-tertiary);
-  margin: 0;
+  font-size: 22px;
   line-height: 1;
 }
 
-/* 虚线添加按钮：透明底 + dashed 边框，hover 提亮（focus/reduced-motion 见文件尾部同名选择器） */
+.shortcut-expanded-empty p {
+  max-width: 100%;
+  margin: 0;
+  line-height: 1.3;
+  white-space: normal;
+}
+
+.shortcut-expanded-empty-title {
+  color: var(--text-secondary);
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+/* 添加按钮：实底矩形（无虚线、无边框），hover 提亮（focus / reduced-motion 见文件尾部同名选择器） */
 .shortcut-expanded-add {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 5px;
-  min-height: 32px;
+  gap: 6px;
   width: 100%;
-  padding: 6px 10px;
-  border: 1px dashed var(--border);
+  min-height: 36px;
+  padding: 8px 12px;
+  border: 0;
   border-radius: 8px;
-  background: transparent;
-  color: var(--text-tertiary);
+  background: color-mix(in srgb, var(--text-primary) 7%, transparent);
+  color: var(--text-secondary);
   font-family: var(--font);
   font-size: 0.75rem;
   line-height: 1;
   cursor: pointer;
-  transition: color 0.2s var(--ease), background 0.2s var(--ease), border-color 0.2s var(--ease);
+  transition:
+    color 0.2s var(--ease),
+    background 0.2s var(--ease);
+}
+
+.shortcut-expanded-add .mgc_add_line {
+  font-size: 0.8125rem;
+  line-height: 1;
 }
 
 .shortcut-expanded-add:hover {
-  color: var(--text-secondary);
-  border-color: var(--border-strong);
-  background: color-mix(in srgb, var(--text-primary) 6%, transparent);
+  background: color-mix(in srgb, var(--text-primary) 12%, transparent);
+  color: var(--text-primary);
 }
 
 /* 多级子文件夹：面板内的行内标签，与图标标签同一行排列 */
@@ -842,9 +876,7 @@ body.has-image-bg .folder-scrollbar.is-dragging .folder-scrollbar-thumb {
 
 /* 层级聚焦：子项级 blur 档位已与主面板统一到 .shortcut-expanded.dim-* 规则处（锚点豁免） */
 
-.shortcut-expanded-subfolder-children.open.is-empty {
-  min-width: 140px;
-}
+/* 空子文件夹的尺寸与主面板空卡片统一，规则在 .shortcut-expanded.is-empty 处（同一套卡片） */
 
 /* 子文件夹与普通链接之间的分隔线已移除（内联模式下不需要） */
 
