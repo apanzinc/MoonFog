@@ -923,6 +923,7 @@ html.low-perf body.has-image-bg .search-box,
 html.low-perf.boot-has-image .search-box,
 html.low-perf .shortcut-btn,
 html.low-perf .shortcut-folder-trigger,
+html.low-perf .shortcuts-expand,
 html.low-perf .shortcut-expanded,
 html.low-perf .context-menu,
 html.low-perf .modal-overlay,
@@ -939,6 +940,7 @@ html.perf-low body.has-image-bg .search-box,
 html.perf-low body.has-image-bg .search-suggest,
 html.perf-low .shortcut-btn,
 html.perf-low .shortcut-folder-trigger,
+html.perf-low .shortcuts-expand,
 html.perf-low .settings-btn {
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
@@ -951,12 +953,14 @@ html.low-perf body.folder-open .bing-credit,
 html.low-perf body.folder-open .settings-wrapper,
 html.low-perf body.folder-open .shortcuts-row > .shortcut-drag-wrapper > .shortcut-btn,
 html.low-perf body.folder-open .shortcuts-row > .shortcut-drag-wrapper > .shortcut-folder .shortcut-folder-trigger,
+html.low-perf body.folder-open .shortcuts-section > .shortcuts-expand,
 html.perf-low body.folder-open .greeting-section,
 html.perf-low body.folder-open .search-section,
 html.perf-low body.folder-open .bing-credit,
 html.perf-low body.folder-open .settings-wrapper,
 html.perf-low body.folder-open .shortcuts-row > .shortcut-drag-wrapper > .shortcut-btn,
-html.perf-low body.folder-open .shortcuts-row > .shortcut-drag-wrapper > .shortcut-folder .shortcut-folder-trigger {
+html.perf-low body.folder-open .shortcuts-row > .shortcut-drag-wrapper > .shortcut-folder .shortcut-folder-trigger,
+html.perf-low body.folder-open .shortcuts-section > .shortcuts-expand {
   filter: none !important;
 }
 
@@ -1029,6 +1033,7 @@ html.low-perf .shortcut-folder-trigger,
 html.low-perf .settings-btn,
 html.perf-low .search-box,
 html.perf-low .shortcut-btn,
+html.perf-low .shortcuts-expand,
 html.perf-low .settings-btn {
   background: var(--card-bg) !important;
 }

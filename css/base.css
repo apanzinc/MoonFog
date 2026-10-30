@@ -291,13 +291,16 @@ html.boot-ready .content > .shortcuts-section {
     filter 0.22s cubic-bezier(0.25, 1, 0.5, 1);
 }
 
-/* 文件夹展开时：所有非文件夹内容透明度 80%（opacity 0.2），仍可见但不抢眼 */
+/* 文件夹展开时：所有非文件夹内容透明度 80%（opacity 0.2），仍可见但不抢眼
+   注意：展开开关 #shortcutsExpand 是 .shortcuts-section 的直接子元素、位于 .shortcuts-row 之外，
+   必须单独列出，否则文件夹展开时它不会跟随失焦 */
 body.folder-open .greeting-section,
 body.folder-open .search-section,
 body.folder-open .bing-credit,
 body.folder-open .settings-wrapper,
 body.folder-open .shortcuts-row > .shortcut-drag-wrapper > .shortcut-btn:not(.shortcut-folder-trigger),
-body.folder-open .shortcuts-row > .shortcut-drag-wrapper > .shortcut-folder:not(.open) .shortcut-folder-trigger {
+body.folder-open .shortcuts-row > .shortcut-drag-wrapper > .shortcut-folder:not(.open) .shortcut-folder-trigger,
+body.folder-open .shortcuts-section > .shortcuts-expand {
   opacity: 0.2 !important;
   /* 与上移同为 ease-out 0.22s，起步即变，不比面板慢半拍 */
   transition:
@@ -313,9 +316,11 @@ body.folder-open .settings-wrapper {
   filter: blur(2px);
 }
 
-/* 文件夹一展开，页面上的其他标签就失焦退后（打开中的胶囊走下方锚点豁免，not(.open) 排除关闭中的文件夹 trigger） */
+/* 文件夹一展开，页面上的其他标签就失焦退后（打开中的胶囊走下方锚点豁免，not(.open) 排除关闭中的文件夹 trigger）
+   展开开关同样在 .shortcuts-row 之外，需单独列出 */
 body.folder-open .shortcuts-row > .shortcut-drag-wrapper > .shortcut-btn:not(.shortcut-folder-trigger),
-body.folder-open .shortcuts-row > .shortcut-drag-wrapper > .shortcut-folder:not(.open) .shortcut-folder-trigger {
+body.folder-open .shortcuts-row > .shortcut-drag-wrapper > .shortcut-folder:not(.open) .shortcut-folder-trigger,
+body.folder-open .shortcuts-section > .shortcuts-expand {
   filter: blur(1.5px);
 }
 
