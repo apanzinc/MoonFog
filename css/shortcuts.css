@@ -476,6 +476,8 @@ html body.has-image-bg .shortcut-folder .subfolder-portal .shortcut-btn {
 
 .shortcut-folder.open .shortcut-folder-trigger {
   box-shadow: none;
+  backdrop-filter: blur(var(--chrome-blur, 14px)) saturate(var(--glass-saturate, 1.12));
+  -webkit-backdrop-filter: blur(var(--chrome-blur, 14px)) saturate(var(--glass-saturate, 1.12));
 }
 
 /* 展开面板：使用绝对定位弹出，不影响主行布局 */
