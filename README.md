@@ -1,5 +1,11 @@
 <h1 align="center"><img src="assets/logo.png" width="38" alt="MoonFog logo" align="top"> MoonFog 朔雾</h1>
 
+<p align="center">
+  <a href="https://microsoftedge.microsoft.com/addons/detail/amgodilcleohpndamnepjhgfjmpohkle"><img src="assets/badges/edge-store.svg" alt="Microsoft Edge 扩展商店" height="56"></a>
+  &nbsp;&nbsp;
+  <a href="https://chromewebstore.google.com/detail/jnheegmemghhmbanifecnkifakjeecen"><img src="assets/badges/chrome-webstore.svg" alt="Chrome 应用商店" height="56"></a>
+</p>
+
 ![MoonFog banner](assets/banner.png)
 
 月雾之间，新页初启。MoonFog 是一款把浏览器默认新标签页替换成安静、可定制起始页的开源项目：
