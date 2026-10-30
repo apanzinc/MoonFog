@@ -514,27 +514,107 @@ html body.has-image-bg .shortcut-folder .subfolder-portal .shortcut-btn {
   z-index: 120;
   backdrop-filter: blur(var(--chrome-blur, 14px)) saturate(var(--glass-saturate, 1.12));
   -webkit-backdrop-filter: blur(var(--chrome-blur, 14px)) saturate(var(--glass-saturate, 1.12));
-  scrollbar-width: thin;
-  scrollbar-color: color-mix(in srgb, var(--text-primary) 20%, transparent) transparent;
+  /* 原生滚动条彻底隐藏（含 Firefox）：文件夹面板改用自绘覆盖条 .folder-scrollbar。
+     注意不能再设 scrollbar-width: thin / scrollbar-color——Chrome 121+ 一旦指定标准属性
+     就会忽略 ::-webkit-scrollbar，二者同时写等于把自定义样式作废 */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 
-/* 自定义滚动条样式 */
-.shortcut-expanded::-webkit-scrollbar {
-  width: 6px;
+/*
+ * 文件夹面板滚动条：自绘覆盖式（JS 驱动，见 js/shortcuts.js 的 folderScrollbar 系列）
+ * - 原生条已隐藏，条不占布局宽度，内容不会被顶开
+ * - 覆盖条挂在面板的兄弟层（.shortcut-folder / .subfolder-portal），不进滚动内容，
+ *   所以滚动时轨道本身不随内容位移，也不需要逐帧回补偿
+ * - 内容没溢出时 JS 给面板加 .is-no-scroll：彻底禁用滚动，条也不存在
+ */
+.shortcut-expanded::-webkit-scrollbar,
+.shortcut-expanded-subfolder-children::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
 }
 
-.shortcut-expanded::-webkit-scrollbar-track {
-  background: transparent;
-  border-radius: 3px;
+.shortcut-expanded.is-no-scroll,
+.shortcut-expanded-subfolder-children.is-no-scroll {
+  overflow-y: hidden;
 }
 
-.shortcut-expanded::-webkit-scrollbar-thumb {
-  background: color-mix(in srgb, var(--text-primary) 18%, transparent);
-  border-radius: 3px;
+.folder-scrollbar {
+  position: absolute;
+  width: 8px;
+  z-index: 122;
+  opacity: 0;
+  /* 不可见时不吃点击：面板标签不因为 invisible 的条而点不到 */
+  pointer-events: none;
+  transition: opacity 0.18s var(--ease);
 }
 
-.shortcut-expanded::-webkit-scrollbar-thumb:hover {
-  background: color-mix(in srgb, var(--text-primary) 30%, transparent);
+.folder-scrollbar.is-visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.folder-scrollbar-track {
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--text-primary) 5%, transparent);
+  cursor: default;
+}
+
+.folder-scrollbar-thumb {
+  position: absolute;
+  left: 1px;
+  right: 1px;
+  top: 0;
+  min-height: 24px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--text-primary) 24%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--text-primary) 8%, transparent);
+  cursor: default;
+  transition: background 0.15s var(--ease);
+}
+
+.folder-scrollbar-thumb:hover,
+.folder-scrollbar.is-dragging .folder-scrollbar-thumb {
+  background: color-mix(in srgb, var(--text-primary) 38%, transparent);
+}
+
+/* 失焦档（打开了更深的子面板）= 失活：主面板/上层子面板的条跟着一起淡出 */
+.shortcut-expanded.dim-1 + .folder-scrollbar,
+.shortcut-expanded.dim-2 + .folder-scrollbar,
+.shortcut-expanded-subfolder-children.dim-1 + .folder-scrollbar,
+.shortcut-expanded-subfolder-children.dim-2 + .folder-scrollbar {
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+[data-mode="dark"] .folder-scrollbar-thumb {
+  background: color-mix(in srgb, #fff 24%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, #fff 10%, transparent);
+}
+
+[data-mode="dark"] .folder-scrollbar-thumb:hover,
+[data-mode="dark"] .folder-scrollbar.is-dragging .folder-scrollbar-thumb {
+  background: color-mix(in srgb, #fff 38%, transparent);
+}
+
+body.has-image-bg .folder-scrollbar-thumb {
+  background: color-mix(in srgb, var(--img-chrome-text, var(--img-text, var(--text-primary))) 26%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--img-chrome-text, var(--img-text, var(--text-primary))) 10%, transparent);
+}
+
+body.has-image-bg .folder-scrollbar-thumb:hover,
+body.has-image-bg .folder-scrollbar.is-dragging .folder-scrollbar-thumb {
+  background: color-mix(in srgb, var(--img-chrome-text, var(--img-text, var(--text-primary))) 40%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .folder-scrollbar,
+  .folder-scrollbar-thumb {
+    transition: none;
+  }
 }
 
 .shortcut-folder.open .shortcut-expanded {
@@ -742,22 +822,9 @@ html body.has-image-bg .shortcut-folder .subfolder-portal .shortcut-btn {
     visibility 0s linear 0.22s,
     transform 0.22s cubic-bezier(0.4, 0, 1, 1),
     filter 0.22s cubic-bezier(0.4, 0, 1, 1);
-  scrollbar-width: thin;
-  scrollbar-color: color-mix(in srgb, var(--text-primary) 20%, transparent) transparent;
-}
-
-.shortcut-expanded-subfolder-children::-webkit-scrollbar {
-  width: 6px;
-}
-
-.shortcut-expanded-subfolder-children::-webkit-scrollbar-track {
-  background: transparent;
-  border-radius: 3px;
-}
-
-.shortcut-expanded-subfolder-children::-webkit-scrollbar-thumb {
-  background: color-mix(in srgb, var(--text-primary) 18%, transparent);
-  border-radius: 3px;
+  /* 与主面板同一套：原生条隐藏，改用自绘覆盖条 .folder-scrollbar */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 
 /* 展开：从胶囊里弹出，起步即动后减速落位（与主页面板同参数） */

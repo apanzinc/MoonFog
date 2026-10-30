@@ -924,6 +924,11 @@ function applyFolderExpandLayoutTo(folder) {
   } else {
     scheduleFolderShift();
   }
+  // 方向/封顶高度重排后，覆盖滚动条的位置与是否可滚都要跟着重算
+  if (expanded._folderScrollbar) {
+    syncFolderScrollbar(expanded);
+    requestAnimationFrame(() => syncFolderScrollbar(expanded));
+  }
 }
 
 /**
@@ -969,6 +974,8 @@ window.addEventListener('resize', () => {
   // 尺寸变化后子面板的锚点与空间都失效，先收起再重排主面板（与滚动收起的约定一致）
   document.querySelectorAll('.shortcut-expanded-subfolder.open').forEach(collapseSubfolder);
   applyFolderExpandLayoutTo(openFolder);
+  // 面板宽度/封顶高度随视口变化，覆盖滚动条同步重算
+  refreshOpenFolderScrollbars();
 });
 window.addEventListener('storage', (e) => {
   if (e.key !== null && e.key !== FOLDER_EXPAND_DIR_KEY) return;
@@ -1113,6 +1120,305 @@ function refreshAllDim() {
   document.body.classList.toggle('has-subpanel', anySub);
 }
 
+/* ============================================================
+ * 文件夹面板滚动条：自绘覆盖式（主面板 + 多级子面板通用）
+ * 原生滚动条在 css/shortcuts.css 里被彻底隐藏（scrollbar-width: none + ::-webkit-scrollbar 0），
+ * 这里接管三件事：
+ *   1. 溢出判定：内容放得下（≤2px 取整误差）→ 面板加 .is-no-scroll（overflow-y: hidden），
+ *      不显示滚动条，也根本滚不动——没必要滚动就不滚
+ *   2. 自绘轨道/滑块：条挂在面板的兄弟层，不在滚动内容里，滚动时不会被内容带走，
+ *      因此不需要逐帧回补位置
+ *   3. 交互：拖滑块 / 点轨道跳转 / 滚轮转发 / 悬停显形 / 静置 0.9s 自动淡出
+ * ============================================================ */
+const FOLDER_SCROLLBAR_WIDTH = 8; // 条宽，与 css 中 .folder-scrollbar 一致
+const FOLDER_SCROLLBAR_INSET = 3; // 条距面板右缘
+const FOLDER_SCROLLBAR_VPAD = 8; // 轨道上下内缩，避开面板圆角与内边距
+const FOLDER_SCROLLBAR_MIN_THUMB = 24;
+const FOLDER_SCROLLBAR_HIDE_MS = 900;
+const FOLDER_SCROLLBAR_POP_MS = 240; // 与面板 scale 弹出动画同长，期间条先不显形
+
+function isFolderPanelOpen(panel) {
+  if (!panel) return false;
+  if (panel.classList.contains('shortcut-expanded')) {
+    return !!panel.closest('.shortcut-folder.open');
+  }
+  return panel.classList.contains('open');
+}
+
+/**
+ * 按当前内容量重算：是否需要滚动 + 覆盖条位置/滑块尺寸
+ * 关闭状态下不测量（面板 visibility: hidden，尺寸不可信）
+ */
+function syncFolderScrollbar(panel) {
+  const st = panel && panel._folderScrollbar;
+  if (!st) return;
+  const { bar, thumb } = st;
+  if (!isFolderPanelOpen(panel)) {
+    st.readyAt = 0;
+    bar.classList.remove('is-visible');
+    return;
+  }
+  const trackH = Math.max(0, panel.offsetHeight - FOLDER_SCROLLBAR_VPAD * 2);
+  const viewH = panel.clientHeight;
+  const contentH = panel.scrollHeight;
+  const maxScroll = Math.max(0, contentH - viewH);
+  // 空文件夹卡片是固定内容，永远不需要滚动：.is-up 时 ::before 热区桥挂在面板下沿，
+  // 会让 scrollHeight 虚增 10px，若不排除会凭空冒出一条滚动条
+  const emptyCard = panel.classList.contains('is-empty');
+  // 放得下就不许滚：≤2px 视为 scrollHeight 取整误差
+  const scrollable = !emptyCard && trackH > 0 && maxScroll > 2;
+  panel.classList.toggle('is-no-scroll', !scrollable);
+  if (!scrollable) {
+    st.trackH = trackH;
+    st.thumbH = 0;
+    st.maxTop = 0;
+    st.maxScroll = 0;
+    thumb.style.height = '0px';
+    thumb.style.transform = 'translateY(0px)';
+    bar.classList.remove('is-visible');
+    if (panel.scrollTop !== 0) panel.scrollTop = 0;
+    return;
+  }
+  // 用 offset*（布局坐标）定位：不受面板 scale 打开动画影响
+  bar.style.left =
+    panel.offsetLeft + panel.offsetWidth - FOLDER_SCROLLBAR_WIDTH - FOLDER_SCROLLBAR_INSET + 'px';
+  bar.style.top = panel.offsetTop + FOLDER_SCROLLBAR_VPAD + 'px';
+  bar.style.height = trackH + 'px';
+  const thumbH = Math.min(
+    trackH,
+    Math.max(FOLDER_SCROLLBAR_MIN_THUMB, Math.round((viewH / contentH) * trackH)),
+  );
+  const maxTop = Math.max(0, trackH - thumbH);
+  const top = maxScroll > 0 ? Math.min(maxTop, Math.round((panel.scrollTop / maxScroll) * maxTop)) : 0;
+  st.trackH = trackH;
+  st.thumbH = thumbH;
+  st.maxTop = maxTop;
+  st.maxScroll = maxScroll;
+  thumb.style.height = thumbH + 'px';
+  thumb.style.transform = 'translateY(' + top + 'px)';
+}
+
+function scheduleFolderScrollbarHide(st) {
+  clearTimeout(st.hideTimer);
+  st.hideTimer = setTimeout(() => {
+    st.hideTimer = 0;
+    if (st.dragging || st.hoverBar || st.panel.matches(':hover')) return;
+    st.bar.classList.remove('is-visible');
+  }, FOLDER_SCROLLBAR_HIDE_MS);
+}
+
+/**
+ * 显形：不可滚 / 未展开 / 弹出动画中（scale 会让条错位）都不显形
+ */
+function showFolderScrollbar(panel) {
+  const st = panel && panel._folderScrollbar;
+  if (!st || !isFolderPanelOpen(panel)) return;
+  if (panel.classList.contains('is-no-scroll')) return;
+  const wait = st.readyAt - performance.now();
+  if (wait > 0) {
+    clearTimeout(st.showTimer);
+    st.showTimer = setTimeout(() => {
+      st.showTimer = 0;
+      showFolderScrollbar(panel);
+    }, wait + 16);
+    return;
+  }
+  clearTimeout(st.showTimer);
+  st.showTimer = 0;
+  syncFolderScrollbar(panel);
+  if (panel.classList.contains('is-no-scroll')) return;
+  st.bar.classList.add('is-visible');
+  scheduleFolderScrollbarHide(st);
+}
+
+/**
+ * 立即收起（面板关闭 / 失焦档）：清掉所有定时器，避免关闭后条还挂在屏幕上
+ */
+function hideFolderScrollbar(panel) {
+  const st = panel && panel._folderScrollbar;
+  if (!st) return;
+  clearTimeout(st.hideTimer);
+  clearTimeout(st.showTimer);
+  st.hideTimer = 0;
+  st.showTimer = 0;
+  st.readyAt = 0;
+  st.dragging = false;
+  st.bar.classList.remove('is-visible', 'is-dragging');
+}
+
+/**
+ * 懒挂载：面板第一次展开时才插入覆盖条并绑定交互（未打开的面板零成本）
+ */
+function ensureFolderScrollbar(panel) {
+  if (!panel) return null;
+  if (panel._folderScrollbar) return panel._folderScrollbar;
+  const parent = panel.parentElement;
+  if (!parent) return null;
+  if (getComputedStyle(parent).position === 'static') parent.style.position = 'relative';
+
+  const bar = document.createElement('div');
+  bar.className = 'folder-scrollbar';
+  bar.setAttribute('aria-hidden', 'true');
+  bar.innerHTML = '<div class="folder-scrollbar-track"></div><div class="folder-scrollbar-thumb"></div>';
+  // 紧跟面板插入其兄弟层：条不在滚动容器里，滚动时不会被内容带走
+  panel.after(bar);
+
+  const track = bar.querySelector('.folder-scrollbar-track');
+  const thumb = bar.querySelector('.folder-scrollbar-thumb');
+  const st = {
+    panel,
+    bar,
+    track,
+    thumb,
+    hideTimer: 0,
+    showTimer: 0,
+    dragStartY: 0,
+    dragStartTop: 0,
+    dragging: false,
+    hoverBar: false,
+    readyAt: 0,
+    trackH: 0,
+    thumbH: FOLDER_SCROLLBAR_MIN_THUMB,
+    maxTop: 0,
+    maxScroll: 0,
+  };
+  panel._folderScrollbar = st;
+
+  const thumbTopFromScroll = () => {
+    if (st.maxTop <= 0 || st.maxScroll <= 0) return 0;
+    return (panel.scrollTop / st.maxScroll) * st.maxTop;
+  };
+
+  const onDragMove = (e) => {
+    if (!st.dragging) return;
+    const nextTop = Math.max(0, Math.min(st.maxTop, st.dragStartTop + (e.clientY - st.dragStartY)));
+    if (st.maxTop > 0 && st.maxScroll > 0) {
+      panel.scrollTop = (nextTop / st.maxTop) * st.maxScroll;
+    }
+    syncFolderScrollbar(panel);
+  };
+  const endDrag = () => {
+    if (!st.dragging) return;
+    st.dragging = false;
+    bar.classList.remove('is-dragging');
+    window.removeEventListener('pointermove', onDragMove);
+    window.removeEventListener('pointerup', endDrag);
+    window.removeEventListener('pointercancel', endDrag);
+    scheduleFolderScrollbarHide(st);
+  };
+
+  // 拖滑块
+  thumb.addEventListener('pointerdown', (e) => {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    e.stopPropagation();
+    st.dragging = true;
+    st.dragStartY = e.clientY;
+    st.dragStartTop = thumbTopFromScroll();
+    bar.classList.add('is-dragging', 'is-visible');
+    clearTimeout(st.hideTimer);
+    st.hideTimer = 0;
+    try {
+      thumb.setPointerCapture(e.pointerId);
+    } catch (_) {
+      /* 指针捕获失败不影响手动拖拽 */
+    }
+    window.addEventListener('pointermove', onDragMove);
+    window.addEventListener('pointerup', endDrag);
+    window.addEventListener('pointercancel', endDrag);
+  });
+
+  // 点轨道空白处直接跳转
+  track.addEventListener('pointerdown', (e) => {
+    if (e.button !== 0 || e.target !== track) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const rect = bar.getBoundingClientRect();
+    const nextTop = Math.max(0, Math.min(st.maxTop, e.clientY - rect.top - st.thumbH / 2));
+    if (st.maxTop > 0 && st.maxScroll > 0) {
+      panel.scrollTop = (nextTop / st.maxTop) * st.maxScroll;
+    }
+    showFolderScrollbar(panel);
+  });
+
+  // 条是面板的兄弟节点而不是面板子项：拦住点击/按下，别让文档级「点空白收面板」误判
+  bar.addEventListener('click', (e) => e.stopPropagation());
+  bar.addEventListener('pointerdown', (e) => e.stopPropagation());
+  bar.addEventListener('pointerenter', () => {
+    st.hoverBar = true;
+    showFolderScrollbar(panel);
+  });
+  bar.addEventListener('pointerleave', () => {
+    st.hoverBar = false;
+    scheduleFolderScrollbarHide(st);
+  });
+  // 条本身没有可滚内容：滚轮手动转发给面板
+  bar.addEventListener(
+    'wheel',
+    (e) => {
+      if (panel.classList.contains('is-no-scroll')) return;
+      const step = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY;
+      const before = panel.scrollTop;
+      panel.scrollTop = before + step;
+      if (panel.scrollTop !== before) e.preventDefault();
+      showFolderScrollbar(panel);
+    },
+    { passive: false },
+  );
+
+  // 面板滚动：同步滑块位置并显形
+  panel.addEventListener(
+    'scroll',
+    () => {
+      syncFolderScrollbar(panel);
+      showFolderScrollbar(panel);
+    },
+    { passive: true },
+  );
+  panel.addEventListener('pointerenter', () => showFolderScrollbar(panel));
+  panel.addEventListener('wheel', () => showFolderScrollbar(panel), { passive: true });
+  // 弹出/收起动画结束后按最终尺寸再对一次位
+  panel.addEventListener('transitionend', (e) => {
+    if (e.propertyName !== 'transform') return;
+    syncFolderScrollbar(panel);
+    if (isFolderPanelOpen(panel)) showFolderScrollbar(panel);
+  });
+  // 面板自身尺寸变化（缩放/字体/内容增减）→ 重算是否需要滚动
+  if (typeof ResizeObserver !== 'undefined') {
+    st.resizeObserver = new ResizeObserver(() => syncFolderScrollbar(panel));
+    st.resizeObserver.observe(panel);
+  }
+
+  return st;
+}
+
+/**
+ * 展开时挂上覆盖条：先量一次（不显形），动画落地后再亮一次提示「这里能滚」
+ */
+function attachFolderScrollbar(panel) {
+  const st = ensureFolderScrollbar(panel);
+  if (!st) return null;
+  st.readyAt = performance.now() + FOLDER_SCROLLBAR_POP_MS;
+  syncFolderScrollbar(panel);
+  requestAnimationFrame(() => syncFolderScrollbar(panel));
+  clearTimeout(st.showTimer);
+  st.showTimer = setTimeout(() => {
+    st.showTimer = 0;
+    showFolderScrollbar(panel);
+  }, FOLDER_SCROLLBAR_POP_MS + 40);
+  return st;
+}
+
+/**
+ * 窗口/布局变化后重算所有已打开面板的滚动条
+ */
+function refreshOpenFolderScrollbars() {
+  document
+    .querySelectorAll('.shortcut-folder.open > .shortcut-expanded, .shortcut-expanded-subfolder-children.open')
+    .forEach((panel) => syncFolderScrollbar(panel));
+}
+
+
 /**
  * 收起子文件夹：清 open（含 portal 里的面板）与 aria-expanded
  * 级联收回更深层：子面板 portal 平铺在 folder 直下，深层 panel 不在父 panel 的 DOM 内，
@@ -1126,7 +1432,11 @@ function collapseSubfolder(sf) {
     node.classList.remove('open');
     const t = node.querySelector(':scope > .shortcut-folder-trigger');
     if (t) t.setAttribute('aria-expanded', 'false');
-    if (panel) panel.classList.remove('open');
+    if (panel) {
+      panel.classList.remove('open');
+      // 子面板收起：连带收掉它的覆盖滚动条
+      hideFolderScrollbar(panel);
+    }
     node = next;
   }
   refreshAllDim();
@@ -1267,6 +1577,8 @@ function renderFolderChildrenExpanded(container, children, folderIndex, path, po
           // 先定位/换锚点，再开——同一渲染帧内生效，打开起点即胶囊锚点
           prepareSubPanel(subEl, panelEl);
           panelEl.classList.add('open');
+          // 子面板同一套覆盖滚动条：放得下就不能滚
+          attachFolderScrollbar(panelEl);
         }
         subEl.classList.add('open');
         subTrigger.setAttribute('aria-expanded', 'true');
@@ -1432,6 +1744,9 @@ function renderShortcuts() {
           applyFolderExpandLayout(folder, expanded);
         }
         folder.classList.toggle('open', willOpen);
+        // 覆盖滚动条：打开时按内容量挂上（放得下就禁止滚动），关闭时立即收掉
+        if (willOpen) attachFolderScrollbar(expanded);
+        else hideFolderScrollbar(expanded);
         refreshAllDim();
         trigger.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
         // 切换 body.folder-open 以控制问候语显隐
