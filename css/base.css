@@ -609,6 +609,17 @@ html.boot-ready .shortcuts-section .shortcut-folder-trigger {
   animation: page-enter 0.86s cubic-bezier(0.16, 1, 0.3, 1) 0.18s backwards;
 }
 
+/* 快捷标签子元素（图标+文字）延迟进入，形成分层效果 */
+html.boot-ready .shortcuts-section .shortcut-btn .shortcut-icon,
+html.boot-ready .shortcuts-section .shortcut-folder-trigger .shortcut-icon {
+  animation: page-enter-soft 0.72s cubic-bezier(0.16, 1, 0.3, 1) 0.06s backwards;
+}
+html.boot-ready .shortcuts-section .shortcut-btn .shortcut-label,
+html.boot-ready .shortcuts-section .shortcut-folder-trigger .shortcut-label {
+  animation: page-enter-soft 0.72s cubic-bezier(0.16, 1, 0.3, 1) 0.12s backwards;
+}
+
+/* Bing 来源柔和淡入 */
 html.boot-ready .bing-credit {
   animation: page-enter-soft 0.72s cubic-bezier(0.16, 1, 0.3, 1) 0.28s backwards;
 }
