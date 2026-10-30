@@ -229,6 +229,15 @@ body.shortcuts-expanded .content {
 }
 
 /*
+ * 两种让位叠加：行展开的 -28px 基线 + 文件夹面板的让位。
+ * 上面两条同优先级，后者会把前者的 top 直接覆盖掉（--folder-shift 因此失效，
+ * 行展开状态下打开文件夹面板会被顶出视口），这里用更具体的选择器把两者相加。
+ */
+body.folder-open.shortcuts-expanded .content {
+  top: calc(-28px - var(--folder-shift, 0px));
+}
+
+/*
  * 跟随模式：子文件夹展开/收回时面板高度在做 0.3s 过渡，
  * 若 top 也用自己的过渡去追一个每帧变化的目标会永远慢半拍。
  * 该窗口内关掉过渡，让 JS 逐帧直驱，上移量与面板同帧同步。

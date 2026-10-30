@@ -257,25 +257,44 @@ function saveShortcuts(shortcuts) {
 
 const SHORTCUTS_VISIBLE_KEY = 'moonfog_shortcuts_visible';
 
-/** 快捷标签折叠：始终折叠（不记忆用户习惯），高度一行 */
+/**
+ * 快捷标签折叠：展开出来的多行标签当成一个「特殊样式的文件夹」来管理——
+ * 生命周期与文件夹面板一致：默认隐藏、点击显示、点空白处自动关闭、重新加载自动关闭。
+ * 因此展开态只保存在内存（不写 localStorage），刷新后一定回到折叠。
+ * 与文件夹面板互不干扰：点标签行里的文件夹不会把已展开的多行标签收回，
+ * 反过来展开多行标签也不打断已打开的面板。点空白处按层级收起：
+ * 有面板打开时先关面板（标签保持展开），没有面板时再收标签。
+ * SHORTCUTS_EXPANDED_KEY 是旧版本残留的持久化键，只在启动时清掉，不再用于记忆。
+ */
 const SHORTCUTS_EXPANDED_KEY = 'moonfog_shortcuts_expanded';
 const SHORTCUTS_COLLAPSE_HEIGHT = 38; // 一行：标签 32px + 行距 6px
+// 行展开时 .content 的上移基线，与 css/base.css 的 body.shortcuts-expanded .content 对应；
+// 文件夹面板的让位计算要和这条基线与叠加，缺了它面板在行展开状态下会顶出视口
+const SHORTCUTS_EXPANDED_SHIFT = 28;
 let shortcutsExpandTimer = null;
+let shortcutsRelayoutTimer = null;
+let shortcutsExpanded = false;
 
-// 页面首次加载且 localStorage 没有记录时，默认折叠（写 '0'）；
-// toggle 时传入真实的 next 值来同步 localStorage。
+// 清掉旧版本残留的「记住展开」状态，保证重新加载后一定是折叠态
+try {
+  localStorage.removeItem(SHORTCUTS_EXPANDED_KEY);
+} catch (_) {}
+
 function isShortcutsExpanded() {
-  try {
-    return localStorage.getItem(SHORTCUTS_EXPANDED_KEY) === '1';
-  } catch (_) {
-    return false;
-  }
+  return shortcutsExpanded;
 }
 
 function setShortcutsExpanded(expanded) {
-  try {
-    localStorage.setItem(SHORTCUTS_EXPANDED_KEY, expanded ? '1' : '0');
-  } catch (_) {}
+  shortcutsExpanded = !!expanded;
+}
+
+/**
+ * 当前 .content 的行展开基线位移（折叠时 0，展开时 -28px）。
+ * 文件夹面板的位置/封顶按「静态坐标」决策，渲染时还会叠加这条基线，
+ * 所以视口空间、可移动量的每一处换算都要把它算进去。
+ */
+function shortcutsRowBaseline() {
+  return document.body.classList.contains('shortcuts-expanded') ? -SHORTCUTS_EXPANDED_SHIFT : 0;
 }
 
 /**
@@ -414,6 +433,25 @@ function applyShortcutsCollapse(opts = {}) {
   if (text) text.textContent = expanded ? '收起' : '展开';
 }
 
+/**
+ * 收起所有文件夹面板（含子面板）并复位整页让位位移。
+ * 标签行展开与文件夹面板互不干扰，这里只负责整体复位：
+ * 收起标签行（面板锚点会被折起）、点空白处、重新渲染标签时调用。
+ */
+function closeAllFolderPanels() {
+  document.querySelectorAll('.shortcut-folder.open').forEach((f) => {
+    f.classList.remove('open');
+    const trigger = f.querySelector('.shortcut-folder-trigger');
+    if (trigger) trigger.setAttribute('aria-expanded', 'false');
+    // 面板关闭：覆盖滚动条一并收掉
+    hideFolderScrollbar(f.querySelector(':scope > .shortcut-expanded'));
+  });
+  document.querySelectorAll('.shortcut-expanded-subfolder.open').forEach(collapseSubfolder);
+  document.body.classList.remove('folder-open');
+  stopFolderShiftFollow();
+  document.documentElement.style.setProperty('--folder-shift', '0px');
+}
+
 function bindShortcutsExpandToggle() {
   const btn = document.getElementById('shortcutsExpand');
   if (!btn || btn.dataset.bound) return;
@@ -421,8 +459,19 @@ function bindShortcutsExpandToggle() {
   btn.addEventListener('click', () => {
     const section = document.getElementById('shortcutsSection');
     const next = !(section && section.classList.contains('is-expanded'));
+    // 两者互不干扰：只有「收起」会影响文件夹面板——面板锚点在折叠行里会被 hide，
+    // 先收掉更干净；「展开」不打断已打开的面板，等展开动画落地后按新基线重排一次
+    if (!next) closeAllFolderPanels();
     setShortcutsExpanded(next);
     applyShortcutsCollapse({ animate: true });
+    if (next) {
+      clearTimeout(shortcutsRelayoutTimer);
+      shortcutsRelayoutTimer = setTimeout(() => {
+        shortcutsRelayoutTimer = null;
+        const openFolder = document.querySelector('.shortcut-folder.open');
+        if (openFolder) applyFolderExpandLayoutTo(openFolder);
+      }, 360); // 与 .shortcuts-row 的 max-height 0.32s 过渡对齐
+    }
   });
 }
 
@@ -878,17 +927,20 @@ function applyFolderExpandLayout(folder, expanded) {
   const applied = content ? -(parseFloat(getComputedStyle(content).top) || 0) : 0;
   const rect = folder.getBoundingClientRect();
   const viewportH = window.innerHeight;
+  // 行展开时内容整体上移 28px（body.shortcuts-expanded）：渲染位置 = 静态位置 + 基线 - 让位，
+  // 所以判断「上方/下方还剩多少空间」时必须把基线与视野计算并在一起
+  const rowBaseline = shortcutsRowBaseline();
   const staticTop = rect.top + applied;
   const staticBottom = rect.bottom + applied;
   // offsetHeight = 复位 maxHeight 后的实际高度（CSS 封顶内，含内部滚动裁剪）
   const need = expanded.offsetHeight + 8;
-  const spaceAbove = staticTop - 4;
-  const spaceBelow = viewportH - 4 - (staticBottom + 8);
+  const spaceAbove = staticTop + rowBaseline - 4;
+  const spaceBelow = viewportH - 4 - (staticBottom + rowBaseline + 8);
   // 整页让位的极限：上移 = 触发器停在视口顶部下方；下移 = 标签行不出屏（留 48 给悬浮件）
-  const maxUp = Math.max(0, staticTop - 8);
+  const maxUp = Math.max(0, staticTop + rowBaseline - 8);
   const row = document.querySelector('.shortcuts-row');
   const rowBottom = row ? row.getBoundingClientRect().bottom + applied : staticBottom;
-  const maxDown = Math.max(0, viewportH - rowBottom - 48);
+  const maxDown = Math.max(0, viewportH - (rowBottom + rowBaseline) - 48);
   // 向上放不下时需要的整页下移量（让面板顶部落进视口内）
   const downShift = Math.max(0, need - spaceAbove);
   let up;
@@ -1005,19 +1057,21 @@ function updateFolderShift() {
   // 加上当前实际生效的位移还原成静态位置，重复计算才不会互相打架
   const applied = content ? -(parseFloat(getComputedStyle(content).top) || 0) : 0;
   const viewportH = window.innerHeight;
+  // 行展开基线：渲染位置 = 静态位置 + 基线 - 让位，视野与极限换算都要带上它
+  const rowBaseline = shortcutsRowBaseline();
   const row = document.querySelector('.shortcuts-row');
   const rowBottomStatic = row
     ? row.getBoundingClientRect().bottom + applied
     : openFolder.getBoundingClientRect().bottom + applied;
   // 向上展开：位移量在布局决策时已定（上方放不下 → 整页下移给标签让位），直接沿用
   if (expanded.classList.contains('is-up')) {
-    const maxDown = Math.max(0, viewportH - rowBottomStatic - 48);
+    const maxDown = Math.max(0, viewportH - (rowBottomStatic + rowBaseline) - 48);
     let downShift = Math.min(expanded._upShift || 0, maxDown);
     // 打开的子面板：静态顶部不许出屏顶 → 需要更多下移
     document.querySelectorAll('.shortcut-expanded-subfolder.open').forEach((sf) => {
       const p = sf.subPanelEl;
       if (!p) return;
-      const deficit = 4 - (p.getBoundingClientRect().top + applied);
+      const deficit = 4 - (p.getBoundingClientRect().top + applied + rowBaseline);
       if (deficit > downShift) downShift = deficit;
     });
     document.documentElement.style.setProperty('--folder-shift', -Math.min(downShift, maxDown) + 'px');
@@ -1026,8 +1080,8 @@ function updateFolderShift() {
   const staticBottom = openFolder.getBoundingClientRect().bottom + applied;
   // offsetHeight = 封顶后的可见高度（scrollHeight 是未裁剪的内容高度）
   const expandedHeight = expanded.offsetHeight;
-  // 弹窗底部预计位置
-  const expandedBottom = staticBottom + 8 + expandedHeight;
+  // 弹窗底部预计位置（静态；渲染时再加上行展开基线、被让位上移）
+  const expandedBottom = staticBottom + rowBaseline + 8 + expandedHeight;
   // 如果弹窗底部超出视口底部，需要上移
   const overflow = expandedBottom - viewportH + 20; // 20px 安全距离
   let shift;
@@ -1042,11 +1096,11 @@ function updateFolderShift() {
   document.querySelectorAll('.shortcut-expanded-subfolder.open').forEach((sf) => {
     const p = sf.subPanelEl;
     if (!p) return;
-    const subNeed = p.getBoundingClientRect().bottom + applied - viewportH + 20;
+    const subNeed = p.getBoundingClientRect().bottom + applied + rowBaseline - viewportH + 20;
     if (subNeed > shift) shift = subNeed;
   });
   // 触发器不能被顶出屏幕：上移量最多让触发器停在视口顶部下方
-  const maxShift = Math.max(0, staticBottom - openFolder.offsetHeight - 8);
+  const maxShift = Math.max(0, staticBottom - openFolder.offsetHeight + rowBaseline - 8);
   shift = Math.min(shift, maxShift, viewportH + 200);
   document.documentElement.style.setProperty('--folder-shift', shift + 'px');
 }
@@ -1641,9 +1695,22 @@ function renderFolderChildrenExpanded(container, children, folderIndex, path, po
 function renderShortcuts() {
   const row = document.getElementById('shortcutsRow');
   if (!row) return;
+  // 重渲染会整体重建标签行：先把旧 DOM 上展开中的面板、子面板和覆盖滚动条收干净
+  document.querySelectorAll('.shortcut-expanded-subfolder.open').forEach(collapseSubfolder);
+  document.querySelectorAll('.shortcut-folder.open').forEach((f) => {
+    f.classList.remove('open');
+    const t = f.querySelector('.shortcut-folder-trigger');
+    if (t) t.setAttribute('aria-expanded', 'false');
+    hideFolderScrollbar(f.querySelector(':scope > .shortcut-expanded'));
+  });
+  // 布局态复位：旧面板已销毁，残留的 folder-open / 整页位移会把新的标签行一直压在失焦态
+  document.body.classList.remove('folder-open');
+  stopFolderShiftFollow();
+  document.documentElement.style.setProperty('--folder-shift', '0px');
   // 保留展开开关（行内最后一个"特殊标签"），清空只针对标签 wrapper
   const expandBtn = document.getElementById('shortcutsExpand');
   row.innerHTML = '';
+  refreshAllDim();
   applyShortcutsVisibility();
   if (!isShortcutsVisible()) return;
   let shortcuts;
@@ -1729,12 +1796,16 @@ function renderShortcuts() {
 
       trigger.addEventListener('click', () => {
         const willOpen = !folder.classList.contains('open');
+        // 标签行展开与文件夹面板互不干扰：点标签行里的文件夹不收回已展开的多行标签，
+        // 整页让位由下面的布局决策统一计算（行展开的 -28px 基线已在决策里补偿）
         // 关闭其他已展开的文件夹
         document.querySelectorAll('.shortcut-folder.open').forEach((f) => {
           if (f !== folder) {
             f.classList.remove('open');
             const t = f.querySelector('.shortcut-folder-trigger');
             if (t) t.setAttribute('aria-expanded', 'false');
+            // 连带收掉它的覆盖滚动条，别让条悬在已关闭的面板上
+            hideFolderScrollbar(f.querySelector(':scope > .shortcut-expanded'));
           }
         });
         // 同时关闭已展开的子文件夹
@@ -2298,16 +2369,26 @@ function initShortcutSettings() {
     if (!inSubArea) {
       document.querySelectorAll('.shortcut-expanded-subfolder.open').forEach(collapseSubfolder);
     }
-    if (!e.target.closest('.shortcut-folder') && !e.target.closest('.shortcut-expanded-subfolder')) {
-      document.querySelectorAll('.shortcut-folder.open').forEach((f) => {
-        f.classList.remove('open');
-        const trigger = f.querySelector('.shortcut-folder-trigger');
-        if (trigger) trigger.setAttribute('aria-expanded', 'false');
-      });
-      // 恢复问候语
-      document.body.classList.remove('folder-open');
-      stopFolderShiftFollow();
-      document.documentElement.style.setProperty('--folder-shift', '0px');
+    // 展开出来的多行标签按「特殊样式的文件夹」处理：点区块外空白同样自动收起。
+    // 但文件夹面板打开时，这一次点击先负责关面板，多行标签保持展开（再点一次才收），
+    // 避免「只想关文件夹」的点击顺手把标签菜单也折掉
+    const inShortcutsArea =
+      e.target.closest('.shortcuts-section') ||
+      e.target.closest('.shortcut-expanded') ||
+      e.target.closest('.shortcut-expanded-subfolder') ||
+      e.target.closest('.shortcut-expanded-subfolder-children');
+    const anyFolderOpen = !!document.querySelector('.shortcut-folder.open');
+    if (!inShortcutsArea && !anyFolderOpen && isShortcutsExpanded()) {
+      setShortcutsExpanded(false);
+      applyShortcutsCollapse({ animate: true });
+    }
+    // 「展开/收起」按钮属于标签区自身控件，点它不该把已打开的面板一起关掉
+    if (
+      !e.target.closest('.shortcut-folder') &&
+      !e.target.closest('.shortcut-expanded-subfolder') &&
+      !e.target.closest('.shortcuts-expand')
+    ) {
+      closeAllFolderPanels();
     }
   });
   // 全局阻止原生右键菜单：整个新标签页都用应用自定义菜单
