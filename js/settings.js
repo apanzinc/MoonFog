@@ -96,6 +96,8 @@ function finishSettingsViewVisibility(panel, rootView, pageView, subView, view) 
       page.hidden = true;
     });
   }
+  // 层切换完成后再按目标层实际滚动位置校准一次胶囊态
+  syncSettingsHeaderScrollState(view);
 }
 
 /**
@@ -280,13 +282,10 @@ function navigateSettings(pageId, options = {}) {
   }
 
   const headerEl = panel.querySelector('.settings-header');
-  const backLabel = document.getElementById('settingsBackLabel');
   if (headerEl) headerEl.dataset.level = isRootPageId(pageId) ? 'root' : 'page';
-  if (backLabel) {
-    // 三级页面显示父级名称，二级显示"设置"
-    const parentPage = settingsNavHistory.length > 0 ? settingsNavHistory[settingsNavHistory.length - 1] : null;
-    backLabel.textContent = parentPage ? getSettingsPageTitle(parentPage) : '设置';
-  }
+  // 三级页面显示父级名称，二级显示"设置"
+  const parentPage = settingsNavHistory.length > 0 ? settingsNavHistory[settingsNavHistory.length - 1] : null;
+  setBackLabelText(parentPage ? getSettingsPageTitle(parentPage) : '设置');
   if (backBtn) {
     backBtn.setAttribute('aria-label', '返回设置');
     if (backBtn._backAnimRaf) {
@@ -316,6 +315,8 @@ function navigateSettings(pageId, options = {}) {
 
   if (nextView === 'root') rootView.scrollTop = 0;
   else targetViewEl.scrollTop = 0;
+  // 切层后立即按目标层的滚动位置刷新胶囊态，避免「带着上一层的框返回」
+  syncSettingsHeaderScrollState(nextView);
   if (typeof initOverlayScrollbars === 'function') {
     initOverlayScrollbars(panel);
     if (pageView && pageView._mfScrollbar) pageView._mfScrollbar.update();
@@ -421,6 +422,9 @@ function navigateSettings(pageId, options = {}) {
       else if (backBtn) backBtn.focus({ preventScroll: true });
     });
   }
+
+  syncSettingsHeaderScrollState(nextView);
+  requestAnimationFrame(() => syncSettingsHeaderScrollState(nextView));
 }
 function isRootPageId(pageId) {
   return !pageId || pageId === 'root';
@@ -702,6 +706,7 @@ function closeSettings() {
   if (typeof closeMfColorPicker === 'function') closeMfColorPicker();
   if (typeof releaseFocusTrap === 'function') releaseFocusTrap(panel);
   panel.classList.remove('active');
+  panel.classList.remove('is-content-scrolled');
   panel.setAttribute('aria-hidden', 'true');
   panel.setAttribute('inert', '');
   document.body.classList.remove('settings-open');
@@ -714,6 +719,76 @@ function closeSettings() {
       settingsBtn.focus();
     }
   }
+}
+
+/** 按视图名取对应滚动层元素（root / page / sub） */
+function getSettingsViewElement(view) {
+  if (view === 'page') return document.getElementById('settingsViewPage');
+  if (view === 'sub') return document.getElementById('settingsViewSub');
+  return document.getElementById('settingsViewRoot');
+}
+
+/** 当前可见的设置滚动层（root / page / sub）；可显式指定 view，避开 data-view 更新时序 */
+function getActiveSettingsView(view) {
+  const panel = getSettingsPanel();
+  if (!panel) return null;
+  return getSettingsViewElement(view || panel.dataset.view);
+}
+
+/** 标题栏控件胶囊：只有内容滚到标题栏后面时才出现 */
+function syncSettingsHeaderScrollState(view) {
+  const panel = getSettingsPanel();
+  if (!panel) return;
+  // scroll 事件会把 Event 传进来，这里只接受视图名
+  const target = getActiveSettingsView(typeof view === 'string' ? view : null);
+  panel.classList.toggle('is-content-scrolled', !!(target && target.scrollTop > 2));
+}
+
+/**
+ * 返回键旁标题：切页时做「淡出 → 换字 → 淡入」过渡，避免文字生硬跳变
+ */
+let backLabelSwapToken = 0;
+function setBackLabelText(text) {
+  const el = document.getElementById('settingsBackLabel');
+  if (!el || el.textContent === text) return;
+  const reduceMotion =
+    window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reduceMotion || typeof el.animate !== 'function') {
+    el.textContent = text;
+    return;
+  }
+  const token = ++backLabelSwapToken;
+  try {
+    if (el._backLabelAnim) el._backLabelAnim.cancel();
+  } catch (_) {}
+  const out = el.animate(
+    [
+      { opacity: 1, transform: 'translateY(1px)' },
+      { opacity: 0, transform: 'translateY(-2px)' }
+    ],
+    { duration: 70, easing: 'ease-in', fill: 'forwards' }
+  );
+  el._backLabelAnim = out;
+  const swap = () => {
+    if (token !== backLabelSwapToken) return;
+    el.textContent = text;
+    const enter = el.animate(
+      [
+        { opacity: 0, transform: 'translateY(4px)' },
+        { opacity: 1, transform: 'translateY(1px)' }
+      ],
+      { duration: 140, easing: 'cubic-bezier(0.22, 1, 0.36, 1)', fill: 'both' }
+    );
+    el._backLabelAnim = enter;
+    enter.onfinish = () => {
+      if (token !== backLabelSwapToken) return;
+      // 动画结束交还给 CSS（光学对齐的 translateY(1px) 仍由样式表提供）
+      enter.cancel();
+      el._backLabelAnim = null;
+    };
+  };
+  if (out.finished && typeof out.finished.then === 'function') out.finished.then(swap, swap);
+  else out.onfinish = swap;
 }
 
 function bindSettingsChrome() {
@@ -731,6 +806,11 @@ function bindSettingsChrome() {
   if (closeBtn) {
     closeBtn.addEventListener('click', () => closeSettings());
   }
+
+  ['settingsViewRoot', 'settingsViewPage', 'settingsViewSub'].forEach((id) => {
+    const view = document.getElementById(id);
+    if (view) view.addEventListener('scroll', () => syncSettingsHeaderScrollState(), { passive: true });
+  });
 
   document.addEventListener('keydown', (e) => {
     if (e.key !== 'Escape' || !isSettingsOpen()) return;
