@@ -10,8 +10,9 @@
 MoonFog 把浏览器默认的新标签页替换成一个**兼具颜值与效率的个性化主页**：动态流光背景、自动取色的主题系统、问候语/时钟/每日一言、聚合搜索、快捷导航，同时坚持**零遥测、无账号、数据全本地**的隐私原则。
 
 - **技术形态**：纯原生 HTML/CSS/JS 的 Chrome 扩展（MV3），无框架、无构建依赖
-- **当前版本**：v1.1.0（manifest 版本 1.1.0.3）
-- **权限极简**：API 权限仅 `fontSettings`（读取系统字体列表）；网络访问仅限必应壁纸、Hitokoto 一言、搜索引擎图标与搜索建议几个域名，**不申请 `<all_urls>`**
+- **当前版本**：v1.1.1（manifest 版本 1.1.1）
+- **权限极简**：API 权限仅 `fontSettings`（读取系统字体列表）与 `search`（搜索框使用浏览器默认搜索引擎）；网络访问仅限必应壁纸、Hitokoto 一言与站点图标几个域名，**不申请 `<all_urls>`**
+- **单一用途**：替换新标签页是扩展的唯一用途，不覆盖默认搜索引擎/主页/启动页（Chrome Web Store Single Purpose 合规，见 docs/cws-single-purpose-fix.md）
 - **开源许可**：AGPL-3.0；内置思源宋体（OFL 1.1）与 MingCute 图标（Apache 2.0）
 
 ### 核心亮点
@@ -19,7 +20,7 @@ MoonFog 把浏览器默认的新标签页替换成一个**兼具颜值与效率�
 1. **四种背景模式**：纯色 / 流光渐变（WebGL 流光着色器）/ 本地图片 / 必应每日壁纸
 2. **Material You 式动态主题**：从背景图自动提取主色调生成整套配色（基于 Google material-color-utilities）
 3. **问候区五态**：问候语 / 自定义文本 / 时钟 / 日期 / 每日一言（hitokoto API + 本地兜底）
-4. **聚合搜索**：6 内置引擎 + 自定义引擎 + 输入联想
+4. **搜索**：扩展版默认「跟随浏览器」——通过 `chrome.search` 使用浏览器默认搜索引擎，也可在设置页引擎卡片列表里显式指定搜索引擎（直接在该引擎中搜索）；并保留可关闭的输入联想（扩展版直连引擎官方联想接口，联想来源跟随所选引擎；网页版经 `search-sug` 聚合）；网页版支持 6 内置引擎 + 自定义引擎 + 输入联想
 5. **快捷导航**：支持多级文件夹、右键管理、HTML 书签导入、可选浏览器书签同步
 6. **性能三档**：完全 / 部分 / 限制，低端设备也能流畅
 7. **数据自主**：一键导出/导入 JSON 备份，全部偏好存 localStorage，不上传任何数据
@@ -71,8 +72,10 @@ boot-paint.js   ③立即上屏+触发背景入场   ├ initSettings 绑定设�
 
 ### 2.5 搜索（js/search.js）
 
-- 6 内置引擎（Google/Bing/百度/秘塔/ChatGPT/Claude）+ 无限自定义引擎（`%s` 占位，存 localStorage，可删除）
-- **输入联想**：Google/Bing/百度 时可开启，请求 `search-sug.lonely.land` 聚合接口；键入即发请求，本地不保存查询词
+- **扩展版（Chrome / Edge）**：默认「跟随浏览器」——搜索框通过 `chrome.search.query({ text, disposition: 'CURRENT_TAB' })` 把查询交给浏览器**默认搜索引擎**。不读取、不修改用户的搜索引擎设置。也可在设置页的引擎卡片列表里显式指定引擎（Google/Bing/百度/秘塔AI搜索/ChatGPT/Claude），此时搜索直接在该引擎中打开；自定义引擎模板在扩展内隐藏。输入联想为可关闭的增强（默认开启，联想来源跟随所选引擎；「跟随浏览器」时 Chrome 推断为 Google、Edge 推断为 Bing；所选引擎无联想时按固定顺序 Google → 必应 → 百度 自动回退（切换搜索引擎后解析一次并缓存），并记住可用来源不重复重试）：输入过程中的查询词直接发送至所选引擎的官方联想接口（`api.bing.com` / `suggestqueries.google.com` / `suggestion.baidu.com`），本地不保存——WeTab 等已过审扩展采用同样的「本地页面 + chrome.search 执行 + 联网联想」模式。
+- **网页版 / Firefox / Safari**：没有 `chrome.search`，回退到页面内引擎选择：6 内置引擎（Google/Bing/百度/秘塔/ChatGPT/Claude）+ 无限自定义引擎（`%s` 占位，存 localStorage）；Google/Bing/百度 可开启输入联想，经 `search-sug.lonely.land` 聚合接口（网页版无 host 权限），本地不保存查询词。
+- 网址直开（如 `example.com`）在两种模式下保持一致。
+- 能力探测在 `js/env.js` 的 `MoonFogEnv.browserSearch`，设置页与 OOBE 文案随之切换。
 
 ### 2.6 快捷导航（js/shortcuts.js）
 
@@ -96,7 +99,7 @@ boot-paint.js   ③立即上屏+触发背景入场   ├ initSettings 绑定设�
 
 - **所有偏好**以 `moonfog_*` 前缀存 localStorage，无遥测、无账号、无上传
 - 导出：生成 `moonfog-backup-YYYY-MM-DD.json`；导入：整包覆盖并自动刷新
-- 网络请求仅 4 类：必应壁纸、hitokoto 一言、搜索建议、引擎图标
+- 扩展版网络请求仅 4 类：必应壁纸、hitokoto 一言、快捷方式图标、输入联想（可选：安装时不申请主机权限，用户打开开关时 `chrome.permissions.request` 按需授权，可关闭，直连引擎官方联想接口）；网页版另有引擎侧的搜索条数与联想接口
 
 ---
 
@@ -104,7 +107,7 @@ boot-paint.js   ③立即上屏+触发背景入场   ├ initSettings 绑定设�
 
 ```
 newtab.html            主页 + 设置面板 + 弹窗/右键菜单（单页）
-manifest.json          MV3 清单，仅 fontSettings 权限
+manifest.json          MV3 清单，fontSettings + search 权限，不覆盖搜索/主页/启动页
 js/boot-*.js           首绘链（状态容器/工具/主题注入/问候首帧/上屏）
 js/app.js              主编排入口
 js/background.js       背景四模式 + 调色板提取

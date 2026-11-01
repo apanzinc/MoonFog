@@ -35,7 +35,7 @@ cd dist-web && npx serve .   # 本地预览
 
 - **必应每日一图（网页版）**：必应官方接口不带跨域头，网页版按以下顺序获取——① `web-config.js` 配置 `corsProxy`（自建转发，零第三方依赖，优先）；② 未配置时回退公共镜像 `api.codelife.cc`（当日，图源仍为必应官方 CDN，支持取色/离线缓存）与 `peapix.com`（近 7 日，仅显示）。全部不可达时才降级提示。
 - **快捷方式图标取色缓存（网页版）**：Google favicon 服务不带跨域头，图标经 `MoonFogEnv.applyCorsProxy` 统一处理——配置 `corsProxy` 后缓存/圆角检测完整可用，未配置时静默跳过；图标本身用 `<img>` 显示，不受影响。
-- 一言（hitokoto）、搜索联想（search-sug.lonely.land）已验证支持跨域，网页版功能完整。
+- 一言（hitokoto）与搜索联想（扩展版直连引擎官方联想接口 Google / Bing / 百度，网页版经 `search-sug.lonely.land` 聚合）已验证可用；扩展版搜索通过 `chrome.search` 交给浏览器默认搜索引擎，输入联想默认开启、可在设置中关闭。
 
 ## 扩展版支持矩阵
 
@@ -43,7 +43,7 @@ cd dist-web && npx serve .   # 本地预览
 | --- | --- | --- |
 | Chrome | `npm run pack` 产出 CRX / zip，Chrome Web Store | 原生支持 |
 | Edge | 同上 zip，经 `scripts/publish-edge.mjs` 发布到 Edge Add-ons | 原生支持 |
-| Firefox | `npm run pack:firefox` 产出 AMO zip | MV3；`host_permissions` 由用户按需授权（首次使用必应壁纸时允许站点访问）；不含 `fontSettings`（Firefox 无此 API，字体列表自动回退内置清单） |
+| Firefox | `npm run pack:firefox` 产出 AMO zip | MV3；`host_permissions` 由用户按需授权（首次使用必应壁纸 / 输入联想时允许站点访问）；不含 `fontSettings`（Firefox 无此 API，字体列表自动回退内置清单）与 `search`（无 `chrome.search`，搜索回退到页面内引擎选择） |
 | Safari | `xcrun safari-web-extension-converter` 转换 Xcode 工程后打包 | Safari 不支持替换新标签页，建议 Safari 用户使用网页版 |
 
 ## 功能
@@ -55,7 +55,7 @@ cd dist-web && npx serve .   # 本地预览
   - 纯色背景
 - **动态主题**：基于 Material Color Utilities（MCU）从壁纸提取种子色，生成整套明暗配色；支持手动浅色/深色
 - **问候语**：按时段（早/午/晚）、用户名自定义文案，字号/粗细/字体可调
-- **搜索**：搜索框可搜索或直接打开网址，支持自定义搜索引擎；Google / Bing / 百度输入时显示搜索建议（[search-suggestions](https://github.com/lonely-4/search-suggestions)）
+- **搜索**：搜索框可搜索或直接打开网址。扩展版默认「跟随浏览器」：通过 `chrome.search` API 使用浏览器设置中的默认搜索引擎（不读取、不修改用户的搜索设置）；也可在「设置 → 搜索 → 搜索引擎」卡片列表里显式指定 Google / Bing / 百度 / 秘塔AI搜索 / ChatGPT / Claude（选中后搜索直接在该引擎中进行）。输入时默认显示输入联想（查询词发送至对应引擎的官方联想接口（扩展版直连，网页版经 `search-sug.lonely.land` 聚合）、不保存在本地，可在设置中关闭；联想来源跟随所选引擎，「跟随浏览器」时 Chrome 推断为 Google、Edge 推断为 Bing；所选引擎无联想时按固定顺序 Google → 必应 → 百度 自动回退（切换搜索引擎后解析一次并缓存），并记住可用来源不重复重试）；网页版可选择 Google / Bing / 百度 / 秘塔 / ChatGPT / Claude 或自定义搜索引擎，Google / Bing / 百度输入时显示搜索建议（[search-suggestions](https://github.com/lonely-4/search-suggestions)）
 - **快捷导航**：自定义站点图标，支持导入浏览器书签（Netscape HTML）
 - **字体**：内置思源宋体，也可选系统字体；正文/问候语可分别设置
 - **性能档**：完全 / 部分 / 限制三档，统一控制背景与表面模糊
@@ -67,12 +67,19 @@ cd dist-web && npx serve .   # 本地预览
 | 权限 | 用途 |
 | --- | --- |
 | `fontSettings` | 读取系统字体设置（仅 Chromium 内核；Firefox 打包版不含该权限，字体列表自动回退内置清单） |
+| `search` | 扩展内搜索框通过 `chrome.search` 使用浏览器默认搜索引擎（「跟随浏览器」模式；Firefox 打包版不含该权限，回退页面内引擎选择） |
 | `www.bing.com` / `cn.bing.com` | 获取每日一图与图片署名 |
 | `hitokoto.cn` / `hitokoto.c0ffee.space` | 一言问候文案 |
-| `www.google.com` / `icons.duckduckgo.com` | 站点图标抓取（搜索本身是页面跳转，不使用主机权限） |
-| `search-sug.lonely.land` | Google / Bing / 百度的输入建议。只在搜索框有内容且建议开关打开时请求，查询词不落本地 |
+| `icons.duckduckgo.com` | 快捷方式站点图标缓存（`www.google.com` 图标由站点自身 favicon 提供，不申请该域名主机权限） |
 
-不申请 `<all_urls>`。快捷导航站点自身的 favicon，以及关于页作者头像（`static.apanzinc.top`、`q.qlogo.cn`），只作为图片地址加载。
+可选权限（默认不申请，用户打开「输入联想」开关时才弹出一次授权）：
+
+| 权限 | 用途 |
+| --- | --- |
+| `api.bing.com`、`suggestqueries.google.com`、`suggestion.baidu.com` | 扩展版输入联想（可关闭）：输入过程中的查询词直接发送至对应引擎官方联想接口，不保存 |
+| `search-sug.lonely.land` | 仅网页版输入联想使用（不涉及扩展安装权限）：受 CORS 限制经聚合接口获取建议，不保存 |
+
+不申请 `<all_urls>`。搜索联想扩展版直连引擎官方联想接口（`api.bing.com`、`suggestqueries.google.com`、`suggestion.baidu.com`），网页版经 `search-sug.lonely.land` 聚合；仅用于输入建议，默认开启且可关闭，不读取网页内容。快捷导航站点自身的 favicon，以及关于页作者头像（`static.apanzinc.top`、`q.qlogo.cn`），只作为图片地址加载。
 
 所有偏好仅存储在本地 `localStorage`，不上传、无遥测、无账号。
 
