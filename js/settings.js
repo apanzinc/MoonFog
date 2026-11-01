@@ -2174,6 +2174,19 @@ function initSettings() {
   try { if (typeof initDisplayEffects === 'function') initDisplayEffects(); } catch (_) {}
   try { if (typeof syncSurfaceBlurAvailability === 'function') syncSurfaceBlurAvailability(); } catch (_) {}
   try { bindAboutBannerUpdates(); } catch (_) {}
+  try { updateAboutVersion(); } catch (_) {}
+}
+
+/** 关于页版本号：扩展内读取 manifest 版本，保证与当前安装一致 */
+function updateAboutVersion() {
+  const el = document.querySelector('.about-version');
+  if (!el) return;
+  try {
+    const manifest = (window.chrome && chrome.runtime && typeof chrome.runtime.getManifest === 'function')
+      ? chrome.runtime.getManifest()
+      : null;
+    if (manifest && manifest.version) el.textContent = manifest.version;
+  } catch (_) {}
 }
 
 /**
