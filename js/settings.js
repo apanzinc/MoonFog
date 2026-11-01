@@ -1657,10 +1657,108 @@ function bindGrainSettings() {
   }
 }
 
+/** 媒体来源（本地图片 / 必应每日）：内部仍用 local|bing，界面统一为「媒体」 */
+const MEDIA_SOURCE_KEY = 'moonfog_media_source';
+
+function isMediaBgMode(mode) {
+  return mode === 'local' || mode === 'bing';
+}
+
+function getMediaSource() {
+  const stored = localStorage.getItem(MEDIA_SOURCE_KEY);
+  if (stored === 'local' || stored === 'bing') return stored;
+  return localStorage.getItem(BG_MODE_KEY) === 'bing' ? 'bing' : 'local';
+}
+
+/** 同步「纯色 / 流光渐变 / 媒体」三选一的选中态（媒体在内部映射 local|bing） */
+function syncBgModeSelection() {
+  const grid = document.getElementById('bgModeGrid');
+  if (!grid) return;
+  const mode = localStorage.getItem(BG_MODE_KEY) || DEFAULT_BG_MODE;
+  const activeValue = isMediaBgMode(mode) ? 'media' : mode;
+  grid.querySelectorAll('[data-value]').forEach((item) => {
+    const active = item.dataset.value === activeValue;
+    item.classList.toggle('active', active);
+    item.setAttribute('aria-checked', active ? 'true' : 'false');
+  });
+  syncRadioSelection(grid);
+}
+
+/** 同步「媒体来源」子选项（本地图片 / 必应每日） */
+function syncBgMediaSource() {
+  const mode = localStorage.getItem(BG_MODE_KEY) || DEFAULT_BG_MODE;
+  const source = getMediaSource();
+  const meta = document.getElementById('bgMediaSourceMeta');
+  if (meta) meta.textContent = source === 'bing' ? '必应每日' : '本地图片';
+  const seg = document.getElementById('bgMediaSourceSeg');
+  if (seg) {
+    seg.querySelectorAll('[data-media-source]').forEach((btn) => {
+      const active = btn.dataset.mediaSource === source;
+      btn.classList.toggle('active', active);
+      btn.setAttribute('aria-checked', active ? 'true' : 'false');
+    });
+  }
+  const item = document.getElementById('bgMediaSourceItem');
+  if (!item) return;
+  const visible = isMediaBgMode(mode);
+  if (typeof setSettingsReveal === 'function') setSettingsReveal(item, visible);
+  else item.hidden = !visible;
+}
+
+async function applyMediaSource(source) {
+  const next = source === 'bing' ? 'bing' : 'local';
+  localStorage.setItem(MEDIA_SOURCE_KEY, next);
+  await applyBackgroundMode(next);
+  syncBgModeSelection();
+  syncBgMediaSource();
+}
+
+function bindBgModeGrid() {
+  const grid = document.getElementById('bgModeGrid');
+  if (!grid || grid.dataset.boundBgMode === '1') return;
+  grid.dataset.boundBgMode = '1';
+  grid.addEventListener('click', async (event) => {
+    const item = event.target.closest('[data-value]');
+    if (!item || !grid.contains(item)) return;
+    const value = item.dataset.value;
+    if (value === 'media') {
+      await applyMediaSource(getMediaSource());
+      return;
+    }
+    await applyBackgroundMode(value);
+    syncBgModeSelection();
+    syncBgMediaSource();
+  });
+  grid.addEventListener('keydown', (event) => {
+    if (event.key !== 'Enter' && event.key !== ' ') return;
+    const item = event.target.closest('[data-value]');
+    if (!item) return;
+    event.preventDefault();
+    item.click();
+  });
+}
+
+function bindBgMediaSource() {
+  const seg = document.getElementById('bgMediaSourceSeg');
+  if (!seg || seg.dataset.boundMedia === '1') return;
+  seg.dataset.boundMedia = '1';
+  seg.addEventListener('click', async (event) => {
+    const btn = event.target.closest('[data-media-source]');
+    if (!btn || !seg.contains(btn)) return;
+    await applyMediaSource(btn.dataset.mediaSource);
+  });
+  if (!window.__moonfogBgModeSyncBound) {
+    window.__moonfogBgModeSyncBound = true;
+    window.addEventListener('bg-mode-change', () => {
+      syncBgModeSelection();
+      syncBgMediaSource();
+    });
+  }
+}
+
 function bindBackgroundSetting() {
-   initCardClick('bgModeGrid', BG_MODE_KEY, (value) => {
-     applyBackgroundMode(value);
-   });
+   bindBgModeGrid();
+   bindBgMediaSource();
 
    const bgLocalPick = document.getElementById('bgLocalPick');
    const bgLocalInput = document.getElementById('bgLocalInput');
@@ -1683,7 +1781,7 @@ function bindBackgroundSetting() {
          const dataUrl = await compressImageFile(file);
          saveLocalBackground(dataUrl);
          if (bgLocalTip) bgLocalTip.textContent = '已应用本地图片（仅保存在本机）';
-         await applyBackgroundMode('local');
+         await applyMediaSource('local');
          initBgModeGridSelection();
        } catch (err) {
          if (bgLocalTip) bgLocalTip.textContent = err.message || '图片处理失败';
@@ -1696,7 +1794,7 @@ function bindBackgroundSetting() {
        if (!window.confirm('确定要清除已上传的本地背景图片吗？此操作不可撤销')) return;
        clearLocalBackground();
        if (bgLocalTip) bgLocalTip.textContent = '已清除本地图片';
-       await applyBackgroundMode('local');
+       await applyMediaSource('local');
        initBgModeGridSelection();
      });
    }
@@ -1713,13 +1811,8 @@ function bindBackgroundSetting() {
 }
 
 function initBgModeGridSelection() {
-  const grid = document.getElementById('bgModeGrid');
-  if (!grid) return;
-  const savedValue = localStorage.getItem(BG_MODE_KEY) || DEFAULT_BG_MODE;
-  grid.querySelectorAll('[data-value]').forEach((item) => {
-    item.classList.toggle('active', item.dataset.value === savedValue);
-  });
-  syncRadioSelection(grid);
+  syncBgModeSelection();
+  syncBgMediaSource();
 }
 
 const SETTINGS_BTN_PINNED_KEY = 'moonfog_settings_btn_pinned';

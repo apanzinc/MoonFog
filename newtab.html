@@ -420,7 +420,7 @@
             <h5 class="settings-group-title">背景</h5>
             <div class="settings-card">
               <div class="setting-item setting-item--flush bg-mode-setting">
-                <div class="bg-mode-list" id="bgModeGrid" role="radiogroup" aria-label="背景来源">
+                <div class="bg-mode-list bg-mode-list--3" id="bgModeGrid" role="radiogroup" aria-label="背景来源">
                   <button class="bg-mode-item" data-value="solid" type="button" role="radio" aria-checked="false">
                     <span class="bg-mode-icon" aria-hidden="true"><span class="mgc_palette_fill"></span></span>
                     <span class="bg-mode-name">纯色</span>
@@ -429,15 +429,23 @@
                     <span class="bg-mode-icon" aria-hidden="true"><span class="mgc_sparkles_fill"></span></span>
                     <span class="bg-mode-name">流光渐变</span>
                   </button>
-                  <button class="bg-mode-item" data-value="local" type="button" role="radio" aria-checked="false">
-                    <span class="bg-mode-icon" aria-hidden="true"><span class="mgc_pic_2_fill"></span></span>
-                    <span class="bg-mode-name">本地图片</span>
-                  </button>
-                  <button class="bg-mode-item" data-value="bing" type="button" role="radio" aria-checked="false">
+                  <button class="bg-mode-item" data-value="media" type="button" role="radio" aria-checked="false">
                     <span class="bg-mode-icon" aria-hidden="true"><span class="mgc_image_fill"></span></span>
-                    <span class="bg-mode-name">必应每日壁纸</span>
+                    <span class="bg-mode-name">媒体</span>
                   </button>
                 </div>
+              </div>
+
+              <div class="setting-item bg-extra-field settings-reveal" id="bgMediaSourceItem" hidden>
+                <div class="bg-extra-head">
+                  <span class="bg-extra-title">媒体来源</span>
+                  <span class="bg-extra-meta" id="bgMediaSourceMeta">本地图片</span>
+                </div>
+                <div class="bg-image-sub-row" id="bgMediaSourceSeg" role="radiogroup" aria-label="媒体来源">
+                  <button class="bg-sub-item" type="button" role="radio" aria-checked="false" data-media-source="local">本地图片</button>
+                  <button class="bg-sub-item" type="button" role="radio" aria-checked="false" data-media-source="bing">必应每日</button>
+                </div>
+                <p class="setting-tip" id="bgMediaSourceTip">图片与必应每日壁纸统一归入媒体，视频等格式后再接入</p>
               </div>
 
 

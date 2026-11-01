@@ -564,6 +564,11 @@
   background: color-mix(in srgb, var(--text-primary) 5%, var(--bg-warm));
 }
 
+/* 媒体合并后：纯色 / 流光渐变 / 媒体 三选一 */
+.bg-mode-list--3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
 .bg-mode-item {
   position: relative;
   display: flex;
