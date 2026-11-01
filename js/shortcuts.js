@@ -109,7 +109,9 @@ async function iconToDataURL(src) {
     if (!ctx) return '';
     ctx.drawImage(img, 0, 0);
     return canvas.toDataURL();
-  });
+  } catch (_) {
+    return '';
+  }
 }
 
 /** 对比两个图标是否不同（用尺寸简易判断） */
@@ -306,6 +308,49 @@ function setShortcutsExpanded(expanded) {
 }
 
 /**
+ * 行内真正占位的元素（标签胶囊）。
+ * 不能用 row.scrollHeight 判断需要折叠：文件夹面板是 position:absolute +
+ * visibility:hidden，仍会计入容器的 scrollHeight，导致只要行里含文件夹
+ * 就永远被判定为「需要折叠」，展开按钮一直出现。
+ */
+function shortcutsFlowItems(row, wrappers) {
+  const items = [];
+  wrappers.forEach((w) => {
+    const chip = w.firstElementChild || w;
+    if (chip) items.push(chip);
+  });
+  Array.from(row.children).forEach((child) => {
+    if (!child.classList.contains('shortcut-drag-wrapper')) items.push(child);
+  });
+  return items;
+}
+
+function shortcutsRowNeedsCollapse(row, wrappers) {
+  const rowTop = row.getBoundingClientRect().top;
+  let maxOffset = 0;
+  shortcutsFlowItems(row, wrappers).forEach((el) => {
+    const rect = el.getBoundingClientRect();
+    if (!rect.height) return;
+    const offset = Math.round(rect.top - rowTop);
+    if (offset > maxOffset) maxOffset = offset;
+  });
+  // 第二行标签的顶部偏移 = 一行高 32px + 行距 6px = 38px
+  return maxOffset >= SHORTCUTS_COLLAPSE_HEIGHT - 4;
+}
+
+function shortcutsNaturalHeight(row, wrappers) {
+  const rowTop = row.getBoundingClientRect().top;
+  let maxBottom = 0;
+  shortcutsFlowItems(row, wrappers).forEach((el) => {
+    const rect = el.getBoundingClientRect();
+    if (!rect.height && !rect.width) return;
+    const bottom = rect.bottom - rowTop;
+    if (bottom > maxBottom) maxBottom = bottom;
+  });
+  return Math.round(maxBottom);
+}
+
+/**
  * 当前 .content 的行展开基线位移（折叠时 0，展开时 -28px）。
  * 文件夹面板的位置/封顶按「静态坐标」决策，渲染时还会叠加这条基线，
  * 所以视口空间、可移动量的每一处换算都要把它算进去。
@@ -350,7 +395,7 @@ function applyShortcutsCollapse(opts = {}) {
     btn.classList.remove('is-folded');
   };
 
-  const overflow = row.scrollHeight > SHORTCUTS_COLLAPSE_HEIGHT + 1;
+  const overflow = shortcutsRowNeedsCollapse(row, wrappers);
   if (!overflow) {
     clearTimer();
     row.classList.remove('is-collapsed', 'is-instant');
@@ -397,7 +442,7 @@ function applyShortcutsCollapse(opts = {}) {
       unfoldAll();
       setBtnFolded();
       row.classList.add('is-collapsed');
-      row.style.maxHeight = row.scrollHeight + 'px';
+      row.style.maxHeight = shortcutsNaturalHeight(row, wrappers) + 'px';
       clearTimer();
       shortcutsExpandTimer = setTimeout(() => {
         shortcutsExpandTimer = null;
@@ -424,7 +469,7 @@ function applyShortcutsCollapse(opts = {}) {
     if (animate) {
       // 收起动画：自然高度 → 38px 一行限高（标签同步淡出）
       row.classList.remove('is-collapsed');
-      row.style.maxHeight = row.scrollHeight + 'px';
+      row.style.maxHeight = shortcutsNaturalHeight(row, wrappers) + 'px';
       void row.offsetHeight;
       row.classList.add('is-collapsed');
       row.style.maxHeight = SHORTCUTS_COLLAPSE_HEIGHT + 'px';
@@ -490,6 +535,41 @@ function bindShortcutsExpandToggle() {
       }, 360); // 与 .shortcuts-row 的 max-height 0.32s 过渡对齐
     }
   });
+  bindShortcutsCollapseViewport();
+}
+
+let shortcutsCollapseViewportBound = false;
+let shortcutsCollapseRefreshTimer = null;
+
+/**
+ * 视口宽度/字体变化后按最终布局重新收敛折叠开关。
+ * 首屏渲染时可能先按过渡布局测量（窗口从默认尺寸调整到最终尺寸、字体未就绪），
+ * 容易出现「明明一行放得下、却因误判为溢出而留下展开按钮」的残留状态。
+ */
+function scheduleShortcutsCollapseRefresh(delay = 120) {
+  clearTimeout(shortcutsCollapseRefreshTimer);
+  shortcutsCollapseRefreshTimer = setTimeout(() => {
+    shortcutsCollapseRefreshTimer = null;
+    applyShortcutsCollapse({ animate: false });
+  }, delay);
+}
+
+function bindShortcutsCollapseViewport() {
+  if (shortcutsCollapseViewportBound) return;
+  shortcutsCollapseViewportBound = true;
+  window.addEventListener('resize', () => scheduleShortcutsCollapseRefresh(120));
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(() => scheduleShortcutsCollapseRefresh(0));
+  }
+  // 资源（图标图片、字体）加载完成或标签尺寸变化后，再按最终布局收敛一次
+  window.addEventListener('load', () => scheduleShortcutsCollapseRefresh(0));
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) scheduleShortcutsCollapseRefresh(0);
+  });
+  // 首屏启动动画/布局稳定后兜底再算一次（慢设备、图标较多时多等几拍）
+  setTimeout(() => scheduleShortcutsCollapseRefresh(0), 600);
+  setTimeout(() => scheduleShortcutsCollapseRefresh(0), 1500);
+  setTimeout(() => scheduleShortcutsCollapseRefresh(0), 3000);
 }
 
 /** 收藏夹开关：无 key 或非 '0' 即显示 */

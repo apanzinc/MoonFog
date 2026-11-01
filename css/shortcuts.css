@@ -187,6 +187,14 @@ body.has-image-bg.img-ui-dark .icon-mono {
   margin-top: 6px;
 }
 
+/*
+ * 上面统一胶囊规则里的 display: inline-flex 会覆盖浏览器对 [hidden] 的默认
+ * display: none，导致「没有需要折叠的内容」时按钮仍然可见。这里显式兜底。
+ */
+.shortcuts-expand[hidden] {
+  display: none;
+}
+
 /* 隐藏箭头 */
 .shortcuts-expand .mgc_arrow_down_line {
   display: none;
