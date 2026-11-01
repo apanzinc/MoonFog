@@ -82,13 +82,26 @@ function loadImage(src) {
 }
 
 /** 将图标URL 转为 dataURL 用于本地缓存（离线可用） */
-function iconToDataURL(src) {
-  // 使用 loadImageCrossOrigin（Image() 加载，CORS-free）绕过 fetch CORS 限制；
-  // 失败返回 ''（<img> 显示不受影响，静默降级）
-  return loadImageCrossOrigin(src).then(img => {
+async function iconToDataURL(src) {
+  // 扩展内只为「已声明主机权限、且不会跨域重定向」的图标源做 fetch 缓存：
+  // 例如 Google s2 图标会重定向到未声明的 t*.gstatic.com，fetch 会被 CORS 拦截并刷控制台，
+  // 因此扩展内只缓存 DuckDuckGo 图标源（图标显示仍由 <img> 完成，不要求主机权限）。
+  const canFetchInExtension = /^https:\/\/icons\.duckduckgo\.com\//.test(src) || /^(data|blob):/i.test(src);
+  const allowFetch = window.MoonFogEnv && window.MoonFogEnv.isExtension ? canFetchInExtension : true;
+  if (allowFetch) {
+    // 优先 fetch 成 blob 再转 dataURL：扩展有主机权限时 fetch 不受 CORS 限制，
+    // 且完全不经过 canvas，不会被跨源图污染（网页版无代理时 fetchImageBlob 返回 null）。
+    const blob = await fetchImageBlob(src);
+    if (blob) {
+      const dataUrl = await blobToDataURL(blob);
+      if (dataUrl) return dataUrl;
+    }
+  }
+  // 回退：Image() 加载 + canvas 导出。跨源图会让 canvas 被污染，
+  // toDataURL 抛 SecurityError → 这里静默返回 ''（<img> 显示不受影响，不产生未捕获异常）
+  try {
+    const img = await loadImageCrossOrigin(src);
     if (!img) return '';
-    // canvas 读取会因 CORS 而失败，但 Image 对象已成功加载，
-    // 通过其 naturalWidth/naturalHeight 确认是有效图片
     const canvas = document.createElement('canvas');
     canvas.width = img.naturalWidth;
     canvas.height = img.naturalHeight;
@@ -778,7 +791,7 @@ function setShortcutIcon(iconEl, src, pageUrl, skipCacheRefresh) {
           }
         }
       };
-      checkAndUpdate();
+      checkAndUpdate().catch(() => {});
     });
   }
 }
@@ -812,11 +825,19 @@ function fetchFavicon(url, forceRefresh) {
       }
     }
 
-    const candidates = [
-      `https://www.google.com/s2/favicons?domain=${encodeURIComponent(hostname)}&sz=32`,
-      `https://icons.duckduckgo.com/ip3/${hostname}.ico`,
-      `${origin}/favicon.ico`
-    ];
+    // 扩展内只用已声明主机权限的 DuckDuckGo 与站点自身 favicon；Google s2 会重定向到
+    // 未声明的 t*.gstatic.com（无主机权限，必然 CORS 失败），故仅网页版使用。
+    const isExtension = !!(window.MoonFogEnv && window.MoonFogEnv.isExtension);
+    const candidates = isExtension
+      ? [
+          `https://icons.duckduckgo.com/ip3/${hostname}.ico`,
+          `${origin}/favicon.ico`
+        ]
+      : [
+          `https://www.google.com/s2/favicons?domain=${encodeURIComponent(hostname)}&sz=32`,
+          `https://icons.duckduckgo.com/ip3/${hostname}.ico`,
+          `${origin}/favicon.ico`
+        ];
 
     let index = 0;
     const tryNext = () => {
