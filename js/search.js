@@ -5,6 +5,7 @@
 /**
  * 初始化搜索 */
 function initSearch() {
+  applyBrowserSearchSettings();
   const form = document.getElementById('searchForm');
   const input = document.getElementById('searchInput');
   const clearBtn = document.getElementById('searchClearBtn');
@@ -70,6 +71,7 @@ function initSearch() {
   });
 
   bindSearchSuggestToggle();
+  refreshSuggestPermission();
   syncClearBtn();
   input.focus();
 }
@@ -80,6 +82,81 @@ let searchSuggestAbort = null;
 let searchSuggestSeq = 0;
 let searchSuggestActive = -1;
 let searchSuggestComposing = false;
+
+/**
+ * 扩展（Chrome / Edge）里搜索交给浏览器的 chrome.search API：
+ * 使用用户设置的默认搜索引擎，不读取也不修改搜索设置，
+ * 这样「新标签页」仍是扩展的唯一用途，不叠加「修改搜索体验」。
+ */
+function usesBrowserSearch() {
+  if (!window.MoonFogEnv || !window.MoonFogEnv.browserSearch) return false;
+  try {
+    return typeof chrome !== 'undefined' && !!chrome.search && typeof chrome.search.query === 'function';
+  } catch (_) {
+    return false;
+  }
+}
+
+/** 调用 chrome.search 打开查询；仅在 API 调用失败时回退到页面内引擎 */
+function submitBrowserSearch(query) {
+  try {
+    const pending = chrome.search.query({ text: query, disposition: 'CURRENT_TAB' });
+    if (pending && typeof pending.catch === 'function') {
+      pending.catch((err) => {
+        console.warn('[MoonFog] chrome.search 调用失败，回退到页面内引擎：', err);
+        openEngineSearch(query);
+      });
+    }
+  } catch (err) {
+    console.warn('[MoonFog] chrome.search 调用失败，回退到页面内引擎：', err);
+    openEngineSearch(query);
+  }
+}
+
+/** 扩展内：搜索执行「跟随浏览器」走 chrome.search；引擎卡片列表用于选择搜索/联想引擎 */
+function applyBrowserSearchSettings() {
+  if (!usesBrowserSearch()) return;
+  const setText = (el, text) => { if (el) el.textContent = text; };
+  // 恢复引擎卡片列表：选「跟随浏览器」时搜索走浏览器默认引擎；选具体引擎则直接用该引擎搜索
+  const engineGroup = document.getElementById('searchEngineGroup');
+  if (engineGroup) {
+    engineGroup.hidden = false;
+    setText(engineGroup.querySelector('.settings-group-title'), '搜索引擎');
+  }
+  const grid = document.getElementById('engineGrid');
+  if (grid) {
+    // 扩展内只恢复内置搜索引擎卡片；自定义引擎模板涉及额外「搜索配置」，保持隐藏
+    if (typeof grid.querySelectorAll === 'function') {
+      grid.querySelectorAll('.engine-item').forEach((card) => {
+        const value = card.dataset && card.dataset.value;
+        if (value && value.indexOf('custom_') === 0) card.hidden = true;
+      });
+    }
+    const autoCard = grid.querySelector('[data-value="auto"]');
+    if (autoCard) autoCard.hidden = false;
+  }
+  const addBtn = document.getElementById('addEngineBtn');
+  if (addBtn) addBtn.hidden = true;
+  const engineLabel = document.getElementById('engineLabel');
+  if (engineLabel) engineLabel.textContent = '搜索引擎';
+  const suggestTip = document.getElementById('engineSuggestTip');
+  if (suggestTip) suggestTip.hidden = false;
+  // 首次进入：默认选中「跟随浏览器」
+  const stored = localStorage.getItem('moonfog_engine');
+  if (!stored) localStorage.setItem('moonfog_engine', 'auto');
+  setText(document.querySelector('#searchSuggestGroup > .settings-group-title'), '输入联想');
+  const nav = document.querySelector('.settings-nav-item[data-settings-page="search"]');
+  if (nav) {
+    setText(nav.querySelector('.settings-nav-title'), '搜索');
+    setText(nav.querySelector('.settings-nav-desc'), '搜索引擎与输入联想');
+  }
+  const page = document.querySelector('.settings-page[data-page="search"]');
+  if (page) {
+    setText(page.querySelector('.settings-page-head-title'), '搜索');
+    setText(page.querySelector('.settings-page-head-desc'), '选择搜索引擎，控制输入联想');
+    setText(page.querySelector('.settings-section-title'), '搜索');
+  }
+}
 
 function isSearchSuggestEnabled() {
   if (typeof getStorageTyped !== 'function') return true;
@@ -152,12 +229,261 @@ function mergeShortcutSuggest(local, webItems) {
   return local.concat(filtered);
 }
 
-function currentSuggestProvider() {
-  const engineKey = localStorage.getItem('moonfog_engine') || DEFAULT_ENGINE;
-  const custom = typeof getCustomEngines === 'function' ? getCustomEngines() : {};
-  if (custom[engineKey]) return '';
-  const engine = SEARCH_ENGINES[engineKey];
-  return engine && engine.suggest ? engine.suggest : '';
+/** 联想来源可选：跟随浏览器（默认）/ Google / Bing / 百度（沿用引擎卡片列表的选择） */
+const SUGGEST_SOURCE_CHOICES = ['auto', 'google', 'bing', 'baidu'];
+// Chrome 不向扩展暴露「浏览器默认搜索引擎」，这里按浏览器品牌做最接近的推断：
+// Edge 默认 Bing；Chrome / Firefox / Safari 默认 Google。推断不出的情况回退必应。
+const SUGGEST_AUTO_BY_HOST = { edge: 'bing', chrome: 'google', firefox: 'google', safari: 'google' };
+// 所选引擎不支持联想时，按 Google → 必应 → 百度 依次回退（固定顺序，用户无需设置）
+const SUGGEST_FALLBACK_ORDER = ['google', 'bing', 'baidu'];
+// 联想候选链：切换搜索引擎后解析一次并缓存，之后每次按键直接复用，不重复解析
+const SUGGEST_CHAIN_KEY = 'moonfog_suggest_chain';
+// 已确定的联想来源（成功返回过结果的 provider）：置顶，避免每次按键都重试失效来源
+const SUGGEST_PROVIDER_CACHE_KEY = 'moonfog_suggest_provider';
+// 本会话内网络失败过的 provider：后续按键直接跳过，不再重试
+const suggestFailedProviders = new Set();
+
+// 扩展内直接调用各引擎官方联想接口（有 host 权限，不受 CORS 限制；网页版仍走聚合接口）
+const SUGGEST_OFFICIAL_API = {
+  google: {
+    url: 'https://suggestqueries.google.com/complete/search',
+    params: (query, locale) => ({ client: 'firefox', q: query, hl: locale })
+  },
+  bing: {
+    url: 'https://api.bing.com/osjson.aspx',
+    params: (query) => ({ query, market: 'zh-CN' })
+  },
+  baidu: {
+    url: 'https://suggestion.baidu.com/su',
+    params: (query) => ({ wd: query, cb: 'cb' })
+  }
+};
+
+function usesOfficialSuggestApi() {
+  const env = window.MoonFogEnv || {};
+  return env.isExtension === true;
+}
+
+// 官方联想接口按需授权：安装时不出现这些主机权限，用户开启「输入联想」时再申请
+const SUGGEST_PERMISSION_ORIGINS = [
+  'https://api.bing.com/*',
+  'https://suggestqueries.google.com/*',
+  'https://suggestion.baidu.com/*'
+];
+let suggestPermissionGranted = false;
+let suggestPermissionCheck = null;
+
+function hasSuggestPermissionApi() {
+  return typeof chrome !== 'undefined' && !!chrome.permissions
+    && typeof chrome.permissions.contains === 'function';
+}
+
+function syncSuggestPermissionUI() {
+  if (!usesOfficialSuggestApi()) return;
+  const el = document.getElementById('searchSuggestToggle');
+  const tip = document.getElementById('searchSuggestPermissionTip');
+  if (el) {
+    el.checked = suggestPermissionGranted ? isSearchSuggestEnabled() : false;
+    el.dataset.needGrant = suggestPermissionGranted ? '' : '1';
+  }
+  if (tip) tip.hidden = suggestPermissionGranted;
+}
+
+function refreshSuggestPermission() {
+  if (!usesOfficialSuggestApi()) {
+    suggestPermissionGranted = true;
+    return Promise.resolve(true);
+  }
+  if (suggestPermissionCheck) return suggestPermissionCheck;
+  const contains = hasSuggestPermissionApi()
+    ? chrome.permissions.contains({ origins: SUGGEST_PERMISSION_ORIGINS })
+    : Promise.resolve(false);
+  suggestPermissionCheck = contains
+    .then((granted) => {
+      suggestPermissionGranted = !!granted;
+      return suggestPermissionGranted;
+    })
+    .catch(() => {
+      suggestPermissionGranted = false;
+      return false;
+    })
+    .then((granted) => {
+      suggestPermissionCheck = null;
+      syncSuggestPermissionUI();
+      return granted;
+    });
+  return suggestPermissionCheck;
+}
+
+function requestSuggestPermission() {
+  if (typeof chrome === 'undefined' || !chrome.permissions
+    || typeof chrome.permissions.request !== 'function') {
+    return Promise.resolve(false);
+  }
+  return chrome.permissions.request({ origins: SUGGEST_PERMISSION_ORIGINS })
+    .then((granted) => {
+      suggestPermissionGranted = !!granted;
+      suggestPermissionCheck = null;
+      syncSuggestPermissionUI();
+      return suggestPermissionGranted;
+    })
+    .catch(() => false);
+}
+
+function buildOfficialSuggestUrl(provider, query, locale) {
+  const api = SUGGEST_OFFICIAL_API[provider];
+  if (!api) return '';
+  const url = new URL(api.url);
+  const params = api.params(query, locale);
+  Object.keys(params).forEach((key) => url.searchParams.set(key, String(params[key])));
+  return url.toString();
+}
+
+/** 百度官方联想返回 `cb({q:"...",p:false,s:["a","b"]})`（GBK 编码），从 s 数组提取建议 */
+function parseBaiduSuggest(text) {
+  const bracket = /(?:["']s["']|\bs)\s*:\s*\[([\s\S]*?)\]/.exec(String(text || ''));
+  const raw = bracket ? bracket[1] : '';
+  const items = [];
+  const re = /"((?:[^"\\]|\\.)*)"|'((?:[^'\\]|\\.)*)'/g;
+  let match;
+  while ((match = re.exec(raw))) items.push(match[1] || match[2] || '');
+  return items
+    .map((item) => item.replace(/\\u([0-9a-fA-F]{4})/g, (_, hex) => String.fromCharCode(parseInt(hex, 16))).replace(/\\\//g, '/'))
+    .filter(Boolean);
+}
+
+async function fetchOfficialSuggest(provider, query, locale, signal) {
+  const url = buildOfficialSuggestUrl(provider, query, locale);
+  if (!url) return [];
+  if (!suggestPermissionGranted) {
+    const granted = await refreshSuggestPermission();
+    if (!granted) return [];
+  }
+  const res = await (async () => {
+    try {
+      return await fetch(url, { signal });
+    } catch (error) {
+      // 扩展重载/权限迁移后，浏览器可能还没同步可选权限（表现为 CORS/网络失败）：
+      // 降级为关闭联想并提示重新授权，避免每次按键都刷报错。
+      if (!(signal && signal.aborted)) {
+        suggestPermissionGranted = false;
+        suggestPermissionCheck = null;
+        syncSuggestPermissionUI();
+      }
+      throw error;
+    }
+  })();
+  if (!res.ok) throw new Error(String(res.status));
+  if (provider === 'baidu') {
+    const buffer = await res.arrayBuffer();
+    let text = '';
+    try {
+      text = new TextDecoder('gbk').decode(buffer);
+    } catch (_) {
+      text = new TextDecoder().decode(buffer);
+    }
+    return parseBaiduSuggest(text).map((item) => ({ text: item }));
+  }
+  const data = await res.json();
+  const list = Array.isArray(data) && Array.isArray(data[1]) ? data[1] : [];
+  return list.filter((item) => typeof item === 'string' && item.trim()).map((item) => ({ text: item }));
+}
+
+function fetchSuggestFromEndpoint(provider, query, signal) {
+  const locale = suggestLocale();
+  if (usesOfficialSuggestApi()) return fetchOfficialSuggest(provider, query, locale, signal);
+  // 网页版：CORS 限制，走服务端聚合接口
+  const url = new URL(SEARCH_SUGGEST_ENDPOINT);
+  url.searchParams.set('q', query);
+  url.searchParams.set('with', provider);
+  url.searchParams.set('l', locale);
+  return fetch(url.toString(), { signal })
+    .then((res) => {
+      if (!res.ok) throw new Error(String(res.status));
+      return res.json();
+    })
+    .then((data) => (Array.isArray(data) ? data : []));
+}
+
+function resetSuggestProviderCache() {
+  try { localStorage.removeItem(SUGGEST_PROVIDER_CACHE_KEY); } catch (_) {}
+}
+
+function resetSuggestChain() {
+  try { localStorage.removeItem(SUGGEST_CHAIN_KEY); } catch (_) {}
+}
+
+function getSelectedEngineKey() {
+  const stored = localStorage.getItem('moonfog_engine');
+  if (!stored || stored === 'auto') return 'auto';
+  return stored;
+}
+
+function getSuggestSourceKey() {
+  const stored = localStorage.getItem('moonfog_engine');
+  if (SUGGEST_SOURCE_CHOICES.includes(stored || '')) return stored;
+  return 'auto';
+}
+
+/** 把「跟随浏览器」解析成实际联想来源；推断不出或引擎不支持联想时回退必应 */
+function resolveSuggestSource() {
+  const source = getSuggestSourceKey();
+  if (source !== 'auto') return source;
+  const host = (window.MoonFogEnv && window.MoonFogEnv.host) || '';
+  const detected = SUGGEST_AUTO_BY_HOST[host] || 'bing';
+  const engine = SEARCH_ENGINES[detected];
+  return engine && engine.suggest ? detected : 'bing';
+}
+
+/** 解析联想候选链：所选引擎支持联想则排第一（「跟随浏览器」按品牌推断）；
+ *  不支持联想时按 Google → 必应 → 百度 的顺序回退。 */
+function buildSuggestProviders() {
+  const chain = [];
+  const push = (key) => {
+    if (!key) return;
+    const engine = SEARCH_ENGINES[key];
+    if (!engine || !engine.suggest) return;
+    if (!chain.includes(engine.suggest)) chain.push(engine.suggest);
+  };
+  const selected = getSelectedEngineKey();
+  if (selected === 'auto') {
+    push(resolveSuggestSource());
+  } else {
+    push(selected);
+  }
+  SUGGEST_FALLBACK_ORDER.forEach(push);
+  return chain;
+}
+
+/** 联想候选链：切换搜索引擎后解析一次并缓存，之后每次按键直接复用，不重复解析 */
+function currentSuggestProviders() {
+  const selected = getSelectedEngineKey();
+  let cached = null;
+  try {
+    const raw = localStorage.getItem(SUGGEST_CHAIN_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && parsed.engine === selected && Array.isArray(parsed.providers) && parsed.providers.length) {
+        cached = parsed.providers.slice();
+      }
+    }
+  } catch (_) { cached = null; }
+  let chain = cached;
+  if (!chain) {
+    chain = buildSuggestProviders();
+    try {
+      localStorage.setItem(SUGGEST_CHAIN_KEY, JSON.stringify({ engine: selected, providers: chain }));
+    } catch (_) {}
+  }
+  // 本会话网络失败过的来源不再重试；已成功返回过结果的来源置顶
+  const available = chain.filter((key) => !suggestFailedProviders.has(key));
+  let successful = null;
+  try { successful = localStorage.getItem(SUGGEST_PROVIDER_CACHE_KEY); } catch (_) {}
+  if (successful && available.includes(successful) && available[0] !== successful) {
+    available.splice(available.indexOf(successful), 1);
+    available.unshift(successful);
+  }
+  return available;
 }
 
 function suggestLocale() {
@@ -173,6 +499,24 @@ function bindSearchSuggestToggle() {
     el.dataset.bound = '1';
     el.checked = isSearchSuggestEnabled();
     el.addEventListener('change', () => {
+      const enable = !!el.checked;
+      if (enable && usesOfficialSuggestApi() && !suggestPermissionGranted) {
+        el.disabled = true;
+        requestSuggestPermission().then((granted) => {
+          el.disabled = false;
+          if (typeof setStorageTyped === 'function') {
+            setStorageTyped(SEARCH_SUGGEST_KEY, granted, 'boolean');
+          }
+          if (!granted) {
+            el.checked = false;
+            closeSearchSuggest();
+            return;
+          }
+          syncSuggestPermissionUI();
+          scheduleSearchSuggest();
+        });
+        return;
+      }
       if (typeof setStorageTyped === 'function') {
         setStorageTyped(SEARCH_SUGGEST_KEY, !!el.checked, 'boolean');
       }
@@ -200,7 +544,7 @@ function scheduleSearchSuggest() {
   if (searchSuggestComposing) return;
   const input = document.getElementById('searchInput');
   const query = input ? input.value.trim() : '';
-  const hasWeb = isSearchSuggestEnabled() && !!currentSuggestProvider();
+  const hasWeb = isSearchSuggestEnabled() && currentSuggestProviders().length > 0;
   const hasLocal = isShortcutSuggestEnabled();
   if (!query || (!hasWeb && !hasLocal)) {
     closeSearchSuggest();
@@ -214,8 +558,8 @@ function fetchSearchSuggest() {
   const panel = document.getElementById('searchSuggest');
   if (!input || !panel) return;
   const query = input.value.trim();
-  const provider = currentSuggestProvider();
-  const hasWeb = isSearchSuggestEnabled() && !!provider;
+  const providers = currentSuggestProviders();
+  const hasWeb = isSearchSuggestEnabled() && providers.length > 0;
   const local = isShortcutSuggestEnabled() ? getLocalShortcutMatches(query) : [];
   if (!query || (!hasWeb && !local.length)) {
     closeSearchSuggest();
@@ -229,39 +573,54 @@ function fetchSearchSuggest() {
   if (searchSuggestAbort) searchSuggestAbort.abort();
   searchSuggestAbort = new AbortController();
   const seq = ++searchSuggestSeq;
-  const url = new URL(SEARCH_SUGGEST_ENDPOINT);
-  url.searchParams.set('q', query);
-  url.searchParams.set('with', provider);
-  url.searchParams.set('l', suggestLocale());
-  fetch(url.toString(), { signal: searchSuggestAbort.signal })
-    .then((res) => {
-      if (!res.ok) throw new Error(String(res.status));
-      return res.json();
-    })
-    .then((data) => {
-      if (seq !== searchSuggestSeq) return;
-      if (input.value.trim() !== query) return;
-      const webItems = Array.isArray(data) ? data : [];
-      renderSearchSuggest(panel, input, mergeShortcutSuggest(local, webItems));
-    })
-    .catch((err) => {
-      if (err && err.name === 'AbortError') return;
-      if (seq !== searchSuggestSeq) return;
-      // 网页建议失败：仍有本地命中就不关闭
-      if (local.length) renderSearchSuggest(panel, input, local);
-      else closeSearchSuggest();
-    });
+  const signal = searchSuggestAbort.signal;
+  const fetchProvider = (provider) => fetchSuggestFromEndpoint(provider, query, signal);
+  // 按顺序尝试：所选引擎 → 必应 → 百度 → Google；成功来源记住并置顶；
+  // 本会话网络失败过的来源不再重试（避免每次按键都等一遍失效来源）
+  (async () => {
+    let webItems = [];
+    for (const provider of providers) {
+      if (suggestFailedProviders.has(provider)) continue;
+      try {
+        webItems = await fetchProvider(provider);
+      } catch (err) {
+        if (err && err.name === 'AbortError') return;
+        suggestFailedProviders.add(provider);
+        webItems = [];
+      }
+      if (webItems.length) {
+        try { localStorage.setItem(SUGGEST_PROVIDER_CACHE_KEY, provider); } catch (_) {}
+        break;
+      }
+    }
+    if (seq !== searchSuggestSeq) return;
+    if (input.value.trim() !== query) return;
+    // 全部来源为空：仍有本地命中就展示本地，否则关闭
+    if (!webItems.length && !local.length) {
+      closeSearchSuggest();
+      return;
+    }
+    renderSearchSuggest(panel, input, mergeShortcutSuggest(local, webItems));
+  })().catch((err) => {
+    if (err && err.name === 'AbortError') return;
+    if (seq !== searchSuggestSeq) return;
+    if (local.length) renderSearchSuggest(panel, input, local);
+    else closeSearchSuggest();
+  });
 }
 
 function renderSearchSuggest(panel, input, items) {
   const list = items
-    .map((item) => ({
-      text: item && typeof item.text === 'string' ? item.text.trim() : '',
-      desc: item && typeof item.desc === 'string' ? item.desc.trim() : '',
-      image: item && typeof item.image === 'string' ? item.image.trim() : '',
-      initial: item && typeof item.initial === 'string' ? item.initial.trim() : '',
-      url: item && typeof item.url === 'string' ? item.url : ''
-    }))
+    .map((item) => {
+      if (typeof item === 'string') item = { text: item };
+      return {
+        text: item && typeof item.text === 'string' ? item.text.trim() : '',
+        desc: item && typeof item.desc === 'string' ? item.desc.trim() : '',
+        image: item && typeof item.image === 'string' ? item.image.trim() : '',
+        initial: item && typeof item.initial === 'string' ? item.initial.trim() : '',
+        url: item && typeof item.url === 'string' ? item.url : ''
+      };
+    })
     .filter((item) => item.text)
     .slice(0, SEARCH_SUGGEST_LIMIT);
 
@@ -478,9 +837,22 @@ function performSearch(query) {
     window.location.href = url;
     return;
   }
-  
-  const engineKey = localStorage.getItem('moonfog_engine') || DEFAULT_ENGINE;
-  
+
+  // 扩展内：「跟随浏览器」交给浏览器默认搜索引擎（尊重用户设置）；指定引擎则直接打开该引擎
+  const engineKey = localStorage.getItem('moonfog_engine') || 'auto';
+  if (usesBrowserSearch() && engineKey === 'auto') {
+    submitBrowserSearch(query);
+    return;
+  }
+
+  openEngineSearch(query);
+}
+
+/** 网页版 / Firefox / Safari / 指定引擎：按页面内选择的引擎打开搜索结果 */
+function openEngineSearch(query) {
+  let engineKey = localStorage.getItem('moonfog_engine') || DEFAULT_ENGINE;
+  if (engineKey === 'auto') engineKey = DEFAULT_ENGINE;
+
   // 先检查自定义引擎
   const customEngines = getCustomEngines();
   if (customEngines[engineKey]) {
@@ -488,7 +860,7 @@ function performSearch(query) {
     window.location.href = url;
     return;
   }
-  
+
   // 内置引擎
   const engine = SEARCH_ENGINES[engineKey] || SEARCH_ENGINES[DEFAULT_ENGINE];
   window.location.href = engine.getUrl(query);
@@ -704,6 +1076,12 @@ function confirmAddCustomEngine() {
 function initEngineSettings() {
   initCardClick('engineGrid', 'moonfog_engine', (value) => {
     localStorage.setItem('moonfog_engine', value);
+    // 切换搜索引擎后：清掉记住的回退来源与候选链缓存，重新解析一次
+    if (typeof resetSuggestProviderCache === 'function') resetSuggestProviderCache();
+    if (typeof resetSuggestChain === 'function') resetSuggestChain();
+    if (typeof suggestFailedProviders === 'object' && suggestFailedProviders.clear) suggestFailedProviders.clear();
+    // 切换搜索引擎后立即按新引擎刷新联想
+    if (typeof usesBrowserSearch === 'function' && usesBrowserSearch()) scheduleSearchSuggest();
   });
 
   const engineModal = document.getElementById('engineModal');

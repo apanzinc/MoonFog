@@ -47,6 +47,68 @@ if (!newtab || !existsSync(newtab)) {
   fail(`chrome_url_overrides.newtab 不存在或不在扩展目录内: ${manifest.chrome_url_overrides?.newtab || '(空)'}`);
 }
 
+// Chrome Web Store 单一用途（Single Purpose）：替换新标签页是唯一用途。
+// 1) 不允许 chrome_settings_overrides：覆盖默认搜索引擎/主页/启动页会叠加第二用途；
+// 2) 扩展内搜索必须走 chrome.search，尊重用户在浏览器里选择的默认搜索引擎；
+// 3) 输入联想（WeTab 模式，可在设置里关闭）直接调用各引擎官方联想接口，声明对应主机权限。
+if (manifest.chrome_settings_overrides) {
+  fail('不允许 chrome_settings_overrides：覆盖默认搜索引擎/主页/启动页会被商店判定为第二用途');
+}
+const overrides = manifest.chrome_url_overrides || {};
+for (const key of Object.keys(overrides)) {
+  if (key !== 'newtab') fail(`chrome_url_overrides 只允许 newtab，发现: ${key}`);
+}
+const permissions = Array.isArray(manifest.permissions) ? manifest.permissions : [];
+if (!permissions.includes('search')) {
+  fail('permissions 必须包含 "search"：扩展内搜索框通过 chrome.search 使用浏览器默认搜索引擎');
+}
+const hostPermissions = Array.isArray(manifest.host_permissions) ? manifest.host_permissions : [];
+const optionalHostPermissions = Array.isArray(manifest.optional_host_permissions)
+  ? manifest.optional_host_permissions : [];
+// 必需权限只保留常驻功能：壁纸（Bing）、一言（Hitokoto）、快捷方式图标缓存（DuckDuckGo）
+const requiredHosts = [
+  'https://www.bing.com/*',
+  'https://cn.bing.com/*',
+  'https://v1.hitokoto.cn/*',
+  'https://hitokoto.c0ffee.space/*',
+  'https://icons.duckduckgo.com/*'
+];
+for (const host of requiredHosts) {
+  if (!hostPermissions.includes(host)) fail(`host_permissions 必须包含 ${host}`);
+}
+if (hostPermissions.includes('https://www.google.com/*')) {
+  fail('host_permissions 不应再包含 www.google.com：扩展内图标缓存已不使用该域名');
+}
+// 输入联想改为按需授权：安装时不申请，用户打开「输入联想」时才请求
+const optionalSuggestHosts = [
+  'https://api.bing.com/*',
+  'https://suggestqueries.google.com/*',
+  'https://suggestion.baidu.com/*'
+];
+for (const host of optionalSuggestHosts) {
+  if (!optionalHostPermissions.includes(host)) {
+    fail(`optional_host_permissions 必须包含 ${host}：用户开启输入联想时按需申请`);
+  }
+  if (hostPermissions.includes(host)) {
+    fail(`host_permissions 不应包含 ${host}：联想接口应放在 optional_host_permissions 按需授权`);
+  }
+}
+if (hostPermissions.some((item) => String(item).includes('search-sug'))
+  || optionalHostPermissions.some((item) => String(item).includes('search-sug'))) {
+  fail('扩展不应再声明 search-sug.lonely.land：输入联想已改为直接调用引擎官方接口，第三方聚合仅网页版使用');
+}
+const searchSource = readFileSync(path.join(root, 'js', 'search.js'), 'utf8');
+if (!searchSource.includes('chrome.search.query')) {
+  fail('js/search.js 未调用 chrome.search.query：扩展内搜索会退回页面内搜索引擎');
+}
+if (!searchSource.includes('SUGGEST_OFFICIAL_API')) {
+  fail('js/search.js 缺少 SUGGEST_OFFICIAL_API：扩展内输入联想应直连引擎官方接口');
+}
+if (!searchSource.includes('SUGGEST_PERMISSION_ORIGINS')
+  || !searchSource.includes('chrome.permissions.request')) {
+  fail('js/search.js 缺少可选权限申请逻辑：联想接口应在用户开启时申请授权');
+}
+
 for (const [size, rel] of Object.entries(manifest.icons || {})) {
   const iconPath = resolveInside(rel);
   if (!iconPath || !existsSync(iconPath)) {

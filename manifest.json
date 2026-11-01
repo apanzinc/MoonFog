@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "default_locale": "zh_CN",
   "name": "__MSG_extName__",
-  "version": "1.1.0.3",
+  "version": "1.1.1",
   "description": "__MSG_extDesc__",
   "author": "apanzinc",
   "browser_specific_settings": {
@@ -54,15 +54,19 @@
     ]
   },
   "permissions": [
-    "fontSettings"
+    "fontSettings",
+    "search"
   ],
   "host_permissions": [
     "https://www.bing.com/*",
     "https://cn.bing.com/*",
     "https://hitokoto.c0ffee.space/*",
     "https://v1.hitokoto.cn/*",
-    "https://www.google.com/*",
-    "https://icons.duckduckgo.com/*",
-    "https://search-sug.lonely.land/*"
+    "https://icons.duckduckgo.com/*"
+  ],
+  "optional_host_permissions": [
+    "https://api.bing.com/*",
+    "https://suggestqueries.google.com/*",
+    "https://suggestion.baidu.com/*"
   ]
 }

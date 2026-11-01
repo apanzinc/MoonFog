@@ -58,7 +58,7 @@ const OOBE_STEPS = [
     desc: '把鼠标移到页面右下角，点齿轮打开设置。之后可随时改外观、问候与数据。',
     points: [
       { icon: 'mgc_palette_line', title: '外观与主题', tip: '背景、明暗、色调与问候字体' },
-      { icon: 'mgc_search_2_line', title: '搜索联想', tip: '引擎选择与输入建议' },
+      { icon: 'mgc_search_2_line', title: '搜索', tip: '搜索引擎与输入联想' },
       { icon: 'mgc_bookmark_line', title: '快捷导航', tip: '快捷方式、文件夹与书签同步' },
       { icon: 'mgc_folder_line', title: '数据与备份', tip: '导出导入与重置' }
     ],
@@ -78,6 +78,15 @@ const OOBE_STEPS = [
     image: ''
   }
 ];
+
+// 扩展内搜索交给浏览器默认搜索引擎：OOBE 文案与设置页保持一致
+if (window.MoonFogEnv && window.MoonFogEnv.browserSearch) {
+  const settingsStep = OOBE_STEPS.find((step) => step.id === 'settings');
+  const searchPoint = settingsStep && settingsStep.points.find((point) => point.title === '搜索');
+  if (searchPoint) {
+    searchPoint.tip = '搜索引擎与输入联想（联想需按需授权）';
+  }
+}
 
 // 先选背景，再选明暗；默认跟随壁纸
 const OOBE_APPEARANCE = [

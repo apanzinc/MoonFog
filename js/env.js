@@ -26,6 +26,21 @@
   }
 
   /**
+   * 扩展宿主是否提供 chrome.search API（Chrome / Edge）：
+   * 新标签页搜索框用它把查询词交给浏览器「默认搜索引擎」处理，
+   * 既不读取也不修改用户的搜索引擎设置，符合商店单一用途要求。
+   * Firefox / Safari / 网页版没有该 API，回退到页面内引擎选择。
+   */
+  var browserSearch = false;
+  if (isExtension && (host === 'chrome' || host === 'edge')) {
+    try {
+      browserSearch = !!(typeof chrome !== 'undefined' && chrome.search && typeof chrome.search.query === 'function');
+    } catch (_) {
+      browserSearch = false;
+    }
+  }
+
+  /**
    * 网页版跨域请求统一入口：
    * - 扩展环境：host_permissions 已授权跨域，URL 原样返回。
    * - 网页版：带 ACAO 头的接口（Hitokoto、搜索联想、必应图片 CDN）可直连；
@@ -65,6 +80,7 @@
     isExtension: isExtension,
     isWeb: !isExtension,
     host: host,
+    browserSearch: browserSearch,
     applyCorsProxy: applyCorsProxy
   };
 

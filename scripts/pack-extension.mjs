@@ -44,13 +44,14 @@ function parseArgs(argv) {
   return args;
 }
 
-// Firefox 目标调整：Firefox 没有 fontSettings API（代码里已回退到内置字体清单），
-// 打包时去掉该权限，避免 AMO 校验警告。
+// Firefox 目标调整：Firefox 没有 fontSettings / chrome.search API
+// （代码里已回退到内置字体清单与页面内引擎），打包时去掉这两个权限，避免 AMO 校验警告。
 function manifestForTarget(manifest, target) {
   if (target !== 'firefox') return manifest;
   const clone = JSON.parse(JSON.stringify(manifest));
+  const unsupported = new Set(['fontSettings', 'search']);
   if (Array.isArray(clone.permissions)) {
-    clone.permissions = clone.permissions.filter((p) => p !== 'fontSettings');
+    clone.permissions = clone.permissions.filter((p) => !unsupported.has(p));
   }
   return clone;
 }
