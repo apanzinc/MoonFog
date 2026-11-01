@@ -1798,7 +1798,21 @@
   border-radius: 2px;
 }
 
+/* 「跟随浏览器」卡片的图标占位（与引擎 favicon 同尺寸） */
+.engine-auto-icon {
+  width: 16px;
+  height: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 15px;
+  color: var(--text-secondary);
+}
 
+.engine-item[hidden] {
+  display: none;
+}
 
 .engine-name {
   flex: 1;

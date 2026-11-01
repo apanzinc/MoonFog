@@ -167,8 +167,8 @@
           <button class="settings-nav-item" type="button" data-settings-page="search">
             <span class="settings-nav-icon" aria-hidden="true"><span class="mgc_search_2_fill"></span></span>
             <span class="settings-nav-text">
-              <span class="settings-nav-title">搜索联想</span>
-              <span class="settings-nav-desc">引擎选择与输入建议</span>
+              <span class="settings-nav-title">搜索</span>
+              <span class="settings-nav-desc">搜索引擎与输入联想</span>
             </span>
           </button>
           <button class="settings-nav-item" type="button" data-settings-page="navigation">
@@ -189,7 +189,7 @@
             <span class="settings-nav-icon" aria-hidden="true"><span class="mgc_information_fill"></span></span>
             <span class="settings-nav-text">
               <span class="settings-nav-title">关于朔雾</span>
-              <span class="settings-nav-desc">版本、开源许可与致谢</span>
+              <span class="settings-nav-desc">版本、权限、许可与致谢</span>
             </span>
           </button>
         </nav>
@@ -787,21 +787,26 @@
         </section>
 
 <section class="settings-page" data-page="search" hidden aria-labelledby="sec-search">
-          <h4 class="settings-section-title" id="sec-search" hidden>搜索联想</h4>
+          <h4 class="settings-section-title" id="sec-search" hidden>搜索</h4>
           <div class="settings-page-head">
             <span class="settings-nav-icon" aria-hidden="true"><span class="mgc_search_2_fill"></span></span>
             <div class="settings-page-head-text">
-              <div class="settings-page-head-title">搜索联想</div>
-              <div class="settings-page-head-desc">引擎选择与输入建议</div>
+              <div class="settings-page-head-title">搜索</div>
+              <div class="settings-page-head-desc">选择搜索引擎，控制输入联想</div>
             </div>
           </div>
 
-          <section class="settings-group">
+          <section class="settings-group" id="searchEngineGroup">
             <h5 class="settings-group-title">搜索引擎</h5>
             <div class="settings-card">
               <div class="setting-item setting-item--flush">
                 <div class="setting-label visually-hidden" id="engineLabel">搜索引擎</div>
                 <div class="engine-list" id="engineGrid" role="radiogroup" aria-labelledby="engineLabel">
+                  <button class="engine-item" type="button" data-value="auto" role="radio" aria-checked="false" hidden>
+                    <span class="engine-auto-icon" aria-hidden="true"><span class="mgc_compass_line"></span></span>
+                    <span class="engine-name">跟随浏览器</span>
+                    <span class="check-icon" aria-hidden="true"><span class="mgc_check_line"></span></span>
+                  </button>
                   <button class="engine-item" type="button" data-value="google" role="radio" aria-checked="false">
                     <img src="icons/engines/google.ico" width="16" height="16" alt="" aria-hidden="true">
                     <span class="engine-name">Google</span>
@@ -838,22 +843,24 @@
                   <span class="mgc_add_line" aria-hidden="true"></span>
                   <span>添加自定义</span>
                 </button>
+                <p class="setting-tip" id="engineSuggestTip" hidden>「跟随浏览器」使用浏览器默认搜索引擎；选择具体引擎时，搜索和输入联想都使用该引擎；该引擎不提供联想时，按 Google → 必应 → 百度 的顺序自动回退</p>
               </div>
             </div>
           </section>
 
-          <section class="settings-group">
-            <h5 class="settings-group-title">搜索建议</h5>
+          <section class="settings-group" id="searchSuggestGroup">
+            <h5 class="settings-group-title">输入联想</h5>
             <div class="settings-card">
-              <div class="setting-item">
+              <div class="setting-item" id="webSuggestItem">
                 <div class="setting-label-row">
-                  <div class="setting-label">输入时显示搜索建议</div>
+                  <div class="setting-label">输入时显示联网联想</div>
                   <label class="switch">
                     <input type="checkbox" id="searchSuggestToggle" checked>
                     <span class="switch-slider"></span>
                   </label>
                 </div>
-                <p class="setting-tip">仅 Google、Bing、百度；启用时查询词会发送至 search-sug.lonely.land，不保存在本地</p>
+                <p class="setting-tip">输入联想由 Google、Bing、百度的官方接口提供；所选引擎没有联想时，按 Google → 必应 → 百度 顺序自动回退；扩展不保存输入记录</p>
+                <p class="setting-tip" id="searchSuggestPermissionTip" hidden>首次开启需要浏览器授权一次（允许访问这三个官方联想接口）；拒绝或撤销授权后不再发起请求，开关保持关闭</p>
               </div>
               <div class="setting-item">
                 <div class="setting-label-row">
@@ -1045,13 +1052,6 @@
 
 <section class="settings-page" data-page="about" hidden aria-labelledby="sec-about">
           <h4 class="settings-section-title" id="sec-about" hidden>关于朔雾</h4>
-          <div class="settings-page-head">
-            <span class="settings-nav-icon" aria-hidden="true"><span class="mgc_information_fill"></span></span>
-            <div class="settings-page-head-text">
-              <div class="settings-page-head-title">关于朔雾</div>
-              <div class="settings-page-head-desc">版本、开源许可与致谢</div>
-            </div>
-          </div>
 
           <!-- 横幅区域：每日一图 -->
           <div class="about-banner" id="aboutBanner" aria-hidden="true">
@@ -1069,7 +1069,7 @@
                   <img class="about-logo" src="icons/icon32.png" alt="" />
                   <span class="about-name">MoonFog 朔雾</span>
                 </div>
-                <span class="about-version">1.1.0</span>
+                <span class="about-version">1.1.1</span>
               </div>
 
               <div class="about-row about-row--legal">
@@ -1089,6 +1089,20 @@
                 <div class="about-inline-links">
                   <a class="about-inline-link" href="https://github.com/apanzinc/MoonFog" target="_blank" rel="noopener noreferrer">GitHub</a>
                   <a class="about-inline-link" href="https://github.com/apanzinc/MoonFog/issues" target="_blank" rel="noopener noreferrer">反馈与建议</a>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="settings-group">
+            <h5 class="settings-group-title">权限说明</h5>
+            <div class="settings-card about-section">
+              <div class="about-row about-row--legal">
+                <div class="about-legal-text">
+                  <span class="about-license">必需权限：fontSettings（自定义问候字体）、search（把搜索交给浏览器默认搜索引擎）。</span>
+                  <span class="about-license">网站访问：Bing 壁纸（www.bing.com / cn.bing.com）、一言（hitokoto.c0ffee.space / v1.hitokoto.cn）、图标缓存（icons.duckduckgo.com）。</span>
+                  <span class="about-license">可选权限：开启「输入联想」时才会申请 Google / Bing / 百度官方联想接口，可随时在浏览器扩展设置中撤销。</span>
+                  <span class="about-license">扩展不收集、不上传浏览数据；搜索与联想请求只发送到上面列出的对应服务。</span>
                 </div>
               </div>
             </div>
