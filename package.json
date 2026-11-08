@@ -5,7 +5,10 @@
     "check": "node scripts/check.mjs",
     "pack": "node scripts/pack-extension.mjs",
     "pack:firefox": "node scripts/pack-extension.mjs --target firefox",
-    "build:web": "node scripts/build-web.mjs"
+    "build:web": "node scripts/build-web.mjs",
+    "serve": "node scripts/dev-serve.mjs 8132",
+    "fonts": "python scripts/build-font-slices.py",
+    "icons": "python scripts/build-icon-subset.py"
   },
   "devDependencies": {
     "crx3": "2.0.0"

@@ -1,12 +1,7 @@
 /**
- * MoonFog - Styles Entry
- * 按职责拆分后的样式入口
+ * MoonFog - Styles Entry（已不再被页面引用）
+ *
+ * newtab.html 现在直接并行 <link> 各分片样式：@import 是串行瀑布，
+ * 在移动网络（RTT 400ms+）下每个文件都要等上一层下载解析完才发请求。
+ * 这份文件只作为「样式加载顺序」的说明保留，改顺序时两边一起改。
  */
-
-@import url('./tokens.css');
-@import url('./base.css');
-@import url('./shortcuts.css');
-@import url('./settings/panel.css');
-@import url('./settings/controls.css');
-@import url('./modal.css');
-@import url('./oobe.css');

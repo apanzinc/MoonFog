@@ -13,8 +13,22 @@
   <script src="js/boot-state.js"></script>
   <script src="js/boot-config.js"></script>
   <script src="js/greeting-boot.js"></script>
-  <link rel="stylesheet" href="css/styles.css">
-  <link rel="stylesheet" href="icons/font/Mingcute.css">
+  <!--
+    样式直接并行加载：原来走 css/styles.css 的 8 层 @import，
+    在移动网络下是串行瀑布（每层一个 RTT），首屏白等两三秒。
+    顺序必须与 styles.css 里的 @import 一致（层叠结果不变）。
+  -->
+  <link rel="stylesheet" href="css/tokens.css?v=2026110801">
+  <link rel="stylesheet" href="css/base.css?v=2026110801">
+  <link rel="stylesheet" href="css/shortcuts.css?v=2026110801">
+  <link rel="stylesheet" href="css/settings/panel.css?v=2026110801">
+  <link rel="stylesheet" href="css/settings/controls.css?v=2026110801">
+  <link rel="stylesheet" href="css/modal.css?v=2026110801">
+  <link rel="stylesheet" href="css/oobe.css?v=2026110801">
+  <link rel="stylesheet" href="css/mobile.css?v=2026110801">
+  <link rel="stylesheet" href="css/font-slices.css?v=2026110801">
+  <link rel="stylesheet" href="css/wallpaper.css?v=2026110801">
+  <link rel="stylesheet" href="icons/font/Mingcute.css?v=2026110801">
 </head>
 <body>
   <!-- 图片背景层：双层交叉淡入（换日/换图不闪黑） -->

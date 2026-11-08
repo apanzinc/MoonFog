@@ -1,6 +1,7 @@
 import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { rewriteHtml, rewriteCssUrls } from './lib/bundle-html.mjs';
 
 // 网页版构建：把新标签页原样发布成纯静态站点（index.html + 静态资源），
 // 供 Chrome / Edge / Firefox / Safari 通过「主页 / 新标签页网址」直接使用。
@@ -10,6 +11,20 @@ const OUT_DIR = path.join(root, 'dist-web');
 
 const WEB_PATHS = ['css', 'js', 'icons', 'fonts'];
 
+// 发布包里只带「会真正被下载」的东西：
+// - fonts/ 下整包的思源宋体（每个字重 1.5MB）是切片的源文件，网页只用 fonts/slices/
+// - 图标字体的 ttf/woff 是原始备份，网页只加载 woff2 子集
+const SKIP_RE = [
+  /fonts[\\/]SourceHanSerifSC-(Regular|Medium|SemiBold|Bold)\.woff2$/,
+  /icons[\\/]font[\\/]MingCute\.(ttf|woff)$/,
+  /icons[\\/]font[\\/]Mingcute\.full\.css$/,
+];
+
+function shouldSkip(srcPath) {
+  const normalized = srcPath.replace(/\\/g, '/');
+  return SKIP_RE.some((re) => re.test(normalized));
+}
+
 function copyTo(rel, destRoot) {
   const src = path.join(root, rel);
   if (!existsSync(src)) {
@@ -17,7 +32,7 @@ function copyTo(rel, destRoot) {
   }
   cpSync(src, path.join(destRoot, rel), {
     recursive: true,
-    filter: (srcPath) => path.basename(srcPath) !== '.DS_Store',
+    filter: (srcPath) => path.basename(srcPath) !== '.DS_Store' && !shouldSkip(srcPath),
   });
 }
 
@@ -53,7 +68,7 @@ const anchor = '<script src="js/env.js"></script>';
 if (!indexHtml.includes(anchor)) {
   throw new Error('newtab.html 缺少 js/env.js 引用，无法注入 web-config.js');
 }
-writeFileSync(path.join(OUT_DIR, 'index.html'), indexHtml.replace(anchor, webConfigTag + anchor));
+const patchedHtml = indexHtml.replace(anchor, webConfigTag + anchor);
 writeFileSync(
   path.join(OUT_DIR, 'web-config.js'),
   [
@@ -63,11 +78,46 @@ writeFileSync(
     ' *     追加式: "https://your-worker.example.com/?url=" （自动拼接 encodeURIComponent(目标地址)）',
     ' *     占位式: "https://your-worker.example.com/fetch/{url}"',
     ' *   - 留空时回退公共镜像（api.codelife.cc / peapix.com）获取必应壁纸；',
+    ' */',
     'window.MoonFogWebConfig = { corsProxy: "" };',
     '',
   ].join('\n'),
 );
 
+// 合并首屏资源：11 个样式 + 28 个脚本压成几个文件，
+// 静态托管（HTTP/1.1、无 HTTP/2 推送）时少几十个往返。
+function readBundled(rel) {
+  const clean = rel.split('?')[0];
+  const inOut = path.join(OUT_DIR, clean);
+  return readFileSync(existsSync(inOut) ? inOut : path.join(root, clean), 'utf8');
+}
+
+const { html: finalHtml, bundles } = rewriteHtml(
+  patchedHtml,
+  (name) => `bundle-${name}.${name === 'css' ? 'css' : 'js'}`,
+);
+
+for (const bundle of bundles) {
+  const isCss = bundle.type.startsWith('text/css');
+  const chunks = bundle.parts.map((rel) => {
+    const text = readBundled(rel);
+    return `\n/* ==== ${rel} ==== */\n${isCss ? rewriteCssUrls(text, rel) : text}`;
+  });
+  writeFileSync(
+    path.join(OUT_DIR, `bundle-${bundle.name}.${isCss ? 'css' : 'js'}`),
+    chunks.join(isCss ? '\n' : '\n;\n'),
+  );
+}
+writeFileSync(path.join(OUT_DIR, 'index.html'), finalHtml);
+
 const { count, bytes } = countFiles(OUT_DIR);
+
+// 产物自检：HTML 引用到的本地 css/js 必须都在，否则上线就是白屏
+const refs = [...finalHtml.matchAll(/(?:href|src)="([^"?#]+\.(?:css|js))"/g)].map((m) => m[1]);
+const missing = refs.filter((rel) => !/^https?:/.test(rel) && !existsSync(path.join(OUT_DIR, rel)));
+if (missing.length) {
+  throw new Error(`产物缺少被引用的文件: ${[...new Set(missing)].join(', ')}`);
+}
+
 console.log(`网页版构建完成: ${path.relative(root, OUT_DIR)} (${count} 个文件, ${(bytes / 1024 / 1024).toFixed(1)} MB)`);
 console.log('本地预览: cd dist-web && npx serve . 或 python -m http.server');
