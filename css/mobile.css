@@ -106,6 +106,37 @@
   }
 
   /* ============================================
+     软键盘态：搜索框贴住键盘顶边，建议改向上展开
+     kb-open 与 --kb-h 由 js/keyboard-inset.js 写入，
+     键盘一收起类就移除，布局原样回来（含快捷标签）
+     ============================================ */
+  /* 键盘占了近半屏，问候语与快捷标签没有可用空间，这一态先让位 */
+  body.kb-open .greeting-section,
+  body.kb-open .shortcuts-section {
+    display: none;
+  }
+
+  body.kb-open .search-section {
+    /* 与 .content 同宽同居中：手机端内容宽 = min(视口, 720) - 左右各 20px */
+    position: fixed;
+    left: 0;
+    right: 0;
+    margin: 0 auto;
+    width: calc(min(100vw, 720px) - 40px);
+    bottom: calc(var(--kb-h, 0px) + 10px);
+    /* 高过左下角必应署名，且低于设置面板（100）与弹窗（300） */
+    z-index: 80;
+    max-width: none;
+  }
+
+  /* 键盘下方没有空间，建议面板翻到搜索框上方，从底部往上长 */
+  body.kb-open .search-suggest {
+    top: auto;
+    bottom: calc(100% + 8px);
+    transform-origin: bottom center;
+  }
+
+  /* ============================================
      快捷标签：胶囊加大（32 → 40px），更好点按
      折叠限高的实际值由 js/shortcuts.js 动态测量，
      这里的 max-height 只是兜底（两行 40px + 行距）

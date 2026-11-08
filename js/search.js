@@ -70,6 +70,12 @@ function initSearch() {
     if (panel && !panel.hidden) placeSearchSuggest(panel);
   });
 
+  // 键盘弹出/收起会改建议面板的展开方向，开着的时候重算一次高度
+  window.addEventListener('moonfog:keyboard', () => {
+    const panel = document.getElementById('searchSuggest');
+    if (panel && !panel.hidden) placeSearchSuggest(panel);
+  });
+
   bindSearchSuggestToggle();
   refreshSuggestPermission();
   syncClearBtn();
@@ -742,9 +748,18 @@ function placeSearchSuggest(panel) {
   const form = document.getElementById('searchForm');
   if (!form) return;
   const rect = form.getBoundingClientRect();
+  // 软键盘态：下方没空间，面板翻到搜索框上方，高度按「搜索框顶到可视区顶」算
+  if (document.body.classList.contains('kb-open')) {
+    const vv = window.visualViewport;
+    const visibleTop = vv ? vv.offsetTop : 0;
+    const spaceAbove = rect.top - visibleTop - 20;
+    panel.style.maxHeight = Math.max(96, Math.min(spaceAbove, 400)) + 'px';
+    return;
+  }
   const space = window.innerHeight - rect.bottom - 16;
   panel.style.maxHeight = Math.max(120, Math.min(space, 360)) + 'px';
 }
+
 
 function setSearchSuggestActive(index) {
   const panel = document.getElementById('searchSuggest');
