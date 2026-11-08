@@ -5,38 +5,12 @@
 /* ============================================
    自定义字体 - 思源宋体（Source Han Serif SC / Noto Serif SC）
    400 / 500 / 600 / 700，对应设置里的标题粗细滑块
+
+   @font-face 在 css/font-slices.css（由 scripts/build-font-slices.py 生成）：
+   整份字体按 unicode-range 切成几片，字形一个没删，只是浏览器只会下载
+   当前页面真正用到的那些片。以前首屏要吞 1.5MB，现在约 240KB。
+   源文件 fonts/SourceHanSerifSC-*.woff2 是全量版，改文案后重跑脚本即可。
    ============================================ */
-@font-face {
-  font-family: 'SourceHanSerif';
-  src: url('../fonts/SourceHanSerifSC-Regular.woff2') format('woff2');
-  font-weight: 400;
-  font-style: normal;
-  font-display: optional;
-}
-
-@font-face {
-  font-family: 'SourceHanSerif';
-  src: url('../fonts/SourceHanSerifSC-Medium.woff2') format('woff2');
-  font-weight: 500;
-  font-style: normal;
-  font-display: optional;
-}
-
-@font-face {
-  font-family: 'SourceHanSerif';
-  src: url('../fonts/SourceHanSerifSC-SemiBold.woff2') format('woff2');
-  font-weight: 600;
-  font-style: normal;
-  font-display: optional;
-}
-
-@font-face {
-  font-family: 'SourceHanSerif';
-  src: url('../fonts/SourceHanSerifSC-Bold.woff2') format('woff2');
-  font-weight: 700;
-  font-style: normal;
-  font-display: optional;
-}
 
 /* ============================================
    设计 Tokens
