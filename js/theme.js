@@ -404,7 +404,10 @@ function applyTheme(tone, mode, options = {}) {
   if (changed && typeof refreshImagePaletteForMode === 'function') {
     refreshImagePaletteForMode(nextMode);
   }
-  if (typeof getEffectiveBgMode === 'function' ? getEffectiveBgMode() === 'solid' : typeof currentBgMode !== 'undefined' && currentBgMode === 'solid') {
+  // 只有屏幕上确实没有壁纸时才清极性 class。
+  // 原来按 moonfog_bg_mode==='solid' 判断，背景库选图不写这个键，
+  // 会把刚写好的 img-ui-* / img-scene-* 当场清掉。
+  if (!(typeof isImageBackgroundActive === 'function' && isImageBackgroundActive())) {
     document.body.classList.remove('img-ui-dark', 'img-ui-light', 'img-scene-dark', 'img-scene-light');
   }
 
@@ -460,8 +463,8 @@ function updateModeToggleUI(pref, resolved) {
   const modeToggle = document.getElementById('modeToggle');
   if (modeToggle) {
     const next = nextMode === 'dark' ? '浅色' : '深色';
-    modeToggle.setAttribute('aria-label', `切换{next}界面`);
-    modeToggle.title = `切换{next}界面`;
+    modeToggle.setAttribute('aria-label', `切换${next}界面`);
+    modeToggle.title = `切换${next}界面`;
   }
 
   const segment = document.getElementById('modeSegment');

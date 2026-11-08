@@ -71,23 +71,41 @@ function resolveNeutralWashCss(wash) {
 }
 
 /**
- * 图片壁纸可读性底噪：40% 黑（与 boot-config 首帧保持同一数值）
+ * 图片壁纸可读性底噪：颜色和浓度都跟明暗模式走。
+ * 深色模式压黑保住亮字；浅色模式要用白雾把壁纸提亮，
+ * 否则深色文字压在暗壁纸上根本看不清，界面也不像「浅色」了
  */
-const IMAGE_SCRIM_ALPHA = 0.4;
+const IMAGE_SCRIM_ALPHA_DARK = 0.4;
+const IMAGE_SCRIM_ALPHA_LIGHT = 0.38;
+
+function isDarkUiMode() {
+  return document.documentElement.dataset.mode === 'dark';
+}
+
+function imageScrimAlpha() {
+  return isDarkUiMode() ? IMAGE_SCRIM_ALPHA_DARK : IMAGE_SCRIM_ALPHA_LIGHT;
+}
 
 /**
- * 图片模式遮罩 CSS：40% 可读性底噪 ∘ 用户中性雾，合成单层 rgba。
+ * 图片模式遮罩 CSS：可读性底噪 ∘ 用户中性雾，合成单层 rgba。
  * 单一写入口径：applyBgWash 与 applyImagePalette 都走这里，避免互相覆盖。
- * wash=0 → rgba(0,0,0,0.4)；偏黑单调更暗、偏白单调更亮，0 点连续无跳变（issue #5）
+ * 底噪颜色跟明暗模式：深色压黑、浅色提白；用户滑块在底噪之上再压暗/提亮。
  */
 function resolveImageOverlayCss(wash) {
   const v = normalizeBgWash(wash);
+  const dark = isDarkUiMode();
+  const scrim = imageScrimAlpha();
   const washAlpha = v === 0 ? 0 : Math.min(0.72, Math.abs(v) / 50 * 0.72);
-  // 黑/白雾叠在 40% 黑底噪上的等效单层 alpha
-  const a = IMAGE_SCRIM_ALPHA + washAlpha * (1 - IMAGE_SCRIM_ALPHA);
-  if (v <= 0) return `rgba(0, 0, 0, ${a.toFixed(3)})`;
-  // 白雾：反解单层灰色，使其与「40% 黑 + 白雾」逐像素等效
-  const c = Math.round((washAlpha / a) * 255);
+  const a = scrim + washAlpha * (1 - scrim);
+  // 底噪色：深色模式黑、浅色模式白
+  const baseC = dark ? 0 : 255;
+  if (v === 0 || washAlpha === 0) {
+    return `rgba(${baseC}, ${baseC}, ${baseC}, ${scrim.toFixed(3)})`;
+  }
+  // 用户层：负值压暗（黑），正值提亮（白）
+  const targetC = v < 0 ? 0 : 255;
+  const num = baseC * scrim * (1 - washAlpha) + targetC * washAlpha;
+  const c = Math.round(num / a);
   return `rgba(${c}, ${c}, ${c}, ${a.toFixed(3)})`;
 }
 
@@ -164,12 +182,21 @@ function normalizeSurfaceBlur(value, fallback) {
 }
 
 /**
- * 图片背景是否处于生效态 * 以currentBgMode为主；同时兼容boot 首屏 class，避免初始化时序把搜索毛玻璃误判成纯色 */
+ * 图片背景是否处于生效态
+ * 以屏幕为准：壁纸引擎正在放的条目 > 旧 bg_mode > DOM class。
+ * 背景库选图不会写 moonfog_bg_mode（那是旧背景系统的键），
+ * 只看它会把「已经贴了图」误判成纯色。
+ */
 function isImageBackgroundActive(mode) {
-  // 防呆：始终读 localStorage 真实值，不依赖可能过期的全局缓存
-  const resolved = typeof mode === 'string' && mode
-    ? normalizeBgMode(mode)
-    : getEffectiveBgMode();
+  if (typeof mode === 'string' && mode) {
+    return normalizeBgMode(mode) === 'local' || normalizeBgMode(mode) === 'bing';
+  }
+  const WP = window.MoonFogWp;
+  if (WP && WP.engine && typeof WP.engine.getCurrent === 'function') {
+    const cur = WP.engine.getCurrent();
+    if (cur) return cur.kind === 'image' || cur.kind === 'video';
+  }
+  const resolved = getEffectiveBgMode();
   if (resolved === 'local' || resolved === 'bing') return true;
   try {
     if (document.body && document.body.classList.contains('has-image-bg')) return true;
@@ -1260,6 +1287,16 @@ function clearImagePalette() {
     '--img-seed'
   ];
   keys.forEach((k) => root.style.removeProperty(k));
+  // ThemeManager 在图片模式给主题 token 挂过 !important（内联+!important 只能靠移除撤销），
+  // 不清的话切回纯色/流光后字色还锁在壁纸取色上，同样是「切换不完全」。
+  [
+    '--bg-warm', '--bg-warm-alt', '--card-bg',
+    '--text-primary', '--text-secondary', '--text-tertiary',
+    '--border', '--border-strong', '--shadow', '--shadow-hover',
+    '--accent', '--accent-glow', '--accent-hover',
+    '--surface-text-primary', '--surface-text-secondary', '--surface-text-muted',
+    '--surface-bg', '--surface-bg-hover', '--surface-border', '--surface-chip'
+  ].forEach((k) => root.style.removeProperty(k));
   lastPaletteUrl = '';
   lastPalette = null;
   lastDominant = null;
@@ -1573,8 +1610,8 @@ function detectScenePolarity(data, sw, sh) {
   // 取样分辨率下 blur≈px 对应页面 12px 模糊的大致效果
   const blurred = boxBlurLuma(luma, sw, sh, 2);
 
-  // 模拟 rgba(0,0,0,0.4) 遮罩效果，让检测结果与实际显示一致
-  const OVERLAY_FACTOR = 0.6; // 1 - 0.4
+  // 模拟遮罩效果，让检测结果与实际显示一致（底噪跟明暗模式走）
+  const OVERLAY_FACTOR = 1 - imageScrimAlpha();
 
   let sum = 0;
   let n = 0;
@@ -2372,6 +2409,32 @@ function applyShortcutContrastInline(palette) {
 }
 
 /**
+ * 把半透明色压成不透明色（用于 --card-bg-solid：设置面板卡片必须实底，
+ * 但它又得跟壁纸取色，不能固定用主题色板，否则图片模式下会是一块暖棕压在冷色壁纸上）
+ */
+function flattenToOpaque(color, baseRgb) {
+  const m = /rgba?\(([^)]+)\)/i.exec(String(color || ''));
+  if (!m) return '';
+  const nums = m[1].split(',').map((v) => parseFloat(v));
+  if (nums.length < 3 || nums.some((v) => !Number.isFinite(v))) return '';
+  const [r, g, b] = nums;
+  const a = nums.length > 3 ? Math.min(1, Math.max(0, nums[3])) : 1;
+  if (a >= 0.999) return `rgb(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)})`;
+  const base = baseRgb || [24, 24, 30];
+  const mix = (c, i) => Math.round(base[i] + (c - base[i]) * a);
+  return `rgb(${mix(r, 0)}, ${mix(g, 1)}, ${mix(b, 2)})`;
+}
+
+/** 从 rgb/rgba 字符串里取 rgb 分量 */
+function readRgbParts(color) {
+  const m = /rgba?\(([^)]+)\)/i.exec(String(color || ''));
+  if (!m) return null;
+  const nums = m[1].split(',').map((v) => parseFloat(v));
+  if (nums.length < 3 || nums.slice(0, 3).some((v) => !Number.isFinite(v))) return null;
+  return [nums[0], nums[1], nums[2]];
+}
+
+/**
  * 把取色结果写则CSS 变量（Monet roles →UI tokens（ * 图片壁纸：始终压暐+ 白色文字；深色模式仅捧UI 底色为黑色 */
 function applyImagePalette(palette) {
   // 防呆：防止 applyImagePalette → syncModeWithWallpaperScene → applyTheme → refreshImagePaletteForMode → applyImagePalette 无限递归
@@ -2399,6 +2462,13 @@ function applyImagePalette(palette) {
       lastPalette = palette;
     }
   }
+  // 面板卡片实底：跟壁纸取色压成不透明。
+  // 之前固定用主题色板，图片模式下设置面板是一块暖棕压在冷色壁纸上，很跳。
+  if (palette && !palette.cardBgSolid) {
+    const base = readRgbParts(palette.bgWarm) ||
+      (getUiMode() === 'dark' ? [24, 24, 30] : [248, 246, 242]);
+    palette.cardBgSolid = flattenToOpaque(palette.cardBg || palette.surface, base);
+  }
   // 同步 ThemeManager
   if (window.__MOONFOG_THEME_MANAGER__) {
     window.__MOONFOG_THEME_MANAGER__.setImagePalette(palette);
@@ -2407,11 +2477,13 @@ function applyImagePalette(palette) {
   const isDark = root.getAttribute('data-mode') === 'dark';
   const uiDark = getUiMode() === 'dark';
 
-  // 图片壁纸有40%压暗遮罩，问候文字固定白色
-  root.style.setProperty('--img-text', '#FFFFFF');
-  root.style.setProperty('--img-text-secondary', 'rgba(255,255,255,0.75)');
-  root.style.setProperty('--img-text-muted', 'rgba(255,255,255,0.5)');
-  root.style.setProperty('--img-text-accent', palette.textAccent || palette.accent || '#FFFFFF');
+  // 文字色跟明暗模式走，不跟壁纸：浅色模式下就该是深色字，
+  // 底噪那层白雾负责把壁纸提亮到能压住深色字
+  const textLight = uiDark;
+  root.style.setProperty('--img-text', textLight ? '#FFFFFF' : '#1A1814');
+  root.style.setProperty('--img-text-secondary', textLight ? 'rgba(255,255,255,0.75)' : 'rgba(26,24,20,0.68)');
+  root.style.setProperty('--img-text-muted', textLight ? 'rgba(255,255,255,0.5)' : 'rgba(26,24,20,0.45)');
+  root.style.setProperty('--img-text-accent', textLight ? (palette.textAccent || '#FFFFFF') : (palette.accent || '#1A1814'));
   root.style.setProperty('--img-text-shadow', 'none');
   root.style.setProperty('--img-text-shadow-soft', 'none');
   root.style.setProperty('--img-text-glow', 'transparent');
@@ -2468,23 +2540,35 @@ function applyImagePalette(palette) {
  * 图片背景色板刷新（ * - 裸露文字跟壁纸场景 * - 控件表面/字色跟用户浅深mode
  */
 function refreshImagePaletteForMode(mode) {
-  // 防呆：从 localStorage 读真实 bgMode，避免异步延迟导致的缓存过期
-  const effective = getEffectiveBgMode();
-  if (effective === 'solid') return;
-  if (
-    !document.body.classList.contains('has-image-bg') &&
-    effective !== 'local' &&
-    effective !== 'bing'
-  ) {
-    return;
-  }
+  // 判据是「屏幕上真的有壁纸」，不是旧 bg_mode 键。
+  // 从背景库选图走壁纸引擎，不会写 moonfog_bg_mode，键还停在 solid；
+  // 只认键的话明暗切换会把整块调色板跳过，表现就是面板变深了但字还是黑的。
+  if (!isImageBackgroundActive()) return;
   if (!lastDominant) {
     hydrateImagePaletteSeed();
   }
-  if (!lastDominant) return;
+  if (!lastDominant) {
+    // seed 丢了（换设备 / 清了缓存）：拿当前壁纸重新取一次，别停在旧色上
+    const url = getDisplayedWallpaperUrl();
+    if (url) applyPaletteForUrl(url);
+    return;
+  }
   const palette = buildPaletteFromDominant(lastDominant, mode || getUiMode());
   lastPalette = palette;
   applyImagePalette(palette);
+}
+
+/** 屏幕上正在显示的壁纸地址（壁纸引擎优先，其次旧背景系统） */
+function getDisplayedWallpaperUrl() {
+  try {
+    const inner = document.getElementById('wallpaperMediaInner');
+    const el = inner && inner.querySelector('img, video');
+    if (el) {
+      const src = el.currentSrc || el.src || '';
+      if (src) return src;
+    }
+  } catch (_) {}
+  return getCurrentImageBgUrl();
 }
 
 /**
