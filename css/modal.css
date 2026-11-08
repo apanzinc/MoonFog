@@ -37,7 +37,7 @@
   flex-direction: column;
   background: var(--card-bg);
   border: 1px solid var(--border);
-  border-radius: 14px;
+  border-radius: 12px;
   box-shadow: var(--shadow-hover);
   /* 关闭态 = 进入起点；打开 active 后反向过渡，进出镜像 */
   transform: translateY(10px) scale(0.98);
@@ -246,8 +246,9 @@
 }
 
 .modal-confirm {
-  background: var(--text-primary);
-  color: var(--card-bg);
+  /* 主操作用强调色，和分段控件、选中态同一套语言 */
+  background: var(--accent);
+  color: #fff;
 }
 
 .modal-confirm:hover {

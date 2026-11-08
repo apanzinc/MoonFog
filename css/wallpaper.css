@@ -1,0 +1,1058 @@
+/**
+ * MoonFog - 壁纸个性化系统（Wallpaper Spec）
+ * 1) 主页媒体层：#wallpaperMedia / #wallpaperMediaInner / #wallpaperRippleCanvas
+ * 2) 设置 · 背景页：三入口摘要卡
+ * 3) 设置 · L3 壁纸库：预览 / tabs / 网格 / 空态 / 添加弹层 / 播放 / 样式
+ * 颜色一律走 tokens.css，暗色模式自动适配。
+ */
+
+:root {
+  --wallpaper-media-z: 1;
+  --wallpaper-ripple-z: 2;
+  --wallpaper-wash-z: 1;
+}
+
+/* ============================================
+   一、主页媒体层
+   ============================================ */
+.wallpaper-media {
+  position: absolute;
+  inset: 0;
+  z-index: var(--wallpaper-media-z, 1);
+  overflow: hidden;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    opacity 0.55s var(--ease),
+    visibility 0.55s var(--ease);
+}
+
+.wallpaper-media.is-visible {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* 模糊时媒体层超出 1.1 倍，避免边缘露底；无模糊时 cover 看不出差异 */
+.wallpaper-media-inner {
+  position: absolute;
+  inset: -5%;
+  z-index: 0;
+  transition: filter 0.25s var(--ease);
+}
+
+.wallpaper-media-inner > img,
+.wallpaper-media-inner > video {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  border: 0;
+}
+
+.wallpaper-media.is-blurred .wallpaper-media-inner {
+  filter: blur(var(--wallpaper-blur, 20px));
+}
+
+.wallpaper-ripple-canvas {
+  position: absolute;
+  inset: 0;
+  z-index: var(--wallpaper-ripple-z, 2);
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+/* wash 压暗/提亮蒙层（effects.js 写入 --wallpaper-wash） */
+.wallpaper-wash {
+  position: absolute;
+  inset: 0;
+  z-index: var(--wallpaper-wash-z, 1);
+  pointer-events: none;
+  background: var(--wallpaper-wash, transparent);
+}
+
+html.low-perf .wallpaper-media,
+html.perf-low .wallpaper-media {
+  transition: none !important;
+}
+
+html.low-perf .wallpaper-media-inner,
+html.perf-low .wallpaper-media-inner {
+  filter: none !important;
+}
+
+/* ============================================
+   二、背景页 · 媒体摘要卡（卡片 E）
+   ============================================ */
+.bg-media-summary {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.bg-media-thumb {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  overflow: hidden;
+  background-color: color-mix(in srgb, var(--text-primary) 6%, var(--bg-warm));
+  background-size: cover;
+  background-position: center;
+  border: 1px solid var(--border);
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.bg-media-summary-text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.bg-media-summary-text .bg-extra-title,
+.bg-media-summary-text .bg-extra-meta {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bg-media-summary .bg-action-btn {
+  flex-shrink: 0;
+}
+
+/* ============================================
+   三、L3 壁纸库页
+   ============================================ */
+.settings-page[data-page="wallpaper"] {
+  gap: 12px;
+}
+
+.wallpaper-preview {
+  display: grid;
+  grid-template-columns: 84px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 8px;
+  min-width: 0;
+}
+
+.wallpaper-preview-media {
+  width: 84px;
+  height: 56px;
+  border-radius: 10px;
+  overflow: hidden;
+  background-color: color-mix(in srgb, var(--text-primary) 6%, var(--bg-warm));
+  background-size: cover;
+  background-position: center;
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-tertiary);
+  font-size: 20px;
+}
+
+.wallpaper-preview-media.has-cover > span {
+  display: none;
+}
+
+.wallpaper-preview-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.wallpaper-preview-title {
+  font-size: 0.8125rem;
+  font-weight: 550;
+  color: var(--text-primary);
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wallpaper-preview-meta {
+  font-size: 0.6875rem;
+  color: var(--text-tertiary);
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wallpaper-shuffle-btn {
+  flex-shrink: 0;
+}
+
+/* tabs */
+.wallpaper-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 6px;
+  margin-bottom: 2px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.wallpaper-tabs::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
+
+.wallpaper-tab {
+  flex: 0 0 auto;
+  min-height: 28px;
+  padding: 0 12px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 550;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background 0.18s var(--ease),
+    color 0.18s var(--ease);
+}
+
+.wallpaper-tab:hover {
+  color: var(--text-primary);
+  background: color-mix(in srgb, var(--text-primary) 4%, transparent);
+}
+
+.wallpaper-tab.is-active {
+  color: var(--text-primary);
+  background: var(--card-bg);
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--text-primary) 8%, transparent);
+}
+
+/* 2 列网格 */
+.wallpaper-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  /* 与其它卡片的内容缩进对齐（12px） */
+  padding: 12px;
+}
+
+.wallpaper-grid[hidden] {
+  display: none !important;
+}
+
+.wallpaper-item {
+  position: relative;
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--text-primary) 5%, var(--bg-warm));
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+  aspect-ratio: 16 / 10;
+  transition:
+    border-color 0.18s var(--ease),
+    box-shadow 0.18s var(--ease),
+    transform 0.18s var(--ease);
+}
+
+.wallpaper-item:hover {
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow);
+}
+
+.wallpaper-item:active {
+  transform: scale(0.99);
+}
+
+.wallpaper-item.is-active {
+  border-color: var(--text-primary);
+  box-shadow: 0 0 0 1px var(--text-primary);
+}
+
+/* 当前使用的背景：与「界面色调」一致的勾选标记 */
+.wallpaper-item-check {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--text-primary);
+  color: var(--card-bg);
+  font-size: 12px;
+  line-height: 1;
+  pointer-events: none;
+}
+
+.wallpaper-item-cover {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  background-color: color-mix(in srgb, var(--text-primary) 5%, var(--bg-warm));
+}
+
+.wallpaper-item-empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-tertiary);
+  font-size: 20px;
+}
+
+.wallpaper-item-caption {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 14px 8px 6px;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.52), transparent);
+  color: #fff;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+.wallpaper-item-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wallpaper-item-badge {
+  flex: 0 0 auto;
+  padding: 1px 5px;
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.22);
+  font-size: 0.625rem;
+  font-weight: 500;
+}
+
+.wallpaper-item-more {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  z-index: 2;
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.32);
+  color: #fff;
+  font-size: 13px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s var(--ease), background 0.15s var(--ease);
+}
+
+.wallpaper-item:hover .wallpaper-item-more,
+.wallpaper-item:focus-within .wallpaper-item-more,
+.wallpaper-item-more:focus-visible {
+  opacity: 1;
+}
+
+.wallpaper-item-more:hover {
+  background: rgba(0, 0, 0, 0.5);
+}
+
+/* 条目菜单（动态挂到 body） */
+.wallpaper-item-menu {
+  position: fixed;
+  z-index: 320;
+  min-width: 104px;
+  padding: 4px;
+  border-radius: 10px;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-hover);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.wallpaper-item-menu button {
+  min-height: 28px;
+  padding: 0 10px;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 0.75rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.wallpaper-item-menu button:hover {
+  background: var(--settings-row-hover, var(--bg-warm-alt));
+}
+
+.wallpaper-item-menu button.is-danger {
+  color: #d44;
+}
+
+/* 空态 */
+.wallpaper-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 22px 14px 18px;
+  text-align: center;
+}
+
+.wallpaper-empty[hidden] {
+  display: none !important;
+}
+
+.wallpaper-empty-title {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 550;
+  color: var(--text-primary);
+}
+
+.wallpaper-empty-desc {
+  margin: 0;
+  font-size: 0.6875rem;
+  line-height: 1.4;
+  color: var(--text-secondary);
+}
+
+.wallpaper-empty-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.wallpaper-add-row {
+  display: flex;
+  padding: 4px 8px 8px;
+}
+
+.wallpaper-add-btn {
+  flex: 1 1 auto;
+  justify-content: center;
+}
+
+/* ============================================
+   四、播放方式 / 样式
+   ============================================ */
+.wallpaper-playback-params,
+.wallpaper-style-params {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.wallpaper-playback-params[hidden],
+.wallpaper-style-params[hidden],
+.wallpaper-style-field[hidden] {
+  display: none !important;
+}
+
+.wallpaper-style-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.wallpaper-order-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* ============================================
+   五、添加弹层
+   ============================================ */
+.wallpaper-add-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.wallpaper-add-option {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-height: 52px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--text-primary) 3.5%, var(--bg-warm));
+  color: var(--text-primary);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 0.15s var(--ease),
+    background 0.15s var(--ease);
+}
+
+.wallpaper-add-option:hover {
+  border-color: var(--border-strong);
+  background: color-mix(in srgb, var(--text-primary) 6%, var(--bg-warm));
+}
+
+.wallpaper-add-option.is-active {
+  border-color: var(--text-primary);
+}
+
+.wallpaper-add-option-title {
+  font-size: 0.75rem;
+  font-weight: 550;
+  line-height: 1.3;
+}
+
+.wallpaper-add-option-desc {
+  font-size: 0.625rem;
+  color: var(--text-tertiary);
+  line-height: 1.3;
+}
+
+.wallpaper-add-kind {
+  display: flex;
+  gap: 12px;
+  padding-top: 2px;
+}
+
+.wallpaper-add-kind label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.wallpaper-add-kind input {
+  accent-color: var(--accent);
+}
+
+.wallpaper-add-group-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 180px;
+  overflow: auto;
+}
+
+.wallpaper-add-group-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 4px;
+  border-radius: 7px;
+  font-size: 0.75rem;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.wallpaper-add-group-item:hover {
+  background: var(--settings-row-hover, var(--bg-warm-alt));
+}
+
+.wallpaper-add-group-item input {
+  accent-color: var(--accent);
+  flex-shrink: 0;
+}
+
+.wallpaper-add-group-thumb {
+  width: 28px;
+  height: 20px;
+  border-radius: 5px;
+  background-size: cover;
+  background-position: center;
+  background-color: color-mix(in srgb, var(--text-primary) 6%, var(--bg-warm));
+  flex-shrink: 0;
+}
+
+/* 在线源卡 */
+.wallpaper-catalog-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+}
+
+.wallpaper-catalog-item {
+  grid-column: 1 / -1;
+  width: 100%;
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--text-primary) 3%, var(--bg-warm));
+  color: var(--text-primary);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s var(--ease), background 0.15s var(--ease);
+}
+
+.wallpaper-catalog-item:hover {
+  border-color: var(--border-strong);
+}
+
+.wallpaper-catalog-icon {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--card-bg);
+  color: var(--text-secondary);
+  font-size: 18px;
+}
+
+.wallpaper-catalog-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.wallpaper-catalog-name {
+  font-size: 0.7813rem;
+  font-weight: 550;
+  line-height: 1.3;
+}
+
+.wallpaper-catalog-meta {
+  font-size: 0.6563rem;
+  color: var(--text-tertiary);
+  line-height: 1.3;
+}
+
+.wallpaper-catalog-apply {
+  flex-shrink: 0;
+  font-size: 0.6875rem;
+  font-weight: 550;
+  color: var(--text-secondary);
+}
+
+/* 低性能 / 减少动效 */
+@media (prefers-reduced-motion: reduce) {
+  .wallpaper-media,
+  .wallpaper-media-inner,
+  .wallpaper-item,
+  .wallpaper-tab,
+  .wallpaper-add-option {
+    transition: none !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .wallpaper-grid {
+    gap: 6px;
+    padding: 12px;
+  }
+
+  .wallpaper-preview {
+    grid-template-columns: 64px minmax(0, 1fr) auto;
+  }
+
+  .wallpaper-preview-media {
+    width: 64px;
+    height: 44px;
+  }
+}
+
+/* 纯色背景：铺满页面底色（优先级高于 base.css 的 body 背景）
+   兜底色跟随主题 --bg-warm，深色模式下不能落回浅色 */
+html.wp-solid-bg,
+html.wp-solid-bg body {
+  background: var(--wp-solid-color, var(--bg-warm, #F5F0E8));
+}
+
+/* ============================================
+   六、源列表
+   ============================================ */
+.wallpaper-source-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.wallpaper-source-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--text-primary) 3%, var(--bg-warm));
+}
+
+.wallpaper-source-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.wallpaper-source-name {
+  font-size: 0.7813rem;
+  font-weight: 550;
+  color: var(--text-primary);
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wallpaper-source-kind {
+  font-size: 0.6563rem;
+  color: var(--text-secondary);
+  line-height: 1.3;
+}
+
+.wallpaper-source-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+/* ============================================
+   七、打开策略
+   ============================================ */
+/* 3 个纯文字分段比带图标的分段更矮，字号也更小 */
+#wpStrategySeg .mode-segment-btn {
+  min-height: 34px;
+  padding: 0 4px;
+  font-size: 0.75rem;
+}
+
+/* ============================================
+   八、页内分栏
+   ============================================ */
+/* 页内分栏：自研胶囊按钮组（role=tablist + button[role=tab]）。
+   选中项把胶囊收成圆角方块并加宽，把右边的内容推过去；图标只在选中项出现 */
+.wp-subnav {
+  /* 块高的一半：胶囊圆角用它跟高度对齐 */
+  --seg-cap: 16px;
+  /* 四个胶囊在桌面 312px 面板里等分，不再横向滚动 */
+  --subnav-gutter: 12px;
+  display: flex;
+  gap: 6px;
+  margin-inline: 0;
+  padding: 0;
+  overflow: visible;
+}
+
+/* 与 .settings-view 的 18px 留白对齐（条件与 mobile.css 一致） */
+@media (max-width: 600px), (pointer: coarse) and (hover: none) and (max-width: 915px) {
+  .wp-subnav {
+    --subnav-gutter: 18px;
+  }
+}
+
+.wp-subnav-btn {
+  /* 等分：四个胶囊始终同宽，切换时不跳动也不会溢出 */
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 32px;
+  box-sizing: border-box;
+  padding: 0 2px;
+  border: none;
+  /* 常态：四角全圆的独立胶囊 */
+  border-radius: var(--seg-cap, 16px);
+  background: color-mix(in srgb, var(--text-primary) 8%, transparent);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 550;
+  white-space: nowrap;
+  overflow: hidden;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  /* 图标绝对定位后不参与布局，间距由它自己的位移算。
+     用 rem 不用 em：--seg-icon-w 会被 label 和 icon 两边读取，
+     em 会各自按自己的字号解析，宽度对不上 */
+  gap: 0;
+  --seg-icon-w: 1.1875rem;
+  --seg-icon-gap: 7px;
+  /* 图标字形左右带透明边距，直接对齐会让「图标+文字」整组看着偏左 */
+  --seg-icon-nudge: 2.5px;
+  box-shadow: none;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  /* 宽度和圆角同一条时长同一条曲线：胶囊要在撑开的过程中一点点成形，
+     任何一方先跑完都会看着像「先变完再挪」。底色、文字色仍是瞬时的 */
+  transition:
+    flex-grow calc(0.26s * var(--motion-scale, 1)) var(--ease),
+    border-radius calc(0.26s * var(--motion-scale, 1)) var(--ease);
+}
+
+/* 选中：胶囊收成圆角方块并展开，其余几项平分剩下的宽度，总宽不变 */
+.wp-subnav-btn.is-active {
+  flex-grow: 1.6;
+  border-radius: 12px;
+  background: var(--accent);
+  color: var(--bg-warm);
+  box-shadow: none;
+}
+
+/* 深色底上浅填充更不显，抬一档才看得出是四个独立胶囊（排除选中项） */
+html[data-mode="dark"] .wp-subnav-btn:not(.is-active) {
+  background: color-mix(in srgb, var(--text-primary) 13%, transparent);
+}
+
+/* 只在真正有鼠标的设备上做 hover 加深：触屏按下时浏览器会给 sticky hover */
+@media (hover: hover) and (pointer: fine) {
+  .wp-subnav-btn:not(.is-active):hover {
+    background: color-mix(in srgb, var(--text-primary) 10%, transparent);
+  }
+
+  html[data-mode="dark"] .wp-subnav-btn:not(.is-active):hover {
+    background: color-mix(in srgb, var(--text-primary) 17%, transparent);
+  }
+}
+
+.wp-subnav-btn:not(.is-active):active {
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--text-primary) 14%, transparent);
+}
+
+.wp-subnav-btn.is-active:active {
+  background: color-mix(in srgb, var(--accent) 84%, #000);
+}
+
+.wp-subnav-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* tab 图标：MingCute 字形，只在激活（胶囊展开）时出现。
+   不走 width 过渡——那会让文字每帧重排、字形被 overflow 裁一半。
+   这里绝对定位 + transform，纯合成层动画，文字一点都不动 */
+.wp-subnav .wp-subnav-icon {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: var(--seg-icon-w);
+  height: var(--seg-icon-w);
+  margin: 0;
+  display: grid;
+  place-items: center;
+  overflow: visible;
+  opacity: 0;
+  pointer-events: none;
+  font-size: 1.125rem;
+  line-height: 1;
+  /* 未选中时贴在文字左侧（透明不可见），选中时跟文字同步右移，
+     两者位移量相同，所以一直是「一起动」的整体 */
+  transform:
+    translate(
+      calc(
+        -50% - var(--lab-half, 0px) - var(--seg-icon-gap) - var(--seg-icon-w) / 2 +
+          var(--seg-icon-nudge, 0px)
+      ),
+      -50%
+    )
+    scale(0.45);
+  transition:
+    opacity calc(0.18s * var(--motion-scale, 1)) var(--ease),
+    transform calc(0.26s * var(--motion-scale, 1)) var(--ease);
+}
+
+.wp-subnav-btn.is-active .wp-subnav-icon {
+  opacity: 1;
+  transform:
+    translate(
+      calc(-50% - var(--lab-half, 0px) - var(--seg-icon-gap) / 2 + var(--seg-icon-nudge, 0px)),
+      -50%
+    )
+    scale(1);
+}
+
+/* 文字不做过渡，点下去直接换位；只有胶囊宽度和图标在动 */
+.wp-subnav-text {
+  transition: none;
+}
+
+.wp-subnav-btn.is-active .wp-subnav-text {
+  transform: translateX(calc((var(--seg-icon-w) + var(--seg-icon-gap)) / 2));
+}
+
+/* 手机端宽度充裕，字与图标回到常规尺寸 */
+@media (max-width: 600px), (pointer: coarse) and (hover: none) and (max-width: 915px) {
+  .wp-subnav-btn {
+    padding: 0 8px;
+    font-size: 0.75rem;
+    --seg-icon-w: 1.25rem;
+    --seg-icon-gap: 7px;
+  }
+
+  .wp-subnav .wp-subnav-icon {
+    font-size: 1.1875rem;
+  }
+}
+
+
+.wp-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.wp-panel[hidden] {
+  display: none !important;
+}
+
+.wp-hidden-tab {
+  display: none !important;
+}
+
+.wallpaper-select {
+  width: 100%;
+  min-height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--card-bg);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 0.7813rem;
+  cursor: pointer;
+}
+
+.wallpaper-select:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.wallpaper-strategy-params {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px 10px 2px;
+  border-top: 1px solid var(--border);
+  margin-top: 8px;
+}
+
+.wallpaper-strategy-params[hidden],
+.wallpaper-strategy-field[hidden] {
+  display: none !important;
+}
+
+.wallpaper-strategy-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.wallpaper-source-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.wallpaper-pick-btn {
+  min-height: 28px;
+  max-width: 100%;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--text-primary) 3.5%, var(--bg-warm));
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition:
+    border-color 0.15s var(--ease),
+    color 0.15s var(--ease),
+    background 0.15s var(--ease);
+}
+
+.wallpaper-pick-btn:hover {
+  border-color: var(--border-strong);
+  color: var(--text-primary);
+}
+
+.wallpaper-pick-btn.is-active {
+  border-color: var(--text-primary);
+  color: var(--text-primary);
+  background: color-mix(in srgb, var(--text-primary) 8%, var(--bg-warm));
+}
+
+/* 全局开关分段贴左，不撑满整行 */
+
+@media (max-width: 480px) {
+  #wpStrategySeg .mode-segment-btn {
+    min-height: 40px;
+    font-size: 0.75rem;
+  }
+
+  /* 顶部四 tab 压矮：44px 跟下面的卡片不是一个密度，38px 才像个 tab 条 */
+  .wp-subnav {
+    --seg-cap: 19px;
+  }
+
+  .wp-subnav-btn {
+    min-height: 38px;
+    font-size: 0.75rem;
+  }
+}
+
+/* 触屏没有 hover，更多操作按钮常显 */
+@media (hover: none) {
+  .wallpaper-item-more {
+    opacity: 1;
+  }
+}
+
+@media (max-width: 480px) {
+  .wallpaper-item-more {
+    width: 28px;
+    height: 28px;
+    font-size: 15px;
+  }
+}

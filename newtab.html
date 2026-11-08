@@ -24,6 +24,11 @@
       <div class="page-bg-image is-active" id="pageBgImage" data-bg-layer="a"></div>
       <div class="page-bg-image" id="pageBgImageB" data-bg-layer="b"></div>
     </div>
+    <!-- 壁纸媒体层（Wallpaper Spec 渲染）：图片 / 视频 / 轮换 / 动态 -->
+    <div class="wallpaper-media" id="wallpaperMedia" aria-hidden="true">
+      <div class="wallpaper-media-inner" id="wallpaperMediaInner"></div>
+      <canvas class="wallpaper-ripple-canvas" id="wallpaperRippleCanvas"></canvas>
+    </div>
     <div class="page-bg-overlay" id="pageBgOverlay"></div>
   </div>
 
@@ -677,49 +682,6 @@
                   <span>恢复默认</span>
                 </button>
               </div>
-            </div>
-          </section>
-
-          <section class="settings-group settings-reveal" id="bgBingGroup" hidden>
-            <h5 class="settings-group-title">今日壁纸</h5>
-            <div class="settings-card settings-card--flush">
-              <article class="bg-bing-card bg-bing-card--immersive" id="bgBingMeta">
-                <div class="bg-bing-hero">
-                  <div class="bg-bing-preview-stack" aria-hidden="true">
-                    <img class="bg-bing-preview is-active" id="bgBingPreview" alt="" hidden>
-                    <img class="bg-bing-preview" id="bgBingPreviewB" alt="" hidden>
-                  </div>
-                  <div class="bg-bing-hero-fallback" id="bgBingPreviewFallback" aria-hidden="true">
-                    <span class="mgc_pic_2_line"></span>
-                    <span>正在获取今日壁纸…</span>
-                  </div>
-                  <div class="bg-bing-scrim" aria-hidden="true">
-                    <span class="bg-bing-blur bg-bing-blur--1"></span>
-                    <span class="bg-bing-blur bg-bing-blur--2"></span>
-                    <span class="bg-bing-blur bg-bing-blur--3"></span>
-                    <span class="bg-bing-blur bg-bing-blur--4"></span>
-                    <span class="bg-bing-blur-shade"></span>
-                  </div>
-                  <div class="bg-bing-overlay">
-                    <div class="bg-bing-source">
-                      <img class="bg-bing-source-icon" src="icons/engines/bing.ico" width="14" height="14" alt="" aria-hidden="true">
-                      <span>Microsoft Bing</span>
-                    </div>
-                    <h6 class="bg-bing-title" id="bgBingTitle">加载中…</h6>
-                    <p class="bg-bing-copyright" id="bgBingCopyright"></p>
-                    <div class="bg-bing-actions-row">
-                      <a class="bg-bing-link" id="bgBingLink" href="https://www.bing.com/" target="_blank" rel="noopener noreferrer">
-                        <span>了解此图片</span>
-                        <span class="mgc_arrow_right_line" aria-hidden="true"></span>
-                      </a>
-                      <button class="bg-bing-link bg-bing-shuffle" id="bgBingShuffle" type="button" title="换一张必应壁纸">
-                        <span class="mgc_refresh_2_line" aria-hidden="true"></span>
-                        <span id="bgBingShuffleLabel">换一张</span>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </article>
             </div>
           </section>
 
@@ -1530,6 +1492,100 @@
     </div>
   </div>
 
+  <!-- 背景库 · 添加弹层 -->
+  <div class="modal-overlay" id="wpAddModal" role="dialog" aria-modal="true" aria-labelledby="wpAddTitle" aria-hidden="true" inert>
+    <div class="modal-box">
+      <div class="modal-header">
+        <span id="wpAddTitle">添加背景</span>
+        <button class="modal-close" id="wpAddClose" type="button" aria-label="关闭">
+          <span class="mgc_close_line" aria-hidden="true"></span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="wallpaper-add-options" id="wpAddOptions">
+          <button class="wallpaper-add-option" type="button" data-wp-add="image">
+            <span class="wallpaper-add-option-title">图片</span>
+            <span class="wallpaper-add-option-desc">本地文件或在线链接</span>
+          </button>
+          <button class="wallpaper-add-option" type="button" data-wp-add="video">
+            <span class="wallpaper-add-option-title">视频</span>
+            <span class="wallpaper-add-option-desc">本地文件或在线链接</span>
+          </button>
+          <button class="wallpaper-add-option" type="button" data-wp-add="effect">
+            <span class="wallpaper-add-option-title">动效</span>
+            <span class="wallpaper-add-option-desc">流光渐变等动态背景</span>
+          </button>
+          <button class="wallpaper-add-option" type="button" data-wp-add="solid">
+            <span class="wallpaper-add-option-title">纯色</span>
+            <span class="wallpaper-add-option-desc">单一颜色背景</span>
+          </button>
+        </div>
+        <div class="modal-field" id="wpFileField" hidden>
+          <label>选择文件</label>
+          <input type="file" id="wpFileInput" accept="image/*,video/*" multiple>
+        </div>
+        <div class="modal-field" id="wpUrlField" hidden>
+          <label for="wpUrlInput">地址</label>
+          <input type="url" id="wpUrlInput" inputmode="url" placeholder="https://…" autocomplete="off" spellcheck="false">
+        </div>
+        <div class="modal-field" id="wpColorField" hidden>
+          <label for="wpColorInput">颜色</label>
+          <input type="color" id="wpColorInput" value="#F5F0E8">
+        </div>
+        <div class="modal-field" id="wpEffectField" hidden>
+          <label for="wpEffectSelect">动效类型</label>
+          <select id="wpEffectSelect">
+            <option value="grain">流光渐变</option>
+          </select>
+        </div>
+        <p class="modal-tip" id="wpAddTip"></p>
+        <p class="modal-error" id="wpAddError" role="alert" aria-live="polite"></p>
+      </div>
+      <div class="modal-footer">
+        <button class="modal-cancel" id="wpAddCancel" type="button">取消</button>
+        <button class="modal-confirm" id="wpAddConfirm" type="button">添加</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 源 · 添加弹层 -->
+  <div class="modal-overlay" id="wpSourceModal" role="dialog" aria-modal="true" aria-labelledby="wpSourceTitle" aria-hidden="true" inert>
+    <div class="modal-box">
+      <div class="modal-header">
+        <span id="wpSourceTitle">添加源</span>
+        <button class="modal-close" id="wpSourceClose" type="button" aria-label="关闭">
+          <span class="mgc_close_line" aria-hidden="true"></span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="wallpaper-add-options" id="wpSourceOptions">
+          <button class="wallpaper-add-option" type="button" data-wp-source="bing">
+            <span class="wallpaper-add-option-title">必应每日</span>
+            <span class="wallpaper-add-option-desc">每天一张，自动更新</span>
+          </button>
+          <button class="wallpaper-add-option" type="button" data-wp-source="wdd">
+            <span class="wallpaper-add-option-title">.wdd 时间表</span>
+            <span class="wallpaper-add-option-desc">按当前时间返回对应图片</span>
+          </button>
+          <button class="wallpaper-add-option" type="button" data-wp-source="api">
+            <span class="wallpaper-add-option-title">第三方 API</span>
+            <span class="wallpaper-add-option-desc">从接口拉取图片</span>
+          </button>
+        </div>
+        <div class="modal-field" id="wpSourceApiField" hidden>
+          <label for="wpSourceApiUrl">API 地址</label>
+          <input type="url" id="wpSourceApiUrl" placeholder="https://…（返回 JSON，含 url 字段）" autocomplete="off" spellcheck="false">
+        </div>
+        <p class="modal-tip" id="wpSourceTip"></p>
+        <p class="modal-error" id="wpSourceError" role="alert" aria-live="polite"></p>
+      </div>
+      <div class="modal-footer">
+        <button class="modal-cancel" id="wpSourceCancel" type="button">取消</button>
+        <button class="modal-confirm" id="wpSourceConfirm" type="button">添加</button>
+      </div>
+    </div>
+  </div>
+
   <!-- 按依赖顺序加载：配置 → 工具 → 主题 → 问候 → 背景 → 搜索 → 快捷方式 → 设置 → 启动 -->
   <script src="js/config.js"></script>
   <script src="js/utils.js"></script>
@@ -1538,6 +1594,14 @@
   <script src="js/theme.js"></script>
   <script src="js/greeting.js"></script>
   <script src="js/background.js"></script>
+  <!-- 背景系统（背景库 + 源 + 打开策略）：顺序不可调 -->
+  <script src="js/wallpaper/spec.js"></script>
+  <script src="js/wallpaper/library.js"></script>
+  <script src="js/wallpaper/sources.js"></script>
+  <script src="js/wallpaper/effects.js"></script>
+  <script src="js/wallpaper/theme-bridge.js"></script>
+  <script src="js/wallpaper/engine.js"></script>
+  <script src="js/wallpaper/settings-ui.js"></script>
   <script src="js/search.js"></script>
   <script src="js/shortcuts.js"></script>
   <script src="js/settings.js"></script>

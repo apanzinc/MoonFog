@@ -140,6 +140,19 @@ function initDeferred(boot) {
     .catch((err) => {
       console.error('[MoonFog] initBackground/initBingCreditPop failed:', err);
     });
+  // 背景系统（背景库 + 源 + 打开策略）
+  Promise.resolve()
+    .then(async () => {
+      const WP = window.MoonFogWp || {};
+      try {
+        if (WP.library && typeof WP.library.init === 'function') await WP.library.init();
+        if (WP.engine && typeof WP.engine.init === 'function') WP.engine.init();
+        if (WP.ui && typeof WP.ui.init === 'function') WP.ui.init();
+      } catch (err) {
+        console.error('[MoonFog] wallpaper init failed:', err);
+      }
+    })
+    .catch((err) => console.error('[MoonFog] wallpaper init failed:', err));
 }
 
 /**

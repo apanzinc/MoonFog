@@ -1875,56 +1875,13 @@ function bindBgMediaSource() {
 }
 
 function bindBackgroundSetting() {
-   bindBgModeGrid();
-   bindBgMediaSource();
-
-   const bgLocalPick = document.getElementById('bgLocalPick');
-   const bgLocalInput = document.getElementById('bgLocalInput');
-   const bgLocalClear = document.getElementById('bgLocalClear');
-   const bgLocalTip = document.getElementById('bgLocalTip');
+   // 流光渐变配置（内置动效的参数）
    bindGrainSettings();
 
-   if (bgLocalPick && bgLocalInput) {
-     bgLocalPick.addEventListener('click', () => bgLocalInput.click());
-     bgLocalInput.addEventListener('change', async () => {
-       const file = bgLocalInput.files && bgLocalInput.files[0];
-       bgLocalInput.value = '';
-       if (!file) return;
-       if (!file.type.startsWith('image/')) {
-         if (bgLocalTip) bgLocalTip.textContent = '请选择图片文件';
-         return;
-       }
-       try {
-         if (bgLocalTip) bgLocalTip.textContent = '正在处理图片…';
-         const dataUrl = await compressImageFile(file);
-         saveLocalBackground(dataUrl);
-         if (bgLocalTip) bgLocalTip.textContent = '已应用本地图片（仅保存在本机）';
-         await applyMediaSource('local');
-         initBgModeGridSelection();
-       } catch (err) {
-         if (bgLocalTip) bgLocalTip.textContent = err.message || '图片处理失败';
-       }
-     });
-   }
-
-   if (bgLocalClear) {
-     bgLocalClear.addEventListener('click', async () => {
-       if (!window.confirm('确定要清除已上传的本地背景图片吗？此操作不可撤销')) return;
-       clearLocalBackground();
-       if (bgLocalTip) bgLocalTip.textContent = '已清除本地图片';
-       await applyMediaSource('local');
-       initBgModeGridSelection();
-     });
-   }
-
-   const bgBingShuffle = document.getElementById('bgBingShuffle');
-   if (bgBingShuffle && !bgBingShuffle.dataset.bound) {
-     bgBingShuffle.dataset.bound = '1';
-     bgBingShuffle.addEventListener('click', async () => {
-       if (typeof shuffleBingWallpaper === 'function') {
-         await shuffleBingWallpaper();
-       }
-     });
+   // 背景系统（背景库 + 源 + 打开策略 + 全局开关）
+   const WP = window.MoonFogWp;
+   if (WP && WP.ui && typeof WP.ui.init === 'function') {
+     WP.ui.init();
    }
 }
 
