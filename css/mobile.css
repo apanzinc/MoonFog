@@ -123,7 +123,7 @@
     right: 0;
     margin: 0 auto;
     width: calc(min(100vw, 720px) - 40px);
-    bottom: calc(var(--kb-h, 0px) + 10px);
+    bottom: calc(var(--kb-h, 0px) + 6px);
     /* 高过左下角必应署名，且低于设置面板（100）与弹窗（300） */
     z-index: 80;
     max-width: none;
