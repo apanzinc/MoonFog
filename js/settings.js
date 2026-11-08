@@ -140,7 +140,12 @@ function runSettingsPageSwap(pageView, prevPageId, pageId, forward, token, anima
   const prevPageEl = prevPageId ? pageView.querySelector(`.settings-page[data-page="${prevPageId}"]`) : null;
   const nextPageEl = pageView.querySelector(`.settings-page[data-page="${pageId}"]`);
   if (!nextPageEl) return;
-  if (!animated || !prevPageEl || typeof prevPageEl.animate !== 'function') return;
+  if (!animated || !prevPageEl || typeof prevPageEl.animate !== 'function') {
+    // 动画被禁用时直接切换可见性，避免目标页仍 hidden
+    nextPageEl.hidden = false;
+    if (prevPageEl) prevPageEl.hidden = true;
+    return;
+  }
 
   // 旧页绝对定位覆盖在新页上方，动画结束后还原为 hidden
   prevPageEl.hidden = false;
@@ -234,6 +239,15 @@ function navigateSettings(pageId, options = {}) {
 
   const token = ++settingsNavToken;
   currentSettingsPage = isRootPageId(pageId) ? 'root' : pageId;
+  // 记录"当前显示的具体页面"。返回上级时要靠它保留离开层的可见内容——
+  // sub→page 这类返回也必须更新，否则它还停在上一个三级页 id，
+  // 再返回一级时会把二级页内容按错误 id 过滤掉，滑出去就成了空壳。
+  if (!isRootPageId(pageId)) lastSettingsPageId = pageId;
+
+  // 每下钻一层压一条历史，手机返回键才能逐级回退（返回触发的导航不压）
+  if (!options.fromHistory && !isRootPageId(pageId) && pageId !== prevPageId) {
+    pushSettingsHistoryState(Math.max(settingsDepth(), 0) + 1);
+  }
 
   // 进入下级：切换内容；返回上级：保留内容直到动画结束（见 finishSettingsViewVisibility）
   if (typeof closeMfColorPicker === 'function') closeMfColorPicker();
@@ -283,21 +297,19 @@ function navigateSettings(pageId, options = {}) {
 
   const headerEl = panel.querySelector('.settings-header');
   if (headerEl) headerEl.dataset.level = isRootPageId(pageId) ? 'root' : 'page';
-  // 三级页面显示父级名称，二级显示"设置"
+  // 标题栏显示当前页名；父级名称放进返回键的无障碍标签
   const parentPage = settingsNavHistory.length > 0 ? settingsNavHistory[settingsNavHistory.length - 1] : null;
-  setBackLabelText(parentPage ? getSettingsPageTitle(parentPage) : '设置');
+  const parentTitle = parentPage ? getSettingsPageTitle(parentPage) : '设置';
+  setBackLabelText(isRootPageId(pageId) ? '设置' : getSettingsPageTitle(pageId));
   if (backBtn) {
-    backBtn.setAttribute('aria-label', '返回设置');
+    backBtn.setAttribute('aria-label', '返回' + parentTitle);
     if (backBtn._backAnimRaf) {
       cancelAnimationFrame(backBtn._backAnimRaf);
       backBtn._backAnimRaf = null;
     }
     if (isRootPageId(pageId)) {
-      // 退出：去掉 is-shown 并过渡到收起
-      backBtn.classList.remove('is-shown');
-      backBtn.setAttribute('aria-hidden', 'true');
-      backBtn.setAttribute('tabindex', '-1');
-      backBtn.hidden = false;
+      // 全屏（手机）时返回键常显，点击即关闭；侧边栏形态继续收起
+      syncRootBackBtn(backBtn);
     } else {
       // 进入：直接显示（层滑动动画由面板层负责，返回键无需二次动画）
       backBtn.hidden = false;
@@ -332,6 +344,11 @@ function navigateSettings(pageId, options = {}) {
     subView.hidden = false;
     panel.dataset.view = nextView;
     void panel.offsetWidth;
+    // 无动画时也要切到目标页，否则子页面仍 hidden
+    if (!isRootPageId(pageId)) {
+      const targetViewEl = nextView === 'sub' ? subView : pageView;
+      syncSettingsPageContent(targetViewEl, false, pageId);
+    }
     finishSettingsViewVisibility(panel, rootView, pageView, subView, nextView);
     panel.classList.remove('settings-no-anim');
   } else {
@@ -352,11 +369,15 @@ function navigateSettings(pageId, options = {}) {
       // 后退：先落到 prevView 态（无过渡），并显示目标层内容，再过渡到 nextView
       panel.dataset.view = prevView;
       void pageView.offsetWidth;
-      // 显示目标层(nextView)的内容，以便过渡时可见
-      const targetViewEl = nextView === 'sub' ? subView : pageView;
-      targetViewEl.querySelectorAll('.settings-page').forEach((page) => {
-        page.hidden = page.dataset.page !== pageId;
-      });
+      // 显示目标层(nextView)的内容，以便过渡时可见。
+      // 注意：nextView === 'root' 时目标层是一级菜单，不能拿 pageId('root') 去筛 page 里的 section，
+      // 否则会把正在离开的二级页内容全部 hidden，滑出去的是空壳（看起来就像"旧页没有动画"）。
+      if (nextView !== 'root') {
+        const targetViewEl = nextView === 'sub' ? subView : pageView;
+        targetViewEl.querySelectorAll('.settings-page').forEach((page) => {
+          page.hidden = page.dataset.page !== pageId;
+        });
+      }
     }
     // 前进：直接从初始态过渡到 nextView（root->page: root淡出+page滑入；page->sub: page淡出+sub滑入）
     panel.classList.remove('settings-no-anim');
@@ -430,6 +451,36 @@ function isRootPageId(pageId) {
   return !pageId || pageId === 'root';
 }
 
+/**
+ * 面板是否处于「全屏」形态（手机上不是侧边栏）。
+ * 条件与 css/settings/panel.css 的全屏媒体查询保持一致；
+ * 全屏时右上角关闭键隐藏，改由左上角返回键承担「回主页」。
+ */
+const SETTINGS_FULLSCREEN_MQ = '(max-width: 600px), (pointer: coarse) and (hover: none) and (max-width: 915px)';
+
+function isFullscreenSettings() {
+  if (typeof window.matchMedia !== 'function') return false;
+  return window.matchMedia(SETTINGS_FULLSCREEN_MQ).matches;
+}
+
+/** 一级页在全屏形态下显示返回键（语义 = 关闭设置） */
+function syncRootBackBtn(backBtn) {
+  if (!backBtn) return;
+  const on = isRootPageId(currentSettingsPage) && isFullscreenSettings();
+  if (on) {
+    backBtn.hidden = false;
+    backBtn.setAttribute('aria-hidden', 'false');
+    backBtn.setAttribute('aria-label', '关闭设置');
+    backBtn.setAttribute('tabindex', '0');
+    backBtn.classList.add('is-shown');
+  } else {
+    backBtn.classList.remove('is-shown');
+    backBtn.setAttribute('aria-hidden', 'true');
+    backBtn.setAttribute('tabindex', '-1');
+    backBtn.hidden = false;
+  }
+}
+
 function bindSettingsNavigation() {
   const panel = getSettingsPanel();
   const backBtn = document.getElementById('settingsBackBtn');
@@ -446,10 +497,30 @@ function bindSettingsNavigation() {
     backBtn.addEventListener('click', (e) => {
       if (!backBtn.classList.contains('is-shown')) return;
       e.preventDefault();
-      // 有历史则回到上一页，否则回一级
+      // 全屏一级页：返回键就是关闭键
+      if (isRootPageId(currentSettingsPage)) {
+        closeSettings();
+        return;
+      }
+      // 交给浏览器历史：弹一条历史 = 面板内退一层，和系统返回键走同一条路径
+      if (settingsDepth() > 0) {
+        history.back();
+        return;
+      }
       const prevPage = settingsNavHistory.length > 0 ? settingsNavHistory[settingsNavHistory.length - 1] : 'root';
       navigateSettings(prevPage, { back: true });
     });
+  }
+
+  // 横竖屏切换 / 窗口拉伸跨过断点：只重算一级页返回键，不动内容与滚动位置
+  if (typeof window.matchMedia === 'function') {
+    const mq = window.matchMedia(SETTINGS_FULLSCREEN_MQ);
+    const onChange = () => {
+      if (!isSettingsOpen()) return;
+      syncRootBackBtn(document.getElementById('settingsBackBtn'));
+    };
+    if (typeof mq.addEventListener === 'function') mq.addEventListener('change', onChange);
+    else if (typeof mq.addListener === 'function') mq.addListener(onChange);
   }
 }
 
@@ -683,6 +754,8 @@ function openSettings() {
   panel.setAttribute('aria-hidden', 'false');
   panel.removeAttribute('inert');
   document.body.classList.add('settings-open');
+  // 手机系统返回键：先为面板根层压一条历史（depth 0），下钻时逐层追加
+  if (settingsDepth() < 0) pushSettingsHistoryState(0);
   const settingsBtn = document.getElementById('settingsBtn');
   if (settingsBtn) settingsBtn.setAttribute('aria-expanded', 'true');
   // 焦点陷阱：Tab 不外溢到背景
@@ -699,8 +772,55 @@ function openSettings() {
   });
 }
 
+/**
+ * 系统返回键支持（手机手势/实体返回）
+ * 每打开一层设置就压一条历史（state.depth 记录层级）：
+ * 返回键 = 弹一条历史 + 面板内退一层，逐级回退，退到根层再按才关面板。
+ */
+function settingsDepth() {
+  const state = history.state;
+  return state && state.mfSettings === true ? (state.depth || 0) : -1;
+}
+
+function pushSettingsHistoryState(depth) {
+  try {
+    history.pushState({ mfSettings: true, depth: typeof depth === 'number' ? depth : 0 }, '');
+  } catch (_) {}
+}
+
+/** 面板由界面主动关闭（关闭键/遮罩/Esc）时，把自己压入的所有历史都弹掉
+ *  depth 0 是根层那条，所以要退 depth + 1 条，不能只退 depth 条 */
+function releaseSettingsHistoryState() {
+  const depth = settingsDepth();
+  if (depth < 0) return;
+  try {
+    history.go(-(depth + 1));
+  } catch (_) {}
+}
+
+function bindSettingsHistory() {
+  window.addEventListener('popstate', () => {
+    if (!isSettingsOpen()) return; // 面板没开，交还给浏览器正常返回
+    const page = currentSettingsPage;
+    if (page && !isRootPageId(page)) {
+      // 返回一条历史 = 面板内退一层（返回触发的导航不再压历史）
+      const prevPage = settingsNavHistory.length > 0 ? settingsNavHistory[settingsNavHistory.length - 1] : 'root';
+      navigateSettings(prevPage, { back: true, fromHistory: true });
+      return;
+    }
+    closeSettings({ fromHistory: true });
+  });
+
+  // bfcache 还原：部分手机浏览器返回时从缓存直接恢复页面，popstate 不触发，
+  // 这里兜底把面板关掉，避免返回后还残留一个打开的面板
+  window.addEventListener('pageshow', (event) => {
+    if (!event.persisted) return;
+    if (isSettingsOpen()) closeSettings({ fromHistory: true });
+  });
+}
+
 /** 关闭设置面板 */
-function closeSettings() {
+function closeSettings(options = {}) {
   const panel = getSettingsPanel();
   if (!panel) return;
   if (typeof closeMfColorPicker === 'function') closeMfColorPicker();
@@ -719,6 +839,8 @@ function closeSettings() {
       settingsBtn.focus();
     }
   }
+  // 面板已收起后再弹历史，popstate 进来会因为面板已关而直接忽略
+  if (!options.fromHistory) releaseSettingsHistoryState();
 }
 
 /** 按视图名取对应滚动层元素（root / page / sub） */
@@ -814,10 +936,8 @@ function bindSettingsChrome() {
 
   document.addEventListener('keydown', (e) => {
     if (e.key !== 'Escape' || !isSettingsOpen()) return;
-    const shortcutModal = document.getElementById('shortcutModal');
-    if (shortcutModal && shortcutModal.classList.contains('active')) return;
-    const engineModal = document.getElementById('engineModal');
-    if (engineModal && engineModal.classList.contains('active')) return;
+    // 任意弹层打开时，Escape 由弹层处理，不能连带关闭设置面板
+    if (document.querySelector('.modal-overlay.active')) return;
     closeSettings();
   });
 
@@ -825,12 +945,10 @@ function bindSettingsChrome() {
     if (!isSettingsOpen() || !panel) return;
     if (panel.contains(e.target)) return;
     if (settingsBtn && settingsBtn.contains(e.target)) return;
+    // 弹层（添加背景 / 添加源 / 快捷方式 / 引擎等）在面板之外，点击弹层不能关闭面板
+    if (document.querySelector('.modal-overlay.active')) return;
     const colorPopover = document.getElementById('mfColorPopover');
     if (colorPopover && colorPopover.contains(e.target)) return;
-    const shortcutModal = document.getElementById('shortcutModal');
-    if (shortcutModal && shortcutModal.contains(e.target)) return;
-    const engineModal = document.getElementById('engineModal');
-    if (engineModal && engineModal.contains(e.target)) return;
     closeSettings();
   });
 }
@@ -2330,6 +2448,7 @@ function initSettings() {
   try { if (typeof initOverlayScrollbars === 'function') initOverlayScrollbars(document); } catch (_) {}
   try { bindSettingsChrome(); } catch (_) {}
   try { bindSettingsNavigation(); } catch (_) {}
+  try { bindSettingsHistory(); } catch (_) {}
   try { bindUsernameSetting(); } catch (_) {}
   try { bindCustomTextSetting(); } catch (_) {}
   try { bindGreetingModeSetting(); } catch (_) {}

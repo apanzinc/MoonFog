@@ -1228,14 +1228,9 @@ body.has-image-bg .bing-credit:focus-visible {
   pointer-events: auto;
 }
 
-/* 小宽度：问候居中 + 隐藏破折号（viewport < 816px 时 content 被压缩，搜索框变小） */
+/* 小宽度：隐藏破折号（viewport < 816px 时 content 被压缩，搜索框变小）
+   问候区一律左对齐，居中样式已移除，避免和 mobile.css 互相覆盖 */
 @media (max-width: 816px) {
-  .greeting-section {
-    text-align: center !important;
-    width: auto !important;
-    max-width: min(100%, 40rem) !important;
-    align-self: center !important;
-  }
   .greeting-section[data-mode="quote"] .greeting-sub:not(:empty)::before {
     content: none;
   }

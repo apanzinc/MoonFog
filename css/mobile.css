@@ -1,0 +1,279 @@
+/**
+ * MoonFog - Mobile Adaptation
+ * 手机端：字号放大、宽度收紧、触控目标加大。
+ * 双条件触发，任一命中即生效：
+ * 1. 视口 ≤ 600px（主流手机竖屏 360–430px，容错偏宽的机型/桌面模式）
+ * 2. 触屏 + 无悬停 + 视口 ≤ 915px（横屏手机、小屏设备，桌面带鼠标不受影响）
+ * 桌面端样式完全不受影响。
+ */
+
+@media (max-width: 600px), (pointer: coarse) and (hover: none) and (max-width: 915px) {
+  /* ============================================
+     根字号 16 → 20px：全站 rem 文字整体放大一档
+     （设置面板、弹窗、提示等继承文本全部受益；
+     px 定高的控件不受影响，折叠高度由 JS 实测兜底）
+     ============================================ */
+  html {
+    font-size: 17px;
+  }
+
+  /* base.css 里 body 是写死的 16px，会挡住根字号继承，改为跟随根字号 */
+  body {
+    font-size: 1rem;
+  }
+
+  /* ============================================
+     内容区：收紧左右留白，整体更紧凑
+     桌面默认 padding 48px，手机上会吃掉近 1/4 宽度；
+     上下改用居中，避免内容贴顶或偏上
+     ============================================ */
+  .content {
+    /* 手机端让搜索框本身落在屏幕正中：上下两块分占剩余空间，
+       问候区贴上半区底部、快捷方式从下半区顶部开始，
+       而不是把整块内容当整体居中（那样搜索框会偏上或偏下） */
+    display: grid;
+    grid-template-rows: 1fr auto 1fr;
+    align-content: stretch;
+    align-items: stretch;
+    padding: 40px 20px;
+    gap: 18px;
+  }
+
+  .content > .greeting-section {
+    align-self: end;
+  }
+
+  .content > .shortcuts-section {
+    align-self: start;
+  }
+
+  /* ============================================
+     字体放大
+     桌面 clamp 中段按 4vw/6vw 取值，手机视口太窄
+     会掉到下限，这里整体抬高一档
+     ============================================ */
+  .greeting-title {
+    font-size: calc(clamp(2rem, 7.5vw, 2.5rem) * var(--size-greeting, 1));
+  }
+
+  .greeting-title.is-clock {
+    font-size: calc(clamp(2.75rem, 13vw, 3.5rem) * var(--size-greeting, 1));
+  }
+
+  .greeting-title.is-quote,
+  .greeting-title.is-custom {
+    font-size: calc(clamp(1.5rem, 5.8vw, 1.8rem) * var(--size-greeting, 1));
+  }
+
+  .greeting-title.is-quote-error {
+    font-size: calc(1.25rem * var(--size-greeting, 1));
+  }
+
+  .greeting-sub {
+    font-size: calc(1rem * var(--size-greeting-sub, 1));
+  }
+
+  /* ============================================
+     搜索框：更大字号与触控目标
+     输入框 ≥16px，避免 iOS 聚焦时自动放大页面
+     ============================================ */
+  .search-box {
+    padding: 10px 10px 10px 14px;
+    gap: 10px;
+  }
+
+  .search-input {
+    font-size: 1.0625rem;
+    height: 46px;
+  }
+
+  .search-btn {
+    width: 44px;
+    height: 44px;
+    font-size: 20px;
+  }
+
+  .search-clear-btn {
+    width: 36px;
+    height: 36px;
+    font-size: 18px;
+  }
+
+  .search-suggest-item {
+    min-height: 44px;
+    padding: 8px 12px;
+    font-size: calc(1rem * var(--size-search, 1));
+  }
+
+  /* ============================================
+     快捷标签：胶囊加大（32 → 40px），更好点按
+     折叠限高的实际值由 js/shortcuts.js 动态测量，
+     这里的 max-height 只是兜底（两行 40px + 行距）
+     ============================================ */
+  .shortcuts-row {
+    gap: 8px;
+    justify-content: flex-start;
+  }
+
+  /* 展开开关与标签行间距统一为 8px（原来 6px，跟行距不一致） */
+  .shortcuts-expand {
+    margin-top: 8px;
+  }
+
+  .shortcut-btn,
+  .shortcut-folder-trigger,
+  .shortcuts-expand {
+    height: 38px;
+    padding: 0 12px;
+    gap: 6px;
+  }
+
+  .shortcut-icon {
+    width: 15px;
+    height: 15px;
+    font-size: 0.625rem;
+  }
+
+  .shortcut-fallback-icon {
+    width: 15px;
+    height: 15px;
+  }
+
+  .shortcut-folder-icon .mgc_folder_2_line,
+  .shortcut-folder-icon .mgc_folder_line {
+    font-size: 14px;
+  }
+
+  .shortcut-label {
+    font-size: 0.88235294rem; /* 15px @ root 17 */
+  }
+
+  .shortcuts-expand-count,
+  .shortcut-folder-count {
+    min-width: 18px;
+    height: 18px;
+    font-size: 0.6875rem;
+  }
+
+  /* 行距从 6px 变 8px：展开时角标收拢的负边距要跟上 */
+  .shortcut-folder.open > .shortcut-folder-trigger .shortcut-folder-count,
+  .shortcut-expanded-subfolder.open > .shortcut-expanded-subfolder-trigger .shortcut-folder-count {
+    margin-left: -8px;
+  }
+
+  .shortcuts-row.is-collapsed {
+    max-height: 84px;
+  }
+
+  /* ============================================
+     弹层：文件夹面板 / 右键菜单触控加大
+     ============================================ */
+  .shortcut-expanded {
+    max-width: calc(100vw - 24px);
+  }
+
+  .context-menu-item {
+    min-height: 40px;
+    font-size: 0.875rem;
+  }
+
+  /* ============================================
+     设置入口：按钮加大到 44px 触控标准
+     （面板本身 ≤480px 已全屏，见 settings/panel.css）
+     ============================================ */
+  .settings-btn {
+    width: 44px;
+    height: 44px;
+  }
+
+  /* ============================================
+     设置面板：控制在正常手机设置页的量级
+     （标题 ~16px、描述 ~13px、图标 36px、行高 56px）
+     ============================================ */
+  /* 内容区两侧留白 12 → 18px，收窄卡片更接近手机原生设置页 */
+  .settings-view {
+    padding: calc(var(--settings-nav-h) + 6px) 18px 16px;
+  }
+
+  /* 标题栏：返回/关闭键 32 → 48px，图标 18 → 26px。
+     注意：--settings-nav-btn / --settings-nav-icon 定义在 .settings-header 上，
+     必须覆盖它自身，写在 .settings-panel 上会被子元素的声明盖掉 */
+  .settings-panel {
+    --settings-nav-h: 72px;
+  }
+
+  .settings-panel .settings-header {
+    --settings-nav-btn: 48px;
+    --settings-nav-icon: 26px;
+  }
+
+  .settings-nav-label {
+    font-size: 1rem;
+  }
+
+  /* 一级菜单 */
+  .settings-nav-item {
+    grid-template-columns: 36px 1fr;
+    column-gap: 12px;
+    min-height: 66px;
+    padding: 13px 12px;
+  }
+
+  .settings-nav-icon {
+    width: 36px;
+    height: 36px;
+    font-size: 19px;
+  }
+
+  .settings-nav-text {
+    gap: 3px;
+  }
+
+  .settings-nav-title {
+    font-size: 0.94117647rem; /* 16px @ root 17 */
+  }
+
+  .settings-nav-desc {
+    font-size: 0.76470588rem; /* 13px @ root 17 */
+  }
+
+  /* 二级页头 */
+  .settings-page-head {
+    padding: 14px;
+  }
+
+  .settings-page-head .settings-nav-icon {
+    width: 44px;
+    height: 44px;
+    font-size: 23px;
+  }
+
+  .settings-page-head-title {
+    font-size: 1rem;
+  }
+
+  .settings-page-head-desc {
+    font-size: 0.82352941rem; /* 14px @ root 17 */
+  }
+
+  /* 分组标题 / 页面提示 */
+  .settings-group-title,
+  .settings-section-title {
+    font-size: 0.76470588rem;
+    padding: 0 10px;
+  }
+
+  .settings-page-hint,
+  .type-roles-intro {
+    font-size: 0.82352941rem;
+  }
+
+  /* 卡片内的设置行 */
+  .settings-card > .setting-item {
+    padding: 12px;
+  }
+
+  .interactive-row {
+    padding: 10px 12px;
+  }
+}
