@@ -2153,7 +2153,23 @@ function bindThemeSetting() {
     let pref = typeof normalizeModePref === 'function'
       ? normalizeModePref(newMode)
       : (newMode || 'light');
-    applyTheme(tone, pref, { animate: true });
+
+    // 先把选中态切过去，让挤占和圆角动画在这一帧就起跑。
+    // applyTheme 要改 data-mode、重算整页 token、重挂背景，同步做完再切 class
+    // 的话，动画首帧会被这坨活推到 50ms 之后，手感就是「点下去先愣一下才动」。
+    const seg = document.getElementById('modeSegment');
+    if (seg) {
+      seg.querySelectorAll('.mode-segment-btn').forEach((btn) => {
+        const on = btn.getAttribute('data-mode') === pref;
+        btn.classList.toggle('active', on);
+        btn.setAttribute('aria-checked', on ? 'true' : 'false');
+      });
+    }
+
+    // 等第一帧画出来（动画已经跑起来），再去换主题
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => applyTheme(tone, pref, { animate: true }));
+    });
   };
 
   // 分段明暗：浅色 / 深色 / 系统
@@ -2592,3 +2608,111 @@ function bindAboutBannerUpdates() {
     window.addEventListener('mode-change', () => { updateAboutBannerBg(); updateSettingsBannerBg(); });
   }
 }
+
+/* ============================================
+   滑块进度填充
+   原生 range 的轨道无法按值着色，这里把当前比例写进
+   --slider-pct，由 CSS 渐变画出左侧的强调色段。
+   设置面板每次展开时重绘一次，避免读档后比例对不上。
+   ============================================ */
+(function initRangeFills() {
+  const paint = (el) => {
+    if (!el || el.type !== 'range') return;
+    const min = Number(el.min || 0);
+    const max = Number(el.max || 100);
+    const val = Number(el.value);
+    const pct = max > min ? ((val - min) / (max - min)) * 100 : 0;
+    el.style.setProperty('--slider-pct', pct.toFixed(2) + '%');
+  };
+
+  const paintAll = () => {
+    document.querySelectorAll('input[type="range"]').forEach(paint);
+  };
+
+  document.addEventListener(
+    'input',
+    (e) => {
+      const t = e.target;
+      if (t && t.type === 'range') paint(t);
+    },
+    true
+  );
+
+  const start = () => {
+    paintAll();
+    const panel = document.getElementById('settingsPanel');
+    if (!panel || !window.MutationObserver) return;
+    let last = panel.classList.contains('active');
+    const mo = new MutationObserver(() => {
+      const now = panel.classList.contains('active');
+      if (now && !last) {
+        paintAll();
+        // 读档是异步的，稍后再对一次
+        window.setTimeout(paintAll, 120);
+        window.setTimeout(paintAll, 500);
+      }
+      last = now;
+    });
+    mo.observe(panel, { attributes: true, attributeFilter: ['class'] });
+  };
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', start);
+  } else {
+    start();
+  }
+})();
+
+/* ============================================
+   分段控件 / 顶部 tab 的图标定位
+   图标改成绝对定位后不参与布局，要让它正好落在文字左侧，
+   就得知道文字有多宽：这里把文字半宽写进 --lab-half，
+   CSS 用 calc(-50% - var(--lab-half) - 半个间距) 把图标摆过去。
+   文字宽度只跟字号有关，量一次就够；用 ResizeObserver 兜住
+   面板从隐藏变可见、根字号变化这些情况。
+   ============================================ */
+(function initSegLabelMetrics() {
+  const GROUPS = [
+    ['.mode-segment--3 .mode-segment-btn', '.mode-segment-label'],
+    ['.wp-subnav-btn', '.wp-subnav-text']
+  ];
+
+  const measureOne = (btn, labelSel) => {
+    const lab = btn.querySelector(labelSel);
+    if (!lab) return;
+    const half = (lab.getBoundingClientRect().width / 2).toFixed(2) + 'px';
+    if (btn.dataset.labHalf !== half) {
+      btn.dataset.labHalf = half;
+      btn.style.setProperty('--lab-half', half);
+    }
+  };
+
+  const measureAll = () => {
+    for (const [btnSel, labelSel] of GROUPS) {
+      document.querySelectorAll(btnSel).forEach((btn) => measureOne(btn, labelSel));
+    }
+  };
+
+  const start = () => {
+    measureAll();
+    if (window.ResizeObserver) {
+      const ro = new ResizeObserver(() => measureAll());
+      for (const [btnSel, labelSel] of GROUPS) {
+        document.querySelectorAll(btnSel).forEach((btn) => {
+          const lab = btn.querySelector(labelSel);
+          if (lab) ro.observe(lab);
+        });
+      }
+    }
+    window.addEventListener('resize', measureAll);
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(measureAll).catch(() => {});
+    }
+  };
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', start);
+  } else {
+    start();
+  }
+})();

@@ -95,11 +95,42 @@
   --space-xl: 48px;
   /* 全站动效：稍更「弹而顺」的曲线，接近原先流畅感 */
   --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  /* 带回弹：控制点 y 超过 1，动画会冲过目标值再收回（分段控件的宽度/圆角用） */
+  --ease-back: cubic-bezier(0.3, 2.7, 0.45, 1);
+  /* 原 linear() 弹簧曲线过冲到 1.167 再回落到 0.839，配 flex-grow 宽度动画
+     会连抖三下（用户反馈「Q弹成啥了」）。改成无回弹的减速曲线：
+     起手快、收尾稳，到位即止 */
+  --ease-spring: cubic-bezier(0.22, 1, 0.36, 1);
+  /* 圆角成形专用：起步比 --ease 更陡（x=0.15 时已经走完八成），
+     方形块点下去要「立刻看得出在圆」，不能跟宽度一起慢慢磨 */
+  --ease-cap: cubic-bezier(0.08, 0.92, 0.18, 1);
+  /* 按下多久（秒）才进入按压态：短于这个时长的点击完全不出按压形态。
+     调这里就能全局试值，比如 0.5s / 0.8s */
+  --press-delay: 0.35s;
+  /* 分段控件 / tab 的动效整体倍率：1 为基准，<1 更快，>1 更慢。
+     所有相关时长都写成 calc(基准时长 * var(--motion-scale)) */
+  --motion-scale: 1;
 }
 
 /* ============================================
    色调（light 变体）
    ============================================ */
+[data-tone="sand"][data-mode="light"] {
+  --bg-warm: #F5F0E8;
+  --bg-warm-alt: #EDE8E0;
+  --card-bg: #FFFFFF;
+  --text-primary: #1A1A1A;
+  --text-secondary: #6B6B6B;
+  --text-tertiary: #9A9A9A;
+  --border: rgba(0, 0, 0, 0.08);
+  --border-strong: rgba(0, 0, 0, 0.15);
+  --shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+  --shadow-hover: 0 8px 30px rgba(0, 0, 0, 0.1);
+  --accent: #A87A20;
+  --accent-hover: #96691A;
+  --accent-glow: rgba(168, 122, 32, 0.18);
+}
+
 [data-tone="cream"][data-mode="light"] {
   --bg-warm: #FDF6EC;
   --bg-warm-alt: #F5ECD8;

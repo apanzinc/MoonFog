@@ -44,34 +44,56 @@ body {
 }
 
 /*
- * 明暗 / 色调切换：仅过渡颜色，不改布局位置
+ * 明暗 / 色调切换：只用「面」来交代，文字和线条瞬时换色
  * 由 html.theme-animating 短暂开启，避免拖拽/首屏也动画
+ *
+ * 以前是给几十个选择器（外加 .settings-panel * 全通配）挂
+ * background / color / border-color / box-shadow / opacity / filter 过渡：
+ * 切一次色要在 360ms 里逐帧重绘上百个元素，实测帧间隔从 8ms 涨到 12ms、
+ * 中间还冒出 50ms 的长帧——分段控件的挤占动画就是被这个拖成「卡」的。
+ * 现在只过渡大块背景，其余一律瞬时，正好也是「文字直接切换」的要求。
  */
+html.theme-animating * {
+  transition: none !important;
+}
+
 html.theme-animating,
 html.theme-animating body,
-html.theme-animating .greeting-title,
-html.theme-animating .greeting-sub,
-html.theme-animating .search-box,
-html.theme-animating .search-input,
-html.theme-animating .search-btn,
-html.theme-animating .shortcut-btn,
-html.theme-animating .shortcut-folder-trigger,
-html.theme-animating .shortcut-label,
-html.theme-animating .shortcut-icon,
-html.theme-animating .shortcut-fallback-icon,
-html.theme-animating .settings-btn,
 html.theme-animating .settings-panel,
-html.theme-animating .settings-panel *,
+html.theme-animating .settings-card,
 html.theme-animating .page-bg-overlay,
 html.theme-animating .bing-credit {
+  transition: background-color 0.36s var(--ease) !important;
+}
+
+/* 分段控件和顶部 tab 的挤占动画必须活下来：
+   点「深色」的那一刻 theme-animating 刚好加上，被一起砍掉的话
+   宽度和圆角会直接跳到位，看着就是卡。
+   两者节奏不同：三段控件要「一开始就圆」（0.1s 陡曲线），
+   顶部 tab 要「边撑开边成胶囊」（跟宽度同长同曲线） */
+html.theme-animating .mode-segment-btn {
   transition:
-    background-color 0.36s var(--ease),
-    background 0.36s var(--ease),
-    color 0.36s var(--ease),
-    border-color 0.36s var(--ease),
-    box-shadow 0.36s var(--ease),
-    opacity 0.36s var(--ease) !important,
-    filter 0.36s var(--ease) !important;
+    flex-grow 0.26s var(--ease),
+    border-radius 0.1s var(--ease-cap) !important;
+}
+
+html.theme-animating .wp-subnav-btn {
+  transition:
+    flex-grow 0.26s var(--ease),
+    border-radius 0.26s var(--ease) !important;
+}
+
+/* 只有图标保留过渡（淡入 + 飞出）；文字一律瞬时换位，不进这条豁免 */
+html.theme-animating .mode-segment-icon {
+  transition:
+    opacity 0.12s var(--ease),
+    transform 0.12s var(--ease) !important;
+}
+
+html.theme-animating .wp-subnav-icon {
+  transition:
+    opacity 0.18s var(--ease),
+    transform 0.26s var(--ease) !important;
 }
 
 /* 明暗切换时禁止改动定位相关属性，保证控件“原地”变色 */

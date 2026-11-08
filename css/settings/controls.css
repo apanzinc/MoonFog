@@ -53,23 +53,71 @@
   padding: 10px !important;
 }
 
+/* 外观页导航列表的第一块：颜色模式标题 + 分段控件，与下面的菜单项同处一条列表 */
+.settings-nav-item--mode {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: 10px;
+  padding: 10px 10px 12px;
+  min-height: 0;
+  cursor: default;
+}
+
+/* 这一块整体不参与按压反馈，按住时保持列表里的原样式 */
+.settings-nav-item--mode:hover,
+.settings-nav-item--mode:active {
+  background: var(--card-bg-solid, var(--card-bg));
+}
+
+.settings-nav-item--mode:active {
+  border-top-left-radius: 12px;
+  border-top-right-radius: 12px;
+  border-bottom-left-radius: 4px;
+  border-bottom-right-radius: 4px;
+}
+
+/* 块内的标题行：只借用图标 + 标题的排布，不再自带底色 / 内边距 / 圆角 */
+.settings-nav-item--mode > .settings-nav-item,
+.settings-nav-item--mode > .settings-nav-item:hover,
+.settings-nav-item--mode > .settings-nav-item:active,
+.settings-nav-item--mode > .settings-nav-item:first-child,
+.settings-nav-item--mode > .settings-nav-item:last-child {
+  min-height: 0;
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  cursor: default;
+}
+
+.settings-nav-item--mode > .settings-nav-item .settings-nav-title {
+  font-size: 0.8125rem;
+}
+
+.settings-nav-item--mode .mode-segment {
+  width: 100%;
+}
+
+/* 分段控件：无轨道底，选项直接排在卡片上；
+   未选中为等宽圆角块，选中项变胶囊并放大，剩余空间由其余项平分 */
+/* 分段控件：无轨道底，选项直接排成一条链；
+   链条两端是完整胶囊圆头，相邻相接的角用小圆角，
+   选中项整个变胶囊并放大，剩余空间由其余项平分 */
 .mode-segment {
   position: relative;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 4px;
-  padding: 4px;
-  border-radius: 10px;
-  background: color-mix(in srgb, var(--text-primary) 5%, var(--bg-warm));
+  /* 块高的一半：两侧块的胶囊圆头靠它跟高度对齐，不写死 17px */
+  --seg-cap: 17px;
+  display: flex;
+  gap: 2px;
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
   border: none;
 }
 
-.mode-segment--3 {
-  grid-template-columns: 1fr 1fr 1fr;
-}
-
 .mode-segment--4 {
-  grid-template-columns: 1fr 1fr 1fr 1fr;
+  --seg-cap: 22px;
 }
 
 .mode-segment--4 .mode-segment-btn {
@@ -86,6 +134,11 @@
 
 .mode-segment--4 .mode-segment-icon {
   font-size: 15px;
+  /* 四列竖排的分段图标常显，否则未选中会只剩文字塌行 */
+  display: inline-block;
+  width: 1em;
+  margin-right: 0;
+  opacity: 1;
 }
 
 .mode-setting .setting-tip {
@@ -97,24 +150,37 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  min-height: 32px;
-  padding: 0 10px;
+  /* 图标用 margin 控制间距，不用 gap：未选中图标宽度收到 0 时才不会留出空隙 */
+  gap: 0;
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 34px;
+  padding: 0 12px;
   border: none;
-  border-radius: 8px;
-  background: transparent;
-  color: var(--text-secondary);
+  /* 基础小圆角：中间按钮用；首尾按钮的朝内侧角由 first/last 单独加大 */
+  border-radius: 10px;
+  /* 浅填充：未选中项必须能和卡片底区分开。
+     之前用 --bg-warm-alt，和 --card-bg 只差几个色阶，整块看起来像没显示 */
+  background: color-mix(in srgb, var(--text-primary) 8%, transparent);
+  color: var(--text-primary);
   cursor: pointer;
   font: inherit;
   font-size: 0.8125rem;
   font-weight: 500;
   line-height: 1;
   white-space: nowrap;
+  /* 长按 1s 才出按压态，顺手禁掉长按选中文字 / 弹系统菜单 */
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  /* 宽度走挤占，圆角单独走一条更短的曲线。
+     两者同时长的时候，宽度早就挤开了圆角还在一格一格往回圆，
+     看着就是「半天才变圆」。圆角压到 0.14s、曲线起步更陡，
+     点下去头一两帧就能看出在圆，宽度继续慢慢撑到终点。
+     颜色和文字色仍然是瞬时的，点下去立刻见色 */
   transition:
-    background 0.18s var(--ease),
-    color 0.18s var(--ease),
-    box-shadow 0.18s var(--ease),
-    transform 0.18s var(--ease);
+    flex-grow calc(0.26s * var(--motion-scale, 1)) var(--ease),
+    border-radius calc(0.1s * var(--motion-scale, 1)) var(--ease-cap);
 }
 
 /* 设置行右侧紧凑分段：固定宽度，避免「24时」被挤成两行 */
@@ -125,20 +191,90 @@
   max-width: 112px;
 }
 
+/* 112px 里再留图标位就没地方放字了，这里不占位 */
+.mode-segment--compact .mode-segment-icon {
+  width: 0;
+  margin-right: 0;
+}
+
 .mode-segment--compact .mode-segment-btn {
   padding: 0 6px;
   font-size: 0.75rem;
 }
 
-.mode-segment-btn:hover {
-  color: var(--text-primary);
-  background: color-mix(in srgb, var(--text-primary) 5%, transparent);
+/* 深色底上 8% 几乎看不出来，抬到 13% 才能一眼认出这是个按钮块。
+   必须排除 .active，否则会盖掉选中项的金色底 */
+html[data-mode="dark"] .mode-segment-btn:not(.active) {
+  background: color-mix(in srgb, var(--text-primary) 13%, transparent);
 }
 
+.mode-segment-btn:hover {
+  background: color-mix(in srgb, var(--text-primary) 10%, transparent);
+}
+
+html[data-mode="dark"] .mode-segment-btn:not(.active):hover {
+  background: color-mix(in srgb, var(--text-primary) 17%, transparent);
+}
+
+/* 链条两端按钮：外侧半高圆头（34px 高对应 17px），朝内一侧 10px 与中间块对齐；
+   17+10=27 < 34，同边圆角之和不超过边长，不会被等比压缩 */
+.mode-segment-btn:first-child {
+  border-top-left-radius: var(--seg-cap, 17px);
+  border-bottom-left-radius: var(--seg-cap, 17px);
+  border-top-right-radius: 10px;
+  border-bottom-right-radius: 10px;
+}
+
+.mode-segment-btn:last-child {
+  border-top-right-radius: var(--seg-cap, 17px);
+  border-bottom-right-radius: var(--seg-cap, 17px);
+  border-top-left-radius: 10px;
+  border-bottom-left-radius: 10px;
+}
+
+/* 选中：变宽，把左右两项挤窄；未选中的几项始终等宽。
+   颜色/圆角瞬时生效，只有宽度做挤占动画，不加阴影 */
 .mode-segment-btn.active {
-  background: var(--card-bg);
-  color: var(--text-primary);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+  flex-grow: 1.55;
+  border-radius: var(--seg-cap, 17px);
+  background: var(--accent);
+  color: var(--bg-warm);
+  box-shadow: none;
+}
+
+/* 按下：圆角略收小并加深，松开 / 移开恢复。
+   :active 对鼠标和触屏都生效；按下用短时长立刻响应，
+   松开回到基础 transition（圆角带一点回弹） */
+.mode-segment-btn:active {
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--text-primary) 14%, transparent);
+  /* 这里会把基础 transition 整个换掉，所以必须把 flex-grow 补回来：
+     否则按下的那一瞬间挤占动画会直接跳完（按压态只是延迟变色的副产品） */
+  transition:
+    flex-grow calc(0.26s * var(--motion-scale, 1)) var(--ease),
+    background calc(0.12s * var(--motion-scale, 1)) var(--ease) var(--press-delay, 0.35s),
+    border-radius calc(0.12s * var(--motion-scale, 1)) var(--ease) var(--press-delay, 0.35s);
+}
+
+/* 两侧块：胶囊那头保持不动，只收朝内的两个角 */
+/* 两侧块按压：只有外侧的胶囊两头不动，其余角都收小 */
+.mode-segment-btn:first-child:active {
+  border-top-left-radius: var(--seg-cap, 17px);
+  border-bottom-left-radius: var(--seg-cap, 17px);
+  border-top-right-radius: 8px;
+  border-bottom-right-radius: 8px;
+}
+
+.mode-segment-btn:last-child:active {
+  border-top-right-radius: var(--seg-cap, 17px);
+  border-bottom-right-radius: var(--seg-cap, 17px);
+  border-top-left-radius: 8px;
+  border-bottom-left-radius: 8px;
+}
+
+/* 选中的那块按下同样收角（首尾位置只保留外侧胶囊角），底色压深 */
+.mode-segment-btn.active:active {
+  background: color-mix(in srgb, var(--accent) 84%, #000);
 }
 
 .mode-segment-btn:disabled,
@@ -152,13 +288,76 @@
   display: none !important;
 }
 
-.mode-segment-icon {
-  font-size: 14px;
-  line-height: 1;
+/* 三段（颜色模式 / 打开策略）：图标脱离布局流，绝对定位叠在文字左侧。
+   之前靠 width 0→14px 参与布局，挤占动画期间每帧都要重新排版文字，
+   字形还被 overflow 硬裁一半，看着就是卡。 */
+.mode-segment--3 .mode-segment-btn {
+  position: relative;
+  padding: 0 10px;
+  --seg-icon-w: 21px;
+  --seg-icon-gap: 12px;
+  /* 图标字形左右带透明边距，直接对齐会让「图标+文字」整组看着偏左，
+     往右补一点回来 */
+  --seg-icon-nudge: 2px;
+}
+
+.mode-segment--3 .mode-segment-btn > .mode-segment-icon {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: var(--seg-icon-w);
+  height: var(--seg-icon-w);
+  margin: 0;
+  overflow: visible;
+  opacity: 0;
+  /* 字形跟着容器走：按钮本身 13px，图标不单独指定字号就会显得偏小。
+     MingCute 实心字形的墨迹只占字号的 ~0.88（20px 字号 → 墨迹约 17.6px），
+     要把可视尺寸撑到 18px 上下就得给到 20px，13.8px 的文字配着才有主次 */
+  font-size: 20px;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  /* 未选中时贴在文字左边缘外侧（透明看不见），选中时跟文字一起右移，
+     间距恒定，不会出现「先挤文字、再补图标」的两段感 */
+  transform:
+    translate(
+      calc(
+        -50% - var(--lab-half, 0px) - var(--seg-icon-gap) - var(--seg-icon-w) / 2 +
+          var(--seg-icon-nudge, 0px)
+      ),
+      -50%
+    )
+    scale(0.45);
+  transition:
+    opacity calc(0.12s * var(--motion-scale, 1)) var(--ease),
+    transform calc(0.12s * var(--motion-scale, 1)) var(--ease);
+}
+
+.mode-segment--3 .mode-segment-btn.active > .mode-segment-icon {
+  width: var(--seg-icon-w);
+  margin-right: 0;
+  opacity: 1;
+  transform:
+    translate(
+      calc(-50% - var(--lab-half, 0px) - var(--seg-icon-gap) / 2 + var(--seg-icon-nudge, 0px)),
+      -50%
+    )
+    scale(1);
 }
 
 .mode-segment-label {
   letter-spacing: 0.01em;
+}
+
+/* 文字不做任何过渡：点下去直接跳到位。
+   之前给它挂了 0.26s 的位移过渡，挤占期间文字是一路滑过去的，
+   看着就是「字在慢慢挪」。现在只有按钮宽度在动，文字瞬时归位 */
+.mode-segment--3 .mode-segment-label {
+  transition: none;
+}
+
+.mode-segment--3 .mode-segment-btn.active > .mode-segment-label {
+  transform: translateX(calc((var(--seg-icon-w) + var(--seg-icon-gap)) / 2));
 }
 
 .mode-setting > .setting-tip {
@@ -2824,4 +3023,24 @@ html[data-mode="light"] .settings-banner-overlay {
   font: inherit;
   font-size: 13px;
   font-family: monospace;
+}
+
+/* 手机：分段控件与操作按钮放大到易点尺寸 */
+@media (max-width: 480px) {
+  .mode-segment {
+    --seg-cap: 20px;
+  }
+
+  .mode-segment-btn {
+    min-height: 40px;
+  }
+
+  /* 四列竖排在手机仍是 44px 高 */
+  .mode-segment--4 {
+    --seg-cap: 22px;
+  }
+
+  .bg-action-btn {
+    height: 36px;
+  }
 }

@@ -402,79 +402,128 @@
 <section class="settings-page" data-page="appearance-bg" hidden aria-labelledby="sec-appearance-bg">
           <h4 class="settings-section-title" id="sec-appearance-bg" hidden>主题与背景</h4>
 
-          <section class="settings-group">
-            <h5 class="settings-group-title">界面明暗</h5>
-            <div class="settings-card">
-              <div class="setting-item setting-item--flush mode-setting">
-                <div class="mode-segment mode-segment--3" id="modeSegment" role="radiogroup" aria-label="界面明暗">
-                  <button class="mode-segment-btn" type="button" data-mode="light" role="radio" aria-checked="false" title="固定浅色">
-                    <span class="mode-segment-icon mgc_sun_fill" aria-hidden="true"></span>
-                    <span class="mode-segment-label">浅色</span>
-                  </button>
-                  <button class="mode-segment-btn" type="button" data-mode="dark" role="radio" aria-checked="false" title="固定深色">
-                    <span class="mode-segment-icon mgc_moon_fill" aria-hidden="true"></span>
-                    <span class="mode-segment-label">深色</span>
-                  </button>
-                  <button class="mode-segment-btn" type="button" data-mode="system" role="radio" aria-checked="false" title="跟随系统浅深">
-                    <span class="mode-segment-icon mgc_computer_fill" aria-hidden="true"></span>
-                    <span class="mode-segment-label">系统</span>
-                  </button>
-                </div>
-                <p class="setting-tip" id="modeSettingTip">控件与面板的浅深模式</p>
-              </div>
-            </div>
-          </section>
+          <div class="wp-subnav" id="wpSubnav" role="tablist" aria-label="背景设置">
+            <button class="wp-subnav-btn is-active" type="button" role="tab" data-wp-tab="library" aria-selected="true" tabindex="0"><span class="wp-subnav-icon mgc_pic_fill" aria-hidden="true"></span><span class="wp-subnav-text">背景库</span></button>
+            <button class="wp-subnav-btn" type="button" role="tab" data-wp-tab="sources" aria-selected="false" tabindex="-1"><span class="wp-subnav-icon mgc_plugin_2_fill" aria-hidden="true"></span><span class="wp-subnav-text">源</span></button>
+            <button class="wp-subnav-btn" type="button" role="tab" data-wp-tab="strategy" aria-selected="false" tabindex="-1"><span class="wp-subnav-icon mgc_play_fill" aria-hidden="true"></span><span class="wp-subnav-text">打开策略</span></button>
+            <button class="wp-subnav-btn" type="button" role="tab" data-wp-tab="globals" aria-selected="false" tabindex="-1"><span class="wp-subnav-icon mgc_settings_5_fill" aria-hidden="true"></span><span class="wp-subnav-text">全局</span></button>
+          </div>
 
-          <section class="settings-group">
-            <h5 class="settings-group-title">背景</h5>
-            <div class="settings-card">
-              <div class="setting-item setting-item--flush bg-mode-setting">
-                <div class="bg-mode-list bg-mode-list--3" id="bgModeGrid" role="radiogroup" aria-label="背景来源">
-                  <button class="bg-mode-item" data-value="solid" type="button" role="radio" aria-checked="false">
-                    <span class="bg-mode-icon" aria-hidden="true"><span class="mgc_palette_fill"></span></span>
-                    <span class="bg-mode-name">纯色</span>
-                  </button>
-                  <button class="bg-mode-item" data-value="grain" type="button" role="radio" aria-checked="false">
-                    <span class="bg-mode-icon" aria-hidden="true"><span class="mgc_sparkles_fill"></span></span>
-                    <span class="bg-mode-name">流光渐变</span>
-                  </button>
-                  <button class="bg-mode-item" data-value="media" type="button" role="radio" aria-checked="false">
-                    <span class="bg-mode-icon" aria-hidden="true"><span class="mgc_image_fill"></span></span>
-                    <span class="bg-mode-name">媒体</span>
+          <div class="wp-panel" data-wp-panel="library">
+            <section class="settings-group">
+              <div class="settings-card settings-card--flush">
+                <div class="wallpaper-grid" id="wpLibraryGrid"></div>
+                <div class="wallpaper-empty" id="wpLibraryEmpty" hidden>
+                  <p class="wallpaper-empty-title">背景库还是空的</p>
+                  <p class="wallpaper-empty-desc">添加图片、视频、动效或纯色</p>
+                </div>
+                <div class="wallpaper-add-row">
+                  <button class="bg-action-btn wallpaper-add-btn" id="wpAddBtn" type="button">
+                    <span class="mgc_add_line" aria-hidden="true"></span>
+                    <span>添加背景</span>
                   </button>
                 </div>
               </div>
+            </section>
+          </div>
 
-              <div class="setting-item bg-extra-field settings-reveal" id="bgMediaSourceItem" hidden>
-                <div class="bg-extra-head">
-                  <span class="bg-extra-title">媒体来源</span>
-                  <span class="bg-extra-meta" id="bgMediaSourceMeta">本地图片</span>
+          <div class="wp-panel" data-wp-panel="sources" hidden>
+            <section class="settings-group">
+              <div class="settings-card">
+                <div class="setting-item">
+                  <div class="setting-label-row">
+                    <div>
+                      <div class="setting-label">在线源</div>
+                      <p class="setting-tip">由第三方决定内容，不参与轮播</p>
+                    </div>
+                    <button class="bg-action-btn" id="wpAddSourceBtn" type="button">添加源</button>
+                  </div>
                 </div>
-                <div class="bg-image-sub-row" id="bgMediaSourceSeg" role="radiogroup" aria-label="媒体来源">
-                  <button class="bg-sub-item" type="button" role="radio" aria-checked="false" data-media-source="local">本地图片</button>
-                  <button class="bg-sub-item" type="button" role="radio" aria-checked="false" data-media-source="bing">必应每日</button>
-                </div>
-                <p class="setting-tip" id="bgMediaSourceTip">图片与必应每日壁纸统一归入媒体，视频等格式后再接入</p>
+                <div class="wallpaper-source-list" id="wpSourceList"></div>
               </div>
+            </section>
+          </div>
 
-
-
-              <div class="setting-item bg-extra-field settings-reveal" id="bgLocalActions" hidden>
-                <div class="bg-local-actions-row">
-                  <input type="file" id="bgLocalInput" accept="image/*" hidden>
-                  <button class="bg-action-btn" id="bgLocalPick" type="button">
-                    <span class="mgc_pic_2_line" aria-hidden="true"></span>
-                    <span>选择图片</span>
-                  </button>
-                  <button class="bg-action-btn bg-action-btn-ghost" id="bgLocalClear" type="button" hidden>
-                    <span class="mgc_delete_2_line" aria-hidden="true"></span>
-                    <span>清除</span>
-                  </button>
+          <div class="wp-panel" data-wp-panel="strategy" hidden>
+            <section class="settings-group">
+              <div class="settings-card">
+                <div class="setting-item setting-item--flush">
+                  <div class="mode-segment mode-segment--3" id="wpStrategySeg" role="radiogroup" aria-label="打开策略">
+                    <button class="mode-segment-btn" type="button" role="radio" data-wp-strategy="fixed" aria-checked="false">固定一张</button>
+                    <button class="mode-segment-btn" type="button" role="radio" data-wp-strategy="rotate" aria-checked="false">轮播</button>
+                    <button class="mode-segment-btn" type="button" role="radio" data-wp-strategy="source" aria-checked="false">用某个源</button>
+                  </div>
+                  <div class="wallpaper-strategy-params" id="wpStrategyParams" hidden>
+                    <div class="wallpaper-strategy-field" id="wpStrategyFixedField" hidden>
+                      <div class="setting-label">固定背景</div>
+                      <div class="wallpaper-source-picker" id="wpFixedPicker"></div>
+                    </div>
+                    <div class="wallpaper-strategy-field" id="wpStrategyRotateField" hidden>
+                      <div class="setting-label">轮播内容（仅图片 / 视频）</div>
+                      <div class="wallpaper-source-picker" id="wpRotatePicker"></div>
+                      <div class="setting-label">轮播间隔</div>
+                      <select class="wallpaper-select" id="wpRotateInterval">
+                        <option value="0">每次打开换一张</option>
+                        <option value="5">5 分钟</option>
+                        <option value="15">15 分钟</option>
+                        <option value="30">30 分钟</option>
+                        <option value="60">60 分钟</option>
+                      </select>
+                    </div>
+                    <div class="wallpaper-strategy-field" id="wpStrategySourceField" hidden>
+                      <div class="setting-label">选择源</div>
+                      <div class="wallpaper-source-picker" id="wpSourcePicker"></div>
+                    </div>
+                  </div>
                 </div>
-                <p class="setting-tip" id="bgLocalTip">图片仅保存在本机</p>
               </div>
-            </div>
-          </section>
+            </section>
+          </div>
+
+          <div class="wp-panel" data-wp-panel="globals" hidden>
+            <section class="settings-group">
+              <div class="settings-card">
+                <div class="setting-item">
+                  <div class="bg-extra-head">
+                    <label for="wpMuteSeg">静音</label>
+                  </div>
+                  <div class="mode-segment mode-segment--3" id="wpMuteSeg" role="radiogroup" aria-label="静音">
+                    <button class="mode-segment-btn" type="button" role="radio" data-wp-mute="force" aria-checked="false">强制静音</button>
+                    <button class="mode-segment-btn" type="button" role="radio" data-wp-mute="follow" aria-checked="false">跟随源</button>
+                    <button class="mode-segment-btn" type="button" role="radio" data-wp-mute="allow" aria-checked="false">允许有声</button>
+                  </div>
+                </div>
+                <div class="setting-item">
+                  <div class="bg-extra-head">
+                    <label for="wpPerfSeg">性能模式</label>
+                  </div>
+                  <div class="mode-segment mode-segment--3" id="wpPerfSeg" role="radiogroup" aria-label="性能模式">
+                    <button class="mode-segment-btn" type="button" role="radio" data-wp-perf="high" aria-checked="false">高性能</button>
+                    <button class="mode-segment-btn" type="button" role="radio" data-wp-perf="balanced" aria-checked="false">平衡</button>
+                    <button class="mode-segment-btn" type="button" role="radio" data-wp-perf="low" aria-checked="false">省电</button>
+                  </div>
+                </div>
+                <div class="setting-item">
+                  <div class="bg-extra-head">
+                    <label for="wpOnlineFailSeg">在线背景加载失败</label>
+                  </div>
+                  <div class="mode-segment mode-segment--2" id="wpOnlineFailSeg" role="radiogroup" aria-label="在线背景加载失败">
+                    <button class="mode-segment-btn" type="button" role="radio" data-wp-online-fail="skip" aria-checked="false">跳过</button>
+                    <button class="mode-segment-btn" type="button" role="radio" data-wp-online-fail="cache" aria-checked="false">用缓存</button>
+                  </div>
+                </div>
+                <div class="setting-item">
+                  <div class="setting-label">缓存清理</div>
+                  <div class="settings-action-row">
+                    <button class="bg-action-btn bg-action-btn-ghost" id="wpClearCacheBtn" type="button">
+                      <span class="mgc_delete_2_line" aria-hidden="true"></span>
+                      <span>清理源缓存</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </section>
+          </div>
 
           <section class="settings-group settings-reveal" id="bgGrainGroup" hidden>
             <h5 class="settings-group-title">流光渐变</h5>
