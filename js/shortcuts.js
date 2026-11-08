@@ -286,7 +286,8 @@ const SHORTCUTS_VISIBLE_KEY = 'moonfog_shortcuts_visible';
  * SHORTCUTS_EXPANDED_KEY 是旧版本残留的持久化键，只在启动时清掉，不再用于记忆。
  */
 const SHORTCUTS_EXPANDED_KEY = 'moonfog_shortcuts_expanded';
-const SHORTCUTS_COLLAPSE_HEIGHT = 38; // 一行：标签 32px + 行距 6px
+// 一行高度不再写死：桌面 32px 胶囊 + 6px 行距 = 38px，手机端（css/mobile.css）
+// 胶囊 40px + 行距 8px = 48px，由 shortcutsLineHeight() 按首个标签实测得出
 // 行展开时 .content 的上移基线，与 css/base.css 的 body.shortcuts-expanded .content 对应；
 // 文件夹面板的让位计算要和这条基线与叠加，缺了它面板在行展开状态下会顶出视口
 const SHORTCUTS_EXPANDED_SHIFT = 28;
@@ -326,6 +327,7 @@ function shortcutsFlowItems(row, wrappers) {
 }
 
 function shortcutsRowNeedsCollapse(row, wrappers) {
+  const lineH = shortcutsLineHeight(row);
   const rowTop = row.getBoundingClientRect().top;
   let maxOffset = 0;
   shortcutsFlowItems(row, wrappers).forEach((el) => {
@@ -334,8 +336,30 @@ function shortcutsRowNeedsCollapse(row, wrappers) {
     const offset = Math.round(rect.top - rowTop);
     if (offset > maxOffset) maxOffset = offset;
   });
-  // 第二行标签的顶部偏移 = 一行高 32px + 行距 6px = 38px
-  return maxOffset >= SHORTCUTS_COLLAPSE_HEIGHT - 4;
+  // 第二行标签的顶部偏移 = 一行高（标签 + 行距），手机端胶囊更高时随实测变化
+  return maxOffset >= lineH - 4;
+}
+
+/**
+ * 一行的实际高度：首个标签实测高度 + 行距。
+ * 手机端（css/mobile.css）胶囊从 32px 加大到 40px、行距从 6px 变 8px，
+ * 折叠判定与限高不能再用写死的 38px，否则第二行标签会被误判/漏判。
+ */
+function shortcutsLineHeight(row) {
+  const wrappers = Array.from(row.querySelectorAll('.shortcut-drag-wrapper'));
+  let chipH = 32;
+  for (const el of shortcutsFlowItems(row, wrappers)) {
+    if (el.offsetHeight) {
+      chipH = el.offsetHeight;
+      break;
+    }
+  }
+  let gap = 6;
+  try {
+    const g = parseFloat(getComputedStyle(row).rowGap);
+    if (!Number.isNaN(g) && g > 0) gap = g;
+  } catch (_) {}
+  return Math.round(chipH + gap);
 }
 
 function shortcutsNaturalHeight(row, wrappers) {
@@ -417,11 +441,12 @@ function applyShortcutsCollapse(opts = {}) {
   // 数量角标：折叠时显示，展开时隐藏（始终在折叠态显示，不受 hiddenCount 影响）
   if (countEl) {
     let hiddenCount = 0;
+    const lineH = shortcutsLineHeight(row);
     const rowTop = row.getBoundingClientRect().top;
     wrappers.forEach((w) => {
       const chip = w.firstElementChild;
       if (!chip) return;
-      if (chip.getBoundingClientRect().top - rowTop >= SHORTCUTS_COLLAPSE_HEIGHT) hiddenCount++;
+      if (chip.getBoundingClientRect().top - rowTop >= lineH) hiddenCount++;
     });
     countEl.textContent = hiddenCount > 0 ? hiddenCount : '';
     countEl.hidden = expanded;
@@ -460,28 +485,29 @@ function applyShortcutsCollapse(opts = {}) {
   } else {
     clearTimer();
     // 折叠时超出两行的标签淡出；展开开关已移到行外单独一行，并不参与折叠
+    const lineH = shortcutsLineHeight(row);
     const rowTop = row.getBoundingClientRect().top;
     wrappers.forEach((w) => {
       const chip = w.firstElementChild;
       if (!chip) return;
-      setFolded(w, chip.getBoundingClientRect().top - rowTop >= SHORTCUTS_COLLAPSE_HEIGHT);
+      setFolded(w, chip.getBoundingClientRect().top - rowTop >= lineH);
     });
     if (animate) {
-      // 收起动画：自然高度 → 38px 一行限高（标签同步淡出）
+      // 收起动画：自然高度 → 一行限高（标签同步淡出）
       row.classList.remove('is-collapsed');
       row.style.maxHeight = shortcutsNaturalHeight(row, wrappers) + 'px';
       void row.offsetHeight;
       row.classList.add('is-collapsed');
-      row.style.maxHeight = SHORTCUTS_COLLAPSE_HEIGHT + 'px';
-      // 动画结束后不再清除 max-height，保持 38px 限高，防止展开时高度突变
+      row.style.maxHeight = lineH + 'px';
+      // 动画结束后不再清除 max-height，保持一行限高，防止展开时高度突变
       shortcutsExpandTimer = setTimeout(() => {
         shortcutsExpandTimer = null;
-        // 保持 38px 限高，不再恢复成空，让下一次展开能从正确的高度起跳
+        // 保持一行限高，不再恢复成空，让下一次展开能从正确的高度起跳
       }, 360);
     } else {
       setWithoutAnim(() => {
         row.classList.add('is-collapsed');
-        row.style.maxHeight = SHORTCUTS_COLLAPSE_HEIGHT + 'px';
+        row.style.maxHeight = lineH + 'px';
       });
     }
   }

@@ -999,9 +999,10 @@ body.has-image-bg .folder-scrollbar.is-dragging .folder-scrollbar-thumb {
 .shortcut-list-item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  min-height: 38px;
-  padding: 6px 8px;
+  gap: 10px;
+  /* 与其它列表行同一档密度 */
+  min-height: 44px;
+  padding: 9px 10px;
   border-radius: 8px;
   transition: background 0.15s var(--ease);
 }
@@ -1082,7 +1083,10 @@ body.has-image-bg .folder-scrollbar.is-dragging .folder-scrollbar-thumb {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  max-width: 100px;
+  /* 100px 只能放下半个域名，放宽后常见域名能完整显示 */
+  max-width: 150px;
+  flex: 0 1 auto;
+  min-width: 0;
 }
 
 .shortcut-list-edit,
