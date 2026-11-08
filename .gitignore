@@ -26,3 +26,14 @@ dist-web/
 
 # 本地基准快照，不纳入版本控制
 /.turn16-baseline/
+
+# 界面走查与性能诊断产物（截图/脚本，几十 MB）
+/.oil-ui/
+
+# 编辑器与智能体工具的工作区数据
+/.workbuddy/
+/.agents/
+
+# 临时截图与开发服务器日志
+/.tmp-*.png
+/scripts/*.log
