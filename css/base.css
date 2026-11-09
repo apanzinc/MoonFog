@@ -17,7 +17,10 @@
 html {
   font-size: 16px;
   -webkit-font-smoothing: antialiased;
-  background-color: var(--bg-warm);
+  /* 根背景必须是实色：壁纸模式下 --bg-warm 带 0.9 的透明度，
+     直接拿去做根背景的话，壁纸层差一条缝就会透出浏览器白底。
+     --bg-root 由 theme-manager 在图片模式下压成实色 */
+  background-color: var(--bg-root, var(--bg-warm));
   color-scheme: light;
   touch-action: manipulation;
 }

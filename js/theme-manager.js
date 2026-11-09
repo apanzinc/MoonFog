@@ -131,7 +131,7 @@
   // 图片壁纸用 !important 覆盖过的主题 token。退出图片模式时必须显式移除，
   // 否则普通 setProperty 抢不过内联 !important，界面会卡在壁纸的取色上。
   const IMAGE_OVERRIDE_KEYS = [
-    '--bg-warm', '--bg-warm-alt', '--card-bg',
+    '--bg-warm', '--bg-warm-alt', '--card-bg', '--bg-root',
     '--text-primary', '--text-secondary', '--text-tertiary',
     '--border', '--border-strong', '--shadow', '--shadow-hover',
     '--accent', '--accent-glow', '--accent-hover',
@@ -141,6 +141,24 @@
 
   function dropImageOverrides (root) {
     IMAGE_OVERRIDE_KEYS.forEach(function (k) { root.style.removeProperty(k) })
+  }
+
+  /**
+   * 把带 alpha 的壁纸底色压成实色，给 html 那层做兜底。
+   * bgWarm 是 rgba(...,0.88~0.92)，直接拿去做根背景的话是半透明的，
+   * 壁纸层只要差一条缝，透出来的就是浏览器画布白底。
+   */
+  function flattenOverBgWarm (color, isDark) {
+    const fallback = isDark ? '#1E1C18' : '#F5F0E8'
+    if (!color) return fallback
+    const m = String(color).match(/rgba?\(([^)]+)\)/)
+    if (!m) return String(color) // #hex 之类本来就是实色
+    const parts = m[1].split(',').map(function (x) { return parseFloat(x) })
+    if (parts.length < 4 || !(parts[3] < 1)) return String(color)
+    const a = parts[3]
+    const base = isDark ? 16 : 250
+    const mix = function (c) { return Math.round(c * a + base * (1 - a)) }
+    return 'rgb(' + mix(parts[0]) + ',' + mix(parts[1]) + ',' + mix(parts[2]) + ')'
   }
 
   const listeners = new Set()
@@ -210,6 +228,10 @@
       var imp = 'important'
       // 取舍原则：--bg-warm / --card-bg / --text-* 用壁纸 surface 色调色（带透明度保证对比度）
       root.style.setProperty('--bg-warm', ip.bgWarm || (ip.isDarkUi ? '#1E1C18' : '#F5F0E8'), imp)
+      // html 那一层不能半透明：它是整页最后的兜底，壁纸层哪怕只差一条缝，
+      // 透出来的就是浏览器画布的白底，看着就像「壁纸空了一段」。
+      // bgWarm 带 0.88–0.92 的透明度，这里按明暗压成实色再给 html 用
+      root.style.setProperty('--bg-root', flattenOverBgWarm(ip.bgWarm, ip.isDarkUi), imp)
       root.style.setProperty('--bg-warm-alt', ip.surfaceHover || ip.bgWarm || (ip.isDarkUi ? '#252320' : '#F8F4ED'), imp)
       // 面板文字颜色固定跟 isDarkUi（ip.text 跟壁纸场景亮度，不跟用户模式）
       root.style.setProperty('--card-bg', ip.cardBg || (ip.isDarkUi ? 'rgba(40,42,50,0.85)' : 'rgba(255,255,255,0.82)'), imp)

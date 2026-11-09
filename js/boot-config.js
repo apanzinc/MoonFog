@@ -265,6 +265,20 @@
       let palette = JSON.parse(get('moonfog_bg_palette') || 'null');
       if (palette && palette.text && palette.v >= 4 && palette.v <= 30) {
         cssParts.push('html.boot-has-image{');
+        // 首屏底色用壁纸自己的主色压成实色：图还没解码完的那一下，
+        // 露出来的是接近壁纸的颜色，而不是一块米白（浅色主题色）。
+        // 壁纸一出来就无缝接上，不会再「闪一下白」
+        var _bgSolid = (function (c) {
+          var m = String(c || '').match(/rgba?\(([^)]+)\)/);
+          if (!m) return c || (mode === 'dark' ? '#1E1C18' : '#F5F0E8');
+          var p = m[1].split(',').map(parseFloat);
+          var a = p.length > 3 ? p[3] : 1;
+          if (!(a < 1)) return c;
+          var base = mode === 'dark' ? 16 : 250;
+          var mixc = function (v) { return Math.round(v * a + base * (1 - a)); };
+          return 'rgb(' + mixc(p[0]) + ',' + mixc(p[1]) + ',' + mixc(p[2]) + ')';
+        })(palette.bgWarm || palette.surface);
+        cssParts.push('--bg-root:' + _bgSolid + ';');
         cssParts.push('--img-text:' + palette.text + ';--img-text-secondary:' + (palette.textSecondary || palette.text) + ';--img-text-muted:' + (palette.textMuted || palette.textSecondary || palette.text) + ';');
         cssParts.push('--img-text-glow:' + (palette.textGlow || 'transparent') + ';--img-text-shadow:none;--img-text-shadow-soft:none;');
         cssParts.push('--img-text-accent:' + (palette.textAccent || palette.accent || palette.text) + ';');
@@ -325,7 +339,10 @@
     cssParts.push('html[data-tone][data-mode].boot-has-image{--bg-neutral-wash:' + imgOverlayCss + ';--img-wash:' + imgOverlayCss + ';}');
   }
 
-  cssParts.push('html,body{background-color:var(--bg-warm);color:var(--text-primary);}');
+  // 根背景走 --bg-root：图片模式下它是不透明兜底色，
+  // 壁纸层差一条缝时透出来的是壁纸主色而不是浏览器白底
+  cssParts.push('html{background-color:var(--bg-root,var(--bg-warm));}');
+  cssParts.push('body{background-color:var(--bg-warm);color:var(--text-primary);}');
 
   const style = document.createElement('style');
   style.id = 'moonfog-boot-theme';
