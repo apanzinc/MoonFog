@@ -744,6 +744,17 @@ html.boot-ready .shortcuts-section.boot-entered {
 .page-bg {
   position: fixed;
   inset: 0;
+  /* 地址栏/工具栏伸缩时 fixed 的 inset:0 会慢半拍，底部偶尔露一条根背景，
+     看着就是「壁纸空了一段」。lvh 是地址栏收起后的最大视口高度，
+     按它铺满只会多不会少，多出的那截在屏幕外看不见。
+     不支持 lvh 的浏览器会忽略这条，退回 inset:0 */
+  height: 100lvh;
+  /* 软键盘按 resizes-content 弹起时布局视口被压矮，100lvh 也跟着缩，
+     background-size / object-fit 的 cover 于是重新裁一遍 —— 看到的就是
+     「一敲键盘壁纸自己也在缩放位移」。--bg-lock-h 是 js/keyboard-inset.js
+     记下的「没有键盘时」的高度（只增不减），取两者更大值：
+     视口怎么缩，壁纸都不动 */
+  height: max(100lvh, var(--bg-lock-h, 0px));
   z-index: 0;
   pointer-events: none;
   overflow: hidden;

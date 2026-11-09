@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content">
   <meta name="theme-color" id="themeColorMeta" content="#F5F0E8">
   <title>新标签页</title>
   <link rel="icon" href="icons/icon16.png" type="image/png">
@@ -14,21 +14,27 @@
   <script src="js/boot-config.js"></script>
   <script src="js/greeting-boot.js"></script>
   <!--
+    首屏只有问候语用思源宋体 Bold，它落在 a 分片里。
+    预加载让它和样式并行开始下载，而不是等 CSSOM 解析完才发现 @font-face；
+    字体早到，swap 换字重排的那一下就不会正好卡在首屏动画里
+  -->
+  <link rel="preload" href="fonts/slices/SourceHanSerifSC-Bold-a.woff2" as="font" type="font/woff2" crossorigin>
+  <!--
     样式直接并行加载：原来走 css/styles.css 的 8 层 @import，
     在移动网络下是串行瀑布（每层一个 RTT），首屏白等两三秒。
     顺序必须与 styles.css 里的 @import 一致（层叠结果不变）。
   -->
-  <link rel="stylesheet" href="css/tokens.css?v=2026110801">
-  <link rel="stylesheet" href="css/base.css?v=2026110801">
-  <link rel="stylesheet" href="css/shortcuts.css?v=2026110801">
-  <link rel="stylesheet" href="css/settings/panel.css?v=2026110801">
-  <link rel="stylesheet" href="css/settings/controls.css?v=2026110801">
-  <link rel="stylesheet" href="css/modal.css?v=2026110801">
-  <link rel="stylesheet" href="css/oobe.css?v=2026110801">
-  <link rel="stylesheet" href="css/mobile.css?v=2026110802">
-  <link rel="stylesheet" href="css/font-slices.css?v=2026110801">
-  <link rel="stylesheet" href="css/wallpaper.css?v=2026110801">
-  <link rel="stylesheet" href="icons/font/Mingcute.css?v=2026110801">
+  <link rel="stylesheet" href="css/tokens.css?v=2026110814">
+  <link rel="stylesheet" href="css/base.css?v=2026110814">
+  <link rel="stylesheet" href="css/shortcuts.css?v=2026110814">
+  <link rel="stylesheet" href="css/settings/panel.css?v=2026110814">
+  <link rel="stylesheet" href="css/settings/controls.css?v=2026110814">
+  <link rel="stylesheet" href="css/modal.css?v=2026110814">
+  <link rel="stylesheet" href="css/oobe.css?v=2026110814">
+  <link rel="stylesheet" href="css/mobile.css?v=2026110814">
+  <link rel="stylesheet" href="css/font-slices.css?v=2026110814">
+  <link rel="stylesheet" href="css/wallpaper.css?v=2026110814">
+  <link rel="stylesheet" href="icons/font/Mingcute.css?v=2026110814">
 </head>
 <body>
   <!-- 图片背景层：双层交叉淡入（换日/换图不闪黑） -->

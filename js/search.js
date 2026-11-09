@@ -747,15 +747,22 @@ function closeSearchSuggest() {
 function placeSearchSuggest(panel) {
   const form = document.getElementById('searchForm');
   if (!form) return;
-  const rect = form.getBoundingClientRect();
-  // 软键盘态：下方没空间，面板翻到搜索框上方，高度按「搜索框顶到可视区顶」算
+  // 软键盘态：搜索框吸顶，面板仍从下方展开，高度到键盘顶为止。
+  // 这里不量 getBoundingClientRect——切布局那 260ms 里搜索框在滑动，
+  // 量到的是中间位置；直接用「顶边留白 + 搜索框高度」推它最终落在哪
   if (document.body.classList.contains('kb-open')) {
-    const vv = window.visualViewport;
-    const visibleTop = vv ? vv.offsetTop : 0;
-    const spaceAbove = rect.top - visibleTop - 20;
-    panel.style.maxHeight = Math.max(96, Math.min(spaceAbove, 400)) + 'px';
+    const content = document.querySelector('.content');
+    const padTop = content ? (parseFloat(getComputedStyle(content).paddingTop) || 0) : 0;
+    // 键盘上方还剩多少高度：resizes-content 模式下看 innerHeight，overlays 下看可视视口，
+    // 脚本把两者较小的那个写进了 --vv-h，直接用，别再拿 innerHeight 减一次键盘高
+    const visibleH = parseFloat(
+      getComputedStyle(document.documentElement).getPropertyValue('--vv-h'),
+    ) || window.innerHeight;
+    const spaceBelow = visibleH - (padTop + form.offsetHeight) - 18;
+    panel.style.maxHeight = Math.max(96, Math.min(spaceBelow, 420)) + 'px';
     return;
   }
+  const rect = form.getBoundingClientRect();
   const space = window.innerHeight - rect.bottom - 16;
   panel.style.maxHeight = Math.max(120, Math.min(space, 360)) + 'px';
 }

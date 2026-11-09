@@ -15,6 +15,14 @@
      ============================================ */
   html {
     font-size: 17px;
+    /* 键盘态进出的统一时基：整块平移、问候语/快捷标签的收放、设置按钮淡出
+       都用它，各走各的时长就会看着散。
+       --kb-ease 走 iOS 面板那条曲线（起步有加速感、收尾特别缓），
+       比全站通用的 --ease（0.22,1,0.36,1，起步太冲）更适合这种大位移；
+       时长按 --motion-scale 缩放，用户的「减少动效」偏好仍然生效 */
+    --kb-motion: calc(0.62s * var(--motion-scale, 1));
+    --kb-fade: calc(0.42s * var(--motion-scale, 1));
+    --kb-ease: cubic-bezier(0.32, 0.72, 0, 1);
   }
 
   /* base.css 里 body 是写死的 16px，会挡住根字号继承，改为跟随根字号 */
@@ -37,6 +45,18 @@
     align-items: stretch;
     padding: 40px 20px;
     gap: 18px;
+    /* 100vh 在安卓底部地址栏模式下含被工具栏盖住的那一截，内容会整体偏下；
+       dvh 跟着浏览器工具栏实时变，内容才真的居中且稳定 */
+    min-height: 100dvh;
+    /* 整块平移走这条。padding 不动 —— 一动上下两行 1fr 就重新分配，
+       搜索框的落点会跟着偏，位移量还得再补偿一次，白白多一层耦合。
+       键盘用的 transform 之外，还得留住 base.css 的 left/top：
+       「展开更多标签」的 -28px 让位、文件夹面板的 --folder-shift 都走 top，
+       这里只写 transform 会把那两条过渡顶掉，手机上就变成一帧硬跳（无动画） */
+    transition:
+      left 0.3s var(--ease),
+      top 0.22s cubic-bezier(0.25, 1, 0.5, 1),
+      transform var(--kb-motion, 0.62s) var(--kb-ease);
   }
 
   .content > .greeting-section {
@@ -45,6 +65,24 @@
 
   .content > .shortcuts-section {
     align-self: start;
+  }
+
+  /* 恢复态：显隐走透明度和位移，不用 display 硬切。
+     收起键盘回原位比藏起来再慢一点点没关系，统一用 --kb-motion */
+  .content > .greeting-section,
+  .content > .shortcuts-section {
+    transition:
+      opacity var(--kb-fade, 0.42s) var(--kb-ease),
+      transform var(--kb-motion, 0.62s) var(--kb-ease),
+      filter var(--kb-fade, 0.42s) var(--kb-ease),
+      visibility 0s;
+  }
+
+  /* 设置入口跟同一档节奏，不然按钮先跳完、内容还在慢慢走 */
+  .settings-wrapper {
+    transition:
+      opacity var(--kb-fade, 0.42s) var(--kb-ease),
+      transform var(--kb-motion, 0.62s) var(--kb-ease);
   }
 
   /* ============================================
@@ -106,34 +144,128 @@
   }
 
   /* ============================================
-     软键盘态：搜索框贴住键盘顶边，建议改向上展开
+     软键盘态：搜索框吸顶，问候语与快捷标签顺次排在下方，
+     整页锁死不允许上下滚动。
      kb-open 与 --kb-h 由 js/keyboard-inset.js 写入，
-     键盘一收起类就移除，布局原样回来（含快捷标签）
+     键盘一收起类就移除，布局原样回来
      ============================================ */
-  /* 键盘占了近半屏，问候语与快捷标签没有可用空间，这一态先让位 */
-  body.kb-open .greeting-section,
-  body.kb-open .shortcuts-section {
-    display: none;
+  /* 键盘态整页冻结：连 html 一起锁，并把高度压成「键盘上方那块可视区」。
+     之前只锁 overflow、body 走 position: fixed，部分手机浏览器对 body fixed
+     支持很差，fixed 退化成普通元素，页面照样能滑、搜索框照样被带走。
+     现在不依赖 fixed：文档本身就只有可视区那么高，没有可滚动的余量 */
+  html.kb-lock {
+    height: var(--vv-h, 100%);
+    max-height: var(--vv-h, 100%);
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+
+  /* 键盘期间（含收起动画）把内容区高度钉住，值由 js 写进 --vp-max-h。
+     键盘一弹，100dvh 会跟着布局视口一起缩，上下两行 1fr 的分配也跟着变，
+     于是「量位移时的行高」和「落地后的行高」不是一个数，搜索框的落点就随
+     量取时机飘 —— 有时贴顶，有时掉到屏幕中间。钉住高度，行高恒定，
+     落点才是确定的。钉住的那一小段时间内容可能比可视区高一点（地址栏那截），
+     顺手把滚动锁掉，别让人在这 0.7 秒里把页面滑走 */
+  html.kb-hpin {
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+
+  html.kb-hpin .content {
+    height: var(--vp-max-h, 100dvh);
+    min-height: 0;
+  }
+
+  body.kb-open {
+    height: var(--vv-h, 100%);
+    min-height: 0;
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+
+  /* 布局动画期间不接受点击（js 在动画开始时挂 kb-busy，结束时摘掉）。
+     中途再点搜索框，键盘状态会立刻翻转、在动的这段动画被新的位移覆盖，
+     位移量只能拿动画中间帧的位置去凑 —— 落点就没保证了。
+     整块内容一起锁：这会儿问候语与快捷标签也在同步收放，点它们同样没有意义。
+     设置按钮在 .content 外面，不受影响 */
+  body.kb-busy .content {
+    pointer-events: none;
+  }
+
+  /* 从「上下留白把搜索框顶到正中」切成「只剩一个搜索框」：
+     整块内容往上提，提到搜索框贴住顶部留白为止。
+     位移量由 js 量好后写进 --kb-lift（= 上面那一行 + 行距）。
+     走 transform 而不是压 grid 行高：transform 是合成动画，
+     跟问候语/快捷标签的位移是同一条曲线同一条时长，能对上拍；
+     压行高是布局动画，浏览器插值出来的节奏跟 transform 对不齐，
+     快慢不一，看着就是「各走各的」 */
+  body.kb-open .content {
+    position: relative;
+    /* 高度不跟着键盘缩：取「没键盘时的视口高度」（js 写的 --vp-max-h）。
+       高度一变，上下两行 1fr 会跟着重算，位移量就偏了 */
+    height: var(--vp-max-h, 100dvh);
+    max-width: 720px;
+    margin: 0 auto;
+    display: grid;
+    align-content: start;
+    align-items: stretch;
+    transform: translateY(var(--kb-lift, 0px));
+    min-height: 0;
+    /* 不要裁：整块上移后盒子底边只到 470 左右，快捷标签往下滑到一半就被
+       这个盒子切掉，看着像凭空消失。交给 body 去裁（它正好在键盘上沿），
+       问候语往上滑出屏幕顶也一样被 body 裁 */
+    overflow: visible;
   }
 
   body.kb-open .search-section {
-    /* 与 .content 同宽同居中：手机端内容宽 = min(视口, 720) - 左右各 20px */
-    position: fixed;
-    left: 0;
-    right: 0;
-    margin: 0 auto;
-    width: calc(min(100vw, 720px) - 40px);
-    bottom: calc(var(--kb-h, 0px) + 6px);
+    width: 100%;
+    max-width: none;
     /* 高过左下角必应署名，且低于设置面板（100）与弹窗（300） */
     z-index: 80;
-    max-width: none;
   }
 
-  /* 键盘下方没有空间，建议面板翻到搜索框上方，从底部往上长 */
-  body.kb-open .search-suggest {
-    top: auto;
-    bottom: calc(100% + 8px);
-    transform-origin: bottom center;
+  /* 键盘态只留搜索框：问候语往上藏、快捷标签往下藏。
+     收起不能是 display: none —— 那样切换是一帧硬跳，
+     这里行高先压到 0，元素同步淡出并按各自方向滑出去，收起键盘时反向回来。
+     时长和缓动读 --kb-motion / --kb-fade（非线性缓动，比原来的 0.26s 慢一档）。
+     选择器带上 .content：base.css 的 `html.boot-ready .xxx.boot-entered`
+     也有 opacity/transform，优先级比 body.kb-open .xxx 高，压不住它 */
+  body.kb-open .content > .greeting-section,
+  body.kb-open .content > .shortcuts-section {
+    /* 0fr 行里子项不设 min-height: 0 会撑住行高 */
+    min-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    pointer-events: none;
+    /* visibility 延到位移走完再切，否则文字先消失只剩空框 */
+    visibility: hidden;
+    transition:
+      opacity var(--kb-fade, 0.42s) var(--kb-ease),
+      transform var(--kb-motion, 0.62s) var(--kb-ease),
+      filter var(--kb-fade, 0.42s) var(--kb-ease),
+      visibility 0s linear var(--kb-motion, 0.62s);
+  }
+
+  /* 问候语往上收 */
+  body.kb-open .content > .greeting-section {
+    transform: translateY(-28px);
+  }
+
+  /* 快捷标签往上收：跟搜索框、问候语同一个方向离场。
+     键盘态整块内容已经提着标签往上走（落点顶边约 100px），这里再补一档负位移，
+     两者同一条曲线叠加，净效果是标签一路向上掠过搜索框、滑出屏幕顶。
+     位移量按「必须真的出屏」取：100 + 自身高 92 = 192 是底线，给到 220 留 28px 余量，
+     动画结束时不会留一条压在屏幕顶边的残影（那时全靠 opacity 兜着太脆）。
+     再大就成「半屏」了，标签 120ms 内被抽走，看不出方向 */
+  body.kb-open .content > .shortcuts-section {
+    transform: translateY(-220px);
+  }
+
+  /* 设置入口一并淡出：它在右下角，键盘态没有它的位置 */
+  body.kb-open .settings-wrapper {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(18px);
   }
 
   /* ============================================
