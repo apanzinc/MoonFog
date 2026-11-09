@@ -19,6 +19,7 @@
   display: flex;
   align-items: flex-end;
   justify-content: flex-end;
+  transition: opacity 0.18s ease, transform 0.22s var(--ease);
 }
 
 .settings-btn-icon {
@@ -59,12 +60,16 @@ html.settings-btn-hover .settings-btn {
 }
 
 html.settings-btn-hover .settings-wrapper:hover .settings-btn,
-html.settings-btn-hover .settings-btn:focus-visible,
-html.settings-btn-hover body.settings-open .settings-btn,
-body.settings-open .settings-btn {
+html.settings-btn-hover .settings-btn:focus-visible {
   opacity: 1;
   pointer-events: auto;
   border-color: var(--border);
+}
+
+/* 面板打开时把入口收掉：它压在面板与毛玻璃之上，会透出一颗浮着的按钮 */
+body.settings-open .settings-wrapper {
+  opacity: 0;
+  pointer-events: none;
 }
 
 body.has-image-bg .settings-btn {
