@@ -1,4 +1,5 @@
 import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { rewriteHtml, rewriteCssUrls } from './lib/bundle-html.mjs';
@@ -97,18 +98,27 @@ const { html: finalHtml, bundles } = rewriteHtml(
   (name) => `bundle-${name}.${name === 'css' ? 'css' : 'js'}`,
 );
 
+const versionMap = new Map();
+
 for (const bundle of bundles) {
   const isCss = bundle.type.startsWith('text/css');
   const chunks = bundle.parts.map((rel) => {
     const text = readBundled(rel);
     return `\n/* ==== ${rel} ==== */\n${isCss ? rewriteCssUrls(text, rel) : text}`;
   });
-  writeFileSync(
-    path.join(OUT_DIR, `bundle-${bundle.name}.${isCss ? 'css' : 'js'}`),
-    chunks.join(isCss ? '\n' : '\n;\n'),
-  );
+  const fileName = `bundle-${bundle.name}.${isCss ? 'css' : 'js'}`;
+  const content = chunks.join(isCss ? '\n' : '\n;\n');
+  writeFileSync(path.join(OUT_DIR, fileName), content);
+  // 文件名固定，手机浏览器会拿旧缓存一直用；
+  // 内容 hash 挂在查询串上，样式/脚本一改，链接就变，刷新即生效
+  versionMap.set(fileName, createHash('sha1').update(content).digest('hex').slice(0, 8));
 }
-writeFileSync(path.join(OUT_DIR, 'index.html'), finalHtml);
+
+let versionedHtml = finalHtml;
+for (const [fileName, hash] of versionMap) {
+  versionedHtml = versionedHtml.split(`"${fileName}"`).join(`"${fileName}?v=${hash}"`);
+}
+writeFileSync(path.join(OUT_DIR, 'index.html'), versionedHtml);
 
 const { count, bytes } = countFiles(OUT_DIR);
 
