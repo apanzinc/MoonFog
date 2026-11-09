@@ -456,9 +456,13 @@ function applyShortcutsCollapse(opts = {}) {
     row.classList.add('is-instant');
     row.style.transition = 'none';
     fn();
-    void row.offsetHeight; // 强制重排后再恢复过渡
+    // 只有已经画过的行才需要强制拍一帧把过渡切断。
+    // 首屏第一次布置标签时元素还没渲染过，本来就没有过渡起点，
+    // 这一下 void offsetHeight 是同步全量重排，首屏最忙的时候纯属添乱
+    if (row.dataset.painted === '1') void row.offsetHeight;
     row.classList.remove('is-instant');
     row.style.transition = '';
+    row.dataset.painted = '1';
   };
 
   if (expanded) {

@@ -135,10 +135,17 @@ body.has-image-bg.img-ui-dark .icon-mono {
     visibility 0s;
 }
 
-.shortcuts-row .shortcut-drag-wrapper.is-folded > .shortcut-btn,
-.shortcuts-row .shortcut-drag-wrapper.is-folded > .shortcut-folder,
-.shortcuts-row > .shortcuts-expand.is-folded {
-  opacity: 0;
+/*
+ * 折叠淡出必须压过两处把胶囊 opacity 钉成 1 的规则：
+ * base.css 的 `html.boot-ready .shortcuts-section.boot-entered .shortcut-btn`（进场收尾）
+ * 与 panel.css 低配模式的同类规则——它们的特异性都高于原来的 3 类选择器，
+ * opacity 被钉死 1 之后折叠只能靠 visibility 硬切，展开/收起都没有淡入淡出。
+ * 所以这里带上 html.boot-ready 前缀 + !important，任何模式、任何页面状态下都归折叠管。
+ */
+html.boot-ready .shortcuts-section .shortcuts-row .shortcut-drag-wrapper.is-folded > .shortcut-btn,
+html.boot-ready .shortcuts-section .shortcuts-row .shortcut-drag-wrapper.is-folded > .shortcut-folder,
+html.boot-ready .shortcuts-section .shortcuts-row > .shortcuts-expand.is-folded {
+  opacity: 0 !important;
   visibility: hidden;
   pointer-events: none;
   transition:
