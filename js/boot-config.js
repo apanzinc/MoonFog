@@ -303,10 +303,12 @@
   }
 
   // 图片背景：首帧遮罩 = 可读性底噪 ∘ 用户中性雾（与 background.js resolveImageOverlayCss 同一公式）
-  // 底噪颜色跟明暗模式：深色压黑保住亮字，浅色用白雾提亮，让深色字能压上去
+  // 底噪必须是 0，与 background.js 的 IMAGE_SCRIM_ALPHA 对齐：
+  // 首屏若还按旧的 0.38 白雾铺一层，运行期再撤掉，画面会从灰白突变回真壁纸，
+  // 这一下在手机上就是「打开后卡了一下、画面跳了一次」
   if (bgUrl && (bgMode === 'local' || bgMode === 'bing')) {
     const bootDark = mode === 'dark';
-    const scrimBase = bootDark ? 0.4 : 0.38;
+    const scrimBase = 0;
     const baseC = bootDark ? 0 : 255;
     let imgWashAlpha = bgWash === 0 ? 0 : Math.min(0.72, Math.abs(bgWash) / 50 * 0.72);
     let imgOverlayAlpha = scrimBase + imgWashAlpha * (1 - scrimBase);

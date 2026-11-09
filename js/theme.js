@@ -50,7 +50,13 @@ function applyGrainPalette() {
 
   if (typeof currentBgMode === 'undefined' || currentBgMode !== 'grain') {
     // 图片壁纸模式（bing/local）的面板色板由 ThemeManager 管理，仅清理流光UI类
-    var isImageMode = currentBgMode === 'bing' || currentBgMode === 'local';
+    // 判据以「屏幕上真的有壁纸」为准：从背景库选图走壁纸引擎，
+    // 不会写 moonfog_bg_mode，键还停在 solid，只看键会把图片模式的
+    // 字色 token 一并清掉（问候语于是回落到主题色，深色壁纸上是黑的）
+    var isImageMode =
+      (typeof isImageBackgroundActive === 'function' && isImageBackgroundActive()) ||
+      currentBgMode === 'bing' ||
+      currentBgMode === 'local';
     if (!isImageMode) {
       root.style.removeProperty('--bg-warm');
       root.style.removeProperty('--bg-warm-alt');

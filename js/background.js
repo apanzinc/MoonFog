@@ -71,12 +71,13 @@ function resolveNeutralWashCss(wash) {
 }
 
 /**
- * 图片壁纸可读性底噪：颜色和浓度都跟明暗模式走。
- * 深色模式压黑保住亮字；浅色模式要用白雾把壁纸提亮，
- * 否则深色文字压在暗壁纸上根本看不清，界面也不像「浅色」了
+ * 图片壁纸可读性底噪。
+ * 以前浅色模式靠 38% 白雾把壁纸提亮、好压深色字，但那层白雾会把壁纸糊成一片灰白。
+ * 现在遮罩只由用户滑块决定，文字色跟壁纸场景走（暗壁纸白字、亮壁纸黑字），
+ * 壁纸保持原样，不需要底噪。
  */
-const IMAGE_SCRIM_ALPHA_DARK = 0.4;
-const IMAGE_SCRIM_ALPHA_LIGHT = 0.38;
+const IMAGE_SCRIM_ALPHA_DARK = 0;
+const IMAGE_SCRIM_ALPHA_LIGHT = 0;
 
 function isDarkUiMode() {
   return document.documentElement.dataset.mode === 'dark';
@@ -191,6 +192,13 @@ function isImageBackgroundActive(mode) {
   if (typeof mode === 'string' && mode) {
     return normalizeBgMode(mode) === 'local' || normalizeBgMode(mode) === 'bing';
   }
+  // 旧背景系统（本地图 / 必应）显示时会给 body 打 has-image-bg，
+  // 它是「屏幕上真的有图」最直接的证据，先认它；
+  // 只问引擎的话，引擎当前项是 grain/solid 时会把已显示的图片判成没有
+  try {
+    if (document.body && document.body.classList.contains('has-image-bg')) return true;
+    if (document.documentElement && document.documentElement.classList.contains('boot-has-image')) return true;
+  } catch (_) {}
   const WP = window.MoonFogWp;
   if (WP && WP.engine && typeof WP.engine.getCurrent === 'function') {
     const cur = WP.engine.getCurrent();
@@ -198,10 +206,6 @@ function isImageBackgroundActive(mode) {
   }
   const resolved = getEffectiveBgMode();
   if (resolved === 'local' || resolved === 'bing') return true;
-  try {
-    if (document.body && document.body.classList.contains('has-image-bg')) return true;
-    if (document.documentElement && document.documentElement.classList.contains('boot-has-image')) return true;
-  } catch (_) {}
   return false;
 }
 
@@ -2477,9 +2481,11 @@ function applyImagePalette(palette) {
   const isDark = root.getAttribute('data-mode') === 'dark';
   const uiDark = getUiMode() === 'dark';
 
-  // 文字色跟明暗模式走，不跟壁纸：浅色模式下就该是深色字，
-  // 底噪那层白雾负责把壁纸提亮到能压住深色字
-  const textLight = uiDark;
+  // 文字色跟壁纸场景走，不跟 UI 明暗：遮罩撤掉之后，
+  // 暗壁纸配白字、亮壁纸配黑字，才能在任何壁纸上都看得清；
+  // 没有取色结果时退回明暗模式
+  const sceneDark = palette && typeof palette.sceneDark === 'boolean' ? palette.sceneDark : uiDark;
+  const textLight = sceneDark;
   root.style.setProperty('--img-text', textLight ? '#FFFFFF' : '#1A1814');
   root.style.setProperty('--img-text-secondary', textLight ? 'rgba(255,255,255,0.75)' : 'rgba(26,24,20,0.68)');
   root.style.setProperty('--img-text-muted', textLight ? 'rgba(255,255,255,0.5)' : 'rgba(26,24,20,0.45)');
