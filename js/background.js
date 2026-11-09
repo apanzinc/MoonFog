@@ -478,6 +478,34 @@ function whenBgEnterSettled(cb, waitMs) {
 }
 
 /**
+ * 壁纸进场后取色。
+ *
+ * 有缓存取色时，首屏文字色在 boot 阶段就已经按缓存铺好了，
+ * 这次取样只是刷新一遍 —— 那就别跟首屏动画、字体加载抢主线程，
+ * 推到真正空闲的时候再跑（timeout 放宽到 2.5s 兜底）。
+ * 没有缓存就必须立刻取，否则整页字色一直是错的。
+ */
+function samplePaletteSoon(url, delay) {
+  if (!url) return;
+  whenBgEnterSettled(function () {
+    let cached = false;
+    try {
+      const p = JSON.parse(localStorage.getItem('moonfog_bg_palette') || 'null');
+      cached = !!(p && p.text && p.v >= 4);
+    } catch (_) {}
+    if (!cached) {
+      applyPaletteForUrl(url);
+      return;
+    }
+    if (typeof requestIdleCallback === 'function') {
+      requestIdleCallback(function () { applyPaletteForUrl(url); }, { timeout: 2500 });
+    } else {
+      setTimeout(function () { applyPaletteForUrl(url); }, 1200);
+    }
+  }, delay);
+}
+
+/**
  * 初始化背景 */
 async function initBackground() {
   if (typeof initBingCreditPop === 'function') initBingCreditPop();
@@ -2637,6 +2665,9 @@ async function applyBackgroundMode(mode, options = {}) {
 
   if (nextMode === 'solid' || nextMode === 'grain') {
     setPageBackgroundImage('', false);
+    // 兜底：图片层收起后旧背景层是被 visibility 藏起来的（html.wp-media-live），
+    // 万一引擎这一轮没走 cleanup，纯色模式会一直看不到背景
+    document.documentElement.classList.remove('wp-media-live');
     setBingCredit('');
     currentBingMeta = null;
     clearImagePalette();
@@ -2670,7 +2701,7 @@ async function applyBackgroundMode(mode, options = {}) {
       // 先等图就绪；取色延后，不挡交叉淡免
       const ok = await setPageBackgroundImage(localBgDataUrl, true);
       if (ok) {
-        whenBgEnterSettled(() => applyPaletteForUrl(localBgDataUrl), 700);
+        samplePaletteSoon(localBgDataUrl, 700);
       }
     } else {
       await setPageBackgroundImage('', false);
@@ -2712,7 +2743,7 @@ async function applyBackgroundMode(mode, options = {}) {
     const ok = await setPageBackgroundImage(meta.imageUrl, true);
     setBingCredit(meta.copyright || meta.title || 'Bing 每日一图', meta);
     if (ok) {
-      whenBgEnterSettled(() => applyPaletteForUrl(meta.imageUrl), 700);
+      samplePaletteSoon(meta.imageUrl, 700);
     }
   } catch (err) {
     const cached = readBingCache();
@@ -2721,7 +2752,7 @@ async function applyBackgroundMode(mode, options = {}) {
       const ok = await setPageBackgroundImage(cached.imageUrl, true);
       setBingCredit(cached.copyright || cached.title || 'Bing 每日一图（缓存）', cached);
       if (ok) {
-        whenBgEnterSettled(() => applyPaletteForUrl(cached.imageUrl), 700);
+        samplePaletteSoon(cached.imageUrl, 700);
       }
     } else {
       await setPageBackgroundImage('', false);
@@ -3080,7 +3111,7 @@ async function shuffleBingWallpaper() {
     setBingCredit(meta.copyright || meta.title || 'Bing 每日一图', meta);
     // 取色延后到交叉淡入后再跑，避免换图卡一与
     if (ok) {
-      whenBgEnterSettled(() => applyPaletteForUrl(meta.imageUrl), 780);
+      samplePaletteSoon(meta.imageUrl, 780);
     }
     updateBgSettingsUI();
     if (label) label.textContent = '换一式';

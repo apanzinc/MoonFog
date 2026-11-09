@@ -45,8 +45,12 @@
   function extractSeedFromPixelData(data, width, height) {
     // HCT 色相分桶 + 色度加权：暗绿植被像素多但色度低，紫色天空像素少但色度高，加权让鲜艳色胜出
     const hueBuckets = new Map()
+    // 种子色只用来定「哪个色相占主导」，不需要逐像素。
+    // 相邻像素几乎同色，每 3 个取 1 个，HCT 转换少三分之二，
+    // 首屏取色这一段在低端机上是实打实的几百毫秒
+    const step = 4 * 3
 
-    for (let i = 0; i < data.length; i += 4) {
+    for (let i = 0; i < data.length; i += step) {
       const a = data[i + 3]
       if (a < 200) continue
       const r = data[i]

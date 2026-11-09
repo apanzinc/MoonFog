@@ -33,6 +33,11 @@
   function setMediaVisible(visible) {
     const media = getMedia();
     if (media) media.classList.toggle('is-visible', !!visible);
+    // 引擎这一层显示后，旧背景层（.page-bg-stack）就没必要再画一遍同一张图：
+    // 两层叠加等于解码两次、每帧多合成一层全屏图，低端机上首屏就是这么卡住的。
+    // 类挂在 html 上，由 CSS 收起旧层；遮罩层（.page-bg-overlay）保留不动
+    const root = document.documentElement;
+    if (root) root.classList.toggle('wp-media-live', !!visible);
   }
 
   function clearMediaInner() {
@@ -193,6 +198,8 @@
     if (!renderer) throw new Error('unknown effect');
     state.effectHandle = renderer.mount(getInner(), item);
     state.currentItem = item;
+    // tick 循环在没有动效时会自己停，切到动效得把它重新叫起来
+    if (state.effectHandle && typeof state.effectHandle.render === 'function') scheduleTick();
     if (WP.theme && typeof WP.theme.apply === 'function') WP.theme.apply('effect', null);
     return true;
   }
@@ -228,14 +235,18 @@
     state.raf = 0;
     if (state.paused || document.hidden) return;
     state.frameTick += 1;
-    if (state.effectHandle && typeof state.effectHandle.render === 'function') {
+    const render = state.effectHandle && state.effectHandle.render;
+    if (typeof render === 'function') {
       try {
-        state.effectHandle.render(now, state.frameTick);
+        render.call(state.effectHandle, now, state.frameTick);
       } catch (err) {
         console.warn('[MoonFogWp] 动效渲染失败:', err);
       }
+      // 只有真的在动的层才需要逐帧。
+      // 静态图 / 纯色没有 render，如果还继续排帧，
+      // 主线程每天每帧都被叫醒一次，首屏那段最忙的时候纯属添乱
+      scheduleTick();
     }
-    scheduleTick();
   }
 
   function scheduleTick() {

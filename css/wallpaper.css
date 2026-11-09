@@ -15,6 +15,29 @@
 /* ============================================
    一、主页媒体层
    ============================================ */
+/* 引擎已经把这层图显示出来了，旧背景层就不再画同一张：
+   两份全屏图一起合成，等于解码两次 + 每帧多画一层，
+   低端手机首屏会卡一下，滚动也掉帧。收起用 visibility，
+   不占合成也不影响遮罩层 */
+html.wp-media-live .page-bg-stack {
+  visibility: hidden;
+}
+
+/* 旧层收起后，模糊与缩放得由引擎这层接过去 ——
+   之前一直是 .page-bg-image 在做，不接的话用户设的壁纸模糊会凭空消失。
+   范围取和旧层一样（--bg-blur / --bg-scale），低配档另有规则全部关掉 */
+html.wp-media-live .wallpaper-media-inner {
+  filter: blur(var(--bg-blur, 20px));
+  transform: scale(var(--bg-scale, 1.04));
+  transform-origin: center;
+}
+
+html.low-perf.wp-media-live .wallpaper-media-inner,
+html.perf-low.wp-media-live .wallpaper-media-inner {
+  filter: none;
+  transform: none;
+}
+
 .wallpaper-media {
   position: absolute;
   inset: 0;
