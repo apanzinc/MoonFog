@@ -96,6 +96,7 @@ cd dist-web && npx serve . # 本地预览
 | --- | --- | --- |
 | Chrome | `npm run pack` 产出 CRX / zip，Chrome Web Store | 原生支持 |
 | Edge | 同上 zip，经 `scripts/publish-edge.mjs` 发布到 Edge 加载项 | 原生支持 |
+| Edge 安卓 | `npm run pack:edge-mobile` 产出专用 CRX / zip | 不声明桌面专用 `fontSettings` 权限，字体列表自动降级；支持 `EdgA` 宿主识别与回调式搜索 / 权限 API。也可从扩展菜单点击图标打开主页 |
 | Firefox | `npm run pack:firefox` 产出 AMO zip | MV3；`host_permissions` 由用户按需授权（首次使用必应壁纸 / 输入联想时允许站点访问）；不含 `fontSettings`（Firefox 无此 API，字体列表自动回退内置清单）与 `search`（无 `chrome.search`，搜索回退到页面内引擎选择） |
 | Safari | `xcrun safari-web-extension-converter` 转换 Xcode 工程后打包 | Safari 不支持替换新标签页，建议 Safari 用户使用网页版 |
 
@@ -145,17 +146,25 @@ dist-web/            网页版构建产物（构建生成，不入库）
 npm install
 npm run serve      # 开发服务器 http://localhost:8132
 npm run check      # 静态自检（HTML 引用、清单、图标等）
+npm test           # 运行时回归与发布脚本单元测试
+npx playwright install chromium
+npm run test:e2e   # 桌面 / Edge 安卓 UA、真实扩展协议与独立网页版产物
 ```
 
 | 脚本 | 作用 |
 | --- | --- |
 | `npm run check` | 静态自检，校验 HTML 引用、清单与资源完整性 |
+| `npm test` | 搜索竞态、URL、宿主与 API 降级，以及发布脚本回归 |
+| `npm run test:e2e` | OOBE、媒体切换、空闲帧、触屏、扩展 CSP 与网页版构建回归；自动构建并启动测试服务器 |
 | `npm run serve` | 本地开发服务器（端口 8132，支持局域网与虚拟局域网访问） |
 | `npm run build:web` | 构建网页版到 `dist-web/` |
 | `npm run pack` | 打包扩展（Chrome / Edge） |
 | `npm run pack:firefox` | 打包 Firefox（AMO）版本 |
+| `npm run pack:edge-mobile` | 打包 Edge 安卓版本，去掉桌面字体权限 |
 | `npm run fonts` | 重新生成字体 unicode-range 分片 |
 | `npm run icons` | 重新生成图标字体子集 |
+
+本轮修复与测试边界见 [质量验证记录](docs/quality-validation.md)。
 
 ## 许可
 
