@@ -83,6 +83,39 @@ test('superseded detached video is released and never autoplays', async ({ page 
   expect(result).toEqual({ autoplay: false, releases: 1, plays: 0, id: 'solid' });
 });
 
+test('reusing the current video still applies a changed global mute setting', async ({ page }) => {
+  const result = await page.evaluate(async () => {
+    const wp = window.MoonFogWp;
+    wp.engine.cleanup();
+    const create = document.createElement.bind(document);
+    let video;
+    let creates = 0;
+    document.createElement = function (name, ...args) {
+      const el = create(name, ...args);
+      if (name === 'video') {
+        video = el; creates++;
+        Object.defineProperty(el, 'src', { set() {} });
+        el.play = () => Promise.resolve(); el.pause = el.load = () => {};
+      }
+      return el;
+    };
+    let mute = 'follow';
+    wp.spec.get = () => ({ strategy: { kind: 'fixed', itemId: 'video' }, globals: { mute } });
+    wp.sources.resolveStrategy = async () => ({ id: 'video', kind: 'video' });
+    wp.library.resolveItemUrl = async () => 'https://example.test/video.mp4';
+    const pending = wp.engine.render();
+    while (!video) await Promise.resolve();
+    video.dispatchEvent(new Event('loadeddata'));
+    await pending;
+    const initial = video.muted;
+    mute = 'allow';
+    await wp.engine.render();
+    document.createElement = create;
+    return { initial, after: video.muted, creates };
+  });
+  expect(result).toEqual({ initial: true, after: false, creates: 1 });
+});
+
 test('delegated grain animation has no duplicate engine frame loop', async ({ page }) => {
   expect(await page.evaluate(() => {
     const handle = window.MoonFogWp.effects.get('grain').mount(null, {});

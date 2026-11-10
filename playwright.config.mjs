@@ -11,5 +11,8 @@ export default defineConfig({
       userAgent: 'Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0 Mobile Safari/537.36 EdgA/142.0'
     } }
   ],
-  webServer: { command: 'npm run serve', url: 'http://127.0.0.1:8132', reuseExistingServer: !process.env.CI }
+  webServer: [
+    { command: 'npm run serve', url: 'http://127.0.0.1:8132', reuseExistingServer: !process.env.CI },
+    { command: 'npm run build:web && node tests/serve-web.mjs', url: 'http://127.0.0.1:8134', reuseExistingServer: !process.env.CI }
+  ]
 });
