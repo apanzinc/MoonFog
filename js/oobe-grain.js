@@ -453,6 +453,8 @@ rootObserver.observe(document.documentElement, {
   attributeFilter: ['data-mode', 'data-perf']
 });
 
+window.matchMedia?.('(prefers-reduced-motion: reduce)').addEventListener('change', syncActiveSpeeds);
+
 // Covers cases where UI state was applied before this deferred module loaded.
 const oobeRoot = document.getElementById('oobe');
 if (
