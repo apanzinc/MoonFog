@@ -560,7 +560,8 @@ function listSystemFonts() {
     try {
       if (typeof chrome !== 'undefined' && chrome.fontSettings && chrome.fontSettings.getFontList) {
         chrome.fontSettings.getFontList((fonts) => {
-          const names = (fonts || [])
+          const error = chrome.runtime && chrome.runtime.lastError;
+          const names = (error ? [] : (fonts || []))
             .map((f) => (f && (f.displayName || f.fontId)) || '')
             .map((n) => (typeof normalizeSystemFontName === 'function' ? normalizeSystemFontName(n) : String(n).trim()))
             .filter(Boolean);

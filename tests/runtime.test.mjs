@@ -136,3 +136,23 @@ test('address input handles query strings, fragments, long TLDs and local develo
     assert.equal(context.resolveSearchAddress(input), '');
   }
 });
+
+test('missing fontSettings on mobile falls back without breaking the font picker', async () => {
+  const context = load('js/settings.js', { window: {}, document: { readyState: 'loading', addEventListener() {} } });
+  const fonts = await context.listSystemFonts();
+  assert.ok(fonts.includes('Noto Sans SC'));
+  assert.ok(fonts.length > 0);
+});
+
+test('font list callback failures are consumed and use the built-in fallback', async () => {
+  let errorRead = false;
+  const context = load('js/settings.js', {
+    window: {}, document: { readyState: 'loading', addEventListener() {} },
+    chrome: {
+      fontSettings: { getFontList(callback) { callback(undefined); } },
+      runtime: { get lastError() { errorRead = true; return { message: 'unsupported' }; } }
+    }
+  });
+  assert.ok((await context.listSystemFonts()).length > 0);
+  assert.equal(errorRead, true);
+});

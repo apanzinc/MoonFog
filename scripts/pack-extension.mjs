@@ -34,8 +34,8 @@ function parseArgs(argv) {
       i += 1;
     } else if (arg === '--target') {
       args.target = takeValue(argv, i, arg);
-      if (args.target !== 'chrome' && args.target !== 'firefox') {
-        throw new Error(`--target 仅支持 chrome / firefox: ${args.target}`);
+      if (!['chrome', 'firefox', 'edge-mobile'].includes(args.target)) {
+        throw new Error(`--target 仅支持 chrome / firefox / edge-mobile: ${args.target}`);
       }
       i += 1;
     } else if (arg === '--keep-key') args.keepKey = true;
@@ -47,23 +47,24 @@ function parseArgs(argv) {
 // Firefox 目标调整：Firefox 没有 fontSettings / chrome.search API
 // （代码里已回退到内置字体清单与页面内引擎），打包时去掉这两个权限，避免 AMO 校验警告。
 function manifestForTarget(manifest, target) {
-  if (target !== 'firefox') return manifest;
+  if (target === 'chrome') return manifest;
   const clone = JSON.parse(JSON.stringify(manifest));
   // Firefox MV3 使用 background scripts，Chromium / Edge 使用 service worker。
-  if (clone.background?.service_worker) {
+  if (target === 'firefox' && clone.background?.service_worker) {
     clone.background = { scripts: [clone.background.service_worker] };
   }
-  const unsupported = new Set(['fontSettings', 'search']);
+  const unsupported = new Set(target === 'edge-mobile' ? ['fontSettings'] : ['fontSettings', 'search']);
   if (Array.isArray(clone.permissions)) {
     clone.permissions = clone.permissions.filter((p) => !unsupported.has(p));
   }
+  if (target === 'edge-mobile') delete clone.browser_specific_settings;
   return clone;
 }
 
 const args = parseArgs(process.argv.slice(2));
 const manifest = JSON.parse(readFileSync(path.join(root, 'manifest.json'), 'utf8'));
 const version = String(manifest.version || '');
-const base = args.name || (args.target === 'firefox' ? `MoonFog-${version}-firefox` : `MoonFog-${version}`);
+const base = args.name || `MoonFog-${version}${args.target === 'chrome' ? '' : '-' + args.target}`;
 const outDir = path.resolve(args.out);
 mkdirSync(outDir, { recursive: true });
 
@@ -90,7 +91,7 @@ try {
     });
   }
 
-  if (args.target === 'firefox') {
+  if (args.target !== 'chrome') {
     writeFileSync(
       path.join(stage, 'manifest.json'),
       `${JSON.stringify(manifestForTarget(manifest, args.target), null, 2)}\n`,
