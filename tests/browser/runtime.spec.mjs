@@ -84,6 +84,22 @@ test('delegated grain animation has no duplicate engine frame loop', async ({ pa
   })).toBe('undefined');
 });
 
+test('late palette failure cannot recolor a solid background after switching away', async ({ page }) => {
+  const result = await page.evaluate(async () => {
+    let displayed = 'https://example.test/old.jpg';
+    getDisplayedWallpaperUrl = () => displayed;
+    let reject;
+    loadImageForPalette = () => new Promise((_resolve, fail) => { reject = fail; });
+    const pending = applyPaletteForUrl(displayed);
+    displayed = '';
+    clearImagePalette();
+    reject(new Error('late image failure'));
+    await pending;
+    return { url: lastPaletteUrl, hasPalette: !!lastPalette, scene: document.body.classList.contains('img-scene-dark') };
+  });
+  expect(result).toEqual({ url: '', hasPalette: false, scene: false });
+});
+
 test('mobile startup leaves the keyboard closed and settings can be tapped', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'edge-android', 'touch-only behavior');
   expect(await page.evaluate(() => document.activeElement.id)).not.toBe('searchInput');

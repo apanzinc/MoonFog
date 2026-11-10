@@ -352,6 +352,7 @@
 
     // 相同 item 且不是源/runtime 直接复用
     if (state.currentItem && state.currentItem.id && item.id && state.currentItem.id === item.id && item.source !== 'runtime') {
+      applyGlobals(item);
       return;
     }
 
