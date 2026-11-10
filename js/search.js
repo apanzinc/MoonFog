@@ -882,13 +882,9 @@ function onSearchSuggestKeydown(e) {
  * 执行搜索
  */
 function performSearch(query) {
-  const urlPattern = /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([/\w .-]*)*\/?$/i;
-  if (urlPattern.test(query)) {
-    let url = query;
-    if (!url.startsWith('http://') && !url.startsWith('https://')) {
-      url = 'https://' + url;
-    }
-    window.location.href = url;
+  const address = resolveSearchAddress(query);
+  if (address) {
+    window.location.href = address;
     return;
   }
 
@@ -900,6 +896,19 @@ function performSearch(query) {
   }
 
   openEngineSearch(query);
+}
+
+function resolveSearchAddress(query) {
+  const text = String(query || '').trim();
+  const explicit = /^https?:\/\//i.test(text);
+  if (!explicit && /\s/.test(text)) return '';
+  try {
+    const url = new URL(explicit ? text : 'https://' + text);
+    if (!['https:', 'http:'].includes(url.protocol) || !url.hostname) return '';
+    if (!explicit && (url.username || url.password)) return '';
+    const hostname = url.hostname;
+    return explicit || hostname === 'localhost' || hostname.includes('.') || hostname.startsWith('[') ? url.href : '';
+  } catch (_) { return ''; }
 }
 
 /** 网页版 / Firefox / Safari / 指定引擎：按页面内选择的引擎打开搜索结果 */
