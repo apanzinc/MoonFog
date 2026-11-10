@@ -79,7 +79,9 @@ function initSearch() {
   bindSearchSuggestToggle();
   refreshSuggestPermission();
   syncClearBtn();
-  input.focus();
+  // 手机不自动唤起软键盘；首次引导期间保留对话框焦点。
+  const touch = window.matchMedia && window.matchMedia('(hover: none)').matches;
+  if (!touch && !document.body.classList.contains('oobe-active')) input.focus();
 }
 
 const SEARCH_SUGGEST_LIMIT = 8;
@@ -88,6 +90,7 @@ let searchSuggestAbort = null;
 let searchSuggestSeq = 0;
 let searchSuggestActive = -1;
 let searchSuggestComposing = false;
+let searchSuggestVisualSeq = 0;
 
 /**
  * 扩展（Chrome / Edge）里搜索交给浏览器的 chrome.search API：
@@ -105,17 +108,25 @@ function usesBrowserSearch() {
 
 /** 调用 chrome.search 打开查询；仅在 API 调用失败时回退到页面内引擎 */
 function submitBrowserSearch(query) {
+  let failed = false;
+  const fallback = () => {
+    if (failed) return;
+    failed = true;
+    openEngineSearch(query);
+  };
   try {
-    const pending = chrome.search.query({ text: query, disposition: 'CURRENT_TAB' });
+    const pending = chrome.search.query({ text: query, disposition: 'CURRENT_TAB' }, () => {
+      if (chrome.runtime && chrome.runtime.lastError) fallback();
+    });
     if (pending && typeof pending.catch === 'function') {
       pending.catch((err) => {
         console.warn('[MoonFog] chrome.search 调用失败，回退到页面内引擎：', err);
-        openEngineSearch(query);
+        fallback();
       });
     }
   } catch (err) {
     console.warn('[MoonFog] chrome.search 调用失败，回退到页面内引擎：', err);
-    openEngineSearch(query);
+    fallback();
   }
 }
 
@@ -301,9 +312,7 @@ function refreshSuggestPermission() {
     return Promise.resolve(true);
   }
   if (suggestPermissionCheck) return suggestPermissionCheck;
-  const contains = hasSuggestPermissionApi()
-    ? chrome.permissions.contains({ origins: SUGGEST_PERMISSION_ORIGINS })
-    : Promise.resolve(false);
+  const contains = hasSuggestPermissionApi() ? querySuggestPermission('contains') : Promise.resolve(false);
   suggestPermissionCheck = contains
     .then((granted) => {
       suggestPermissionGranted = !!granted;
@@ -326,7 +335,7 @@ function requestSuggestPermission() {
     || typeof chrome.permissions.request !== 'function') {
     return Promise.resolve(false);
   }
-  return chrome.permissions.request({ origins: SUGGEST_PERMISSION_ORIGINS })
+  return querySuggestPermission('request')
     .then((granted) => {
       suggestPermissionGranted = !!granted;
       suggestPermissionCheck = null;
@@ -334,6 +343,19 @@ function requestSuggestPermission() {
       return suggestPermissionGranted;
     })
     .catch(() => false);
+}
+
+// Edge 安卓的部分版本只提供回调。同步异常、lastError 与 Promise 拒绝均降级为未授权。
+function querySuggestPermission(method) {
+  return new Promise((resolve) => {
+    try {
+      const pending = chrome.permissions[method]({ origins: SUGGEST_PERMISSION_ORIGINS }, (granted) => {
+        const error = chrome.runtime && chrome.runtime.lastError;
+        resolve(!error && !!granted);
+      });
+      if (pending && typeof pending.then === 'function') pending.then(value => resolve(!!value), () => resolve(false));
+    } catch (_) { resolve(false); }
+  });
 }
 
 function buildOfficialSuggestUrl(provider, query, locale) {
@@ -547,6 +569,8 @@ function bindSearchSuggestToggle() {
 
 function scheduleSearchSuggest() {
   window.clearTimeout(searchSuggestTimer);
+  if (searchSuggestAbort) searchSuggestAbort.abort();
+  searchSuggestSeq++;
   if (searchSuggestComposing) return;
   const input = document.getElementById('searchInput');
   const query = input ? input.value.trim() : '';
@@ -707,6 +731,7 @@ function renderSearchSuggest(panel, input, items) {
 }
 
 function openSearchSuggest(panel, input) {
+  const visualSeq = ++searchSuggestVisualSeq;
   panel.hidden = false;
   placeSearchSuggest(panel);
   if (input) input.setAttribute('aria-expanded', 'true');
@@ -715,10 +740,17 @@ function openSearchSuggest(panel, input) {
     panel.classList.add('is-open');
     return;
   }
-  requestAnimationFrame(() => panel.classList.add('is-open'));
+  requestAnimationFrame(() => {
+    if (visualSeq === searchSuggestVisualSeq && !panel.hidden) panel.classList.add('is-open');
+  });
 }
 
 function closeSearchSuggest() {
+  window.clearTimeout(searchSuggestTimer);
+  if (searchSuggestAbort) searchSuggestAbort.abort();
+  searchSuggestAbort = null;
+  searchSuggestSeq++;
+  const visualSeq = ++searchSuggestVisualSeq;
   const panel = document.getElementById('searchSuggest');
   const input = document.getElementById('searchInput');
   searchSuggestActive = -1;
@@ -733,7 +765,7 @@ function closeSearchSuggest() {
     el.classList.remove('is-active');
   });
   const hide = () => {
-    if (!panel.classList.contains('is-open')) panel.hidden = true;
+    if (visualSeq === searchSuggestVisualSeq && !panel.classList.contains('is-open')) panel.hidden = true;
   };
   const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   if (reduce) {
@@ -873,7 +905,7 @@ function performSearch(query) {
 /** 网页版 / Firefox / Safari / 指定引擎：按页面内选择的引擎打开搜索结果 */
 function openEngineSearch(query) {
   let engineKey = localStorage.getItem('moonfog_engine') || DEFAULT_ENGINE;
-  if (engineKey === 'auto') engineKey = DEFAULT_ENGINE;
+  if (engineKey === 'auto') engineKey = window.MoonFogEnv?.host === 'edge' ? 'bing' : DEFAULT_ENGINE;
 
   // 先检查自定义引擎
   const customEngines = getCustomEngines();

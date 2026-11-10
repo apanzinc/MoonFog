@@ -8,7 +8,7 @@
 // 根据浏览器设置标签页标题
 (function() {
   const ua = navigator.userAgent;
-  if (ua.includes('Edg/')) {
+  if (/Edg(?:A|iOS)?\//.test(ua)) {
     document.title = '新建标签页';
   } else {
     document.title = '新标签页';
