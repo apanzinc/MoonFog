@@ -20,6 +20,12 @@ test('pure color stays idle after startup instead of scheduling empty frames', a
   await page.waitForTimeout(1200);
   expect(await page.evaluate(() => window.idleFrames)).toBe(0);
   expect(await page.evaluate(() => window.greetingWrites)).toBe(0);
+  expect(await page.evaluate(async () => {
+    window.greetingWrites = 0;
+    updateGreetingDisplay(); updateGreetingDisplay();
+    await Promise.resolve();
+    return window.greetingWrites;
+  })).toBe(0);
 });
 
 test('slow old video URL cannot remove a newer solid background', async ({ page }) => {
