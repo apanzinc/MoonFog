@@ -114,3 +114,25 @@ test('callback-only permissions are supported and runtime errors are consumed', 
   assert.equal(await context.refreshSuggestPermission(), true);
   assert.equal(await context.requestSuggestPermission(), false);
 });
+
+test('toolbar action opens the packaged home page without needing a tabs permission', () => {
+  let onClick;
+  const urls = [];
+  load('js/extension-background.js', { chrome: {
+    action: { onClicked: { addListener: listener => { onClick = listener; } } },
+    runtime: { getURL: file => 'chrome-extension://test/' + file },
+    tabs: { create: ({ url }) => urls.push(url) }
+  } });
+  onClick();
+  assert.deepEqual(urls, ['chrome-extension://test/newtab.html']);
+});
+
+test('address input handles query strings, fragments, long TLDs and local development URLs', () => {
+  const { context } = searchContext();
+  for (const input of ['https://example.com/path?a=1#part', 'example.technology', 'localhost:8132/a', '127.0.0.1:8132/a', '[::1]:8132/a']) {
+    assert.equal(context.resolveSearchAddress(input), new URL(input.startsWith('http') ? input : 'https://' + input).href);
+  }
+  for (const input of ['hello world', 'javascript:alert(1)', 'user@example.com', 'a'.repeat(10000) + '!']) {
+    assert.equal(context.resolveSearchAddress(input), '');
+  }
+});

@@ -49,6 +49,10 @@ function parseArgs(argv) {
 function manifestForTarget(manifest, target) {
   if (target !== 'firefox') return manifest;
   const clone = JSON.parse(JSON.stringify(manifest));
+  // Firefox MV3 使用 background scripts，Chromium / Edge 使用 service worker。
+  if (clone.background?.service_worker) {
+    clone.background = { scripts: [clone.background.service_worker] };
+  }
   const unsupported = new Set(['fontSettings', 'search']);
   if (Array.isArray(clone.permissions)) {
     clone.permissions = clone.permissions.filter((p) => !unsupported.has(p));
