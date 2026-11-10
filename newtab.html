@@ -1203,136 +1203,43 @@
     </div>
   </aside>
 
-  <!-- 首次欢迎 OOBE（类 Win11） -->
-  <div class="oobe" id="oobe" hidden aria-hidden="true">
-    <div class="oobe-bg" aria-hidden="true"></div>
+  <!-- 首次欢迎：原生模态对话框管理焦点与背景交互 -->
+  <dialog class="oobe" id="oobe" hidden aria-labelledby="oobeTitle" aria-describedby="oobeDesc">
     <div class="oobe-shell">
-      <div class="oobe-card" role="dialog" aria-modal="true" aria-labelledby="oobeTitle">
-        <div class="oobe-grain" id="oobeGrain" aria-hidden="true"></div>
-        <svg class="oobe-brand-watermark" viewBox="0 0 488 520" aria-hidden="true">
-          <defs>
-            <linearGradient id="oobeBrandGradient" x1="0" y1="0" x2="1" y2="1">
-              <stop class="oobe-brand-stop oobe-brand-stop-1" offset="0"/>
-              <stop class="oobe-brand-stop oobe-brand-stop-2" offset="0.34"/>
-              <stop class="oobe-brand-stop oobe-brand-stop-3" offset="0.68"/>
-              <stop class="oobe-brand-stop oobe-brand-stop-4" offset="1"/>
-            </linearGradient>
-            <pattern id="oobeBrandDots" width="12" height="12" patternUnits="userSpaceOnUse">
-              <circle cx="3.5" cy="3.5" r="3.5" fill="white"/>
-            </pattern>
-            <mask id="oobeBrandDotMask">
-              <rect width="488" height="520" fill="url(#oobeBrandDots)"/>
-            </mask>
-          </defs>
-          <path mask="url(#oobeBrandDotMask)" fill="url(#oobeBrandGradient)" d="M283.03995,0.44206059C272.75479,-1.4506053,262.31436,2.830163,256.20612,11.444452C250.09775,20.058743,249.40974,31.471998,254.4377,40.778713C283.47556,94.440727,274.12473,161.13083,231.49178,204.42798C188.85892,247.72514,123.19202,257.22174,70.353287,227.73146C61.189392,222.62523,49.951263,223.32393,41.469151,229.5274C32.987041,235.73087,28.771952,246.33395,30.635553,256.77936C34.030346,275.73111,39.873547,294.1449,48.013763,311.54358C52.514877,321.14139,62.054482,327.25015,72.522202,327.23764L415.5318,327.23764C425.99966,327.25015,435.53922,321.14139,440.04041,311.54358C501.16241,180.64401,423.38687,26.489088,283.06711,0.41451591L283.03995,0.44206059ZM0,382.33234C0,367.12595,12.138056,354.7988,27.111105,354.7988L460.88885,354.7988C475.86191,354.7988,488,367.12595,488,382.33234C488,397.53873,475.86191,409.86578,460.88885,409.86578L27.111105,409.86578C12.138056,409.86578,0,397.53873,0,382.33234ZM81.333328,492.46646C81.333328,477.26013,93.471375,464.93304,108.44442,464.93304L379.55554,464.93304C394.5285,464.93304,406.66666,477.26013,406.66666,492.46646C406.66666,507.67282,394.5285,520,379.55554,520L108.44442,520C93.471375,520,81.333328,507.67282,81.333328,492.46646Z"/>
-        </svg>
-        <div class="oobe-stage" id="oobeStage">
-          <div class="oobe-layout">
-            <div class="oobe-body">
-<p class="oobe-kicker" id="oobeKicker">MoonFog 朔雾</p>
-               <h1 class="oobe-title" id="oobeTitle">欢迎使用 MoonFog 朔雾</h1>
-              <p class="oobe-desc" id="oobeDesc">接下来用几步完成初始设置：选择背景、界面明暗与问候内容。点「开始」继续，随时可在设置中修改。</p>
-              <ul class="oobe-points" id="oobePoints" hidden></ul>
-              <div class="oobe-appearance" id="oobeAppearance" role="radiogroup" aria-label="界面明暗" hidden></div>
-              <div class="oobe-appearance oobe-wallpaper" id="oobeWallpaper" role="radiogroup" aria-label="主页背景" hidden></div>
-              <div class="oobe-tone-block" id="oobeToneBlock" hidden>
-                <p class="oobe-tone-label">色调</p>
-                <div class="oobe-tone-swatches theme-swatches" id="oobeToneSwatches" role="radiogroup" aria-label="纯色色调"></div>
-                <p class="oobe-tone-hint" id="oobeToneHint">深浅模式请在下一页设置</p>
-              </div>
-              <div class="oobe-greeting-block" id="oobeGreetingBlock" hidden>
-                <div class="oobe-greeting" id="oobeGreeting" role="radiogroup" aria-label="问候内容"></div>
-                <div class="oobe-name-field" id="oobeNameField" hidden>
-                  <label class="oobe-field-label" for="oobeNameInput">显示名称</label>
-                  <input type="text" class="oobe-field-input" id="oobeNameInput" maxlength="20" placeholder="例如：小陈" autocomplete="nickname" spellcheck="false">
-                </div>
-                <div class="oobe-name-field" id="oobeCustomField" hidden>
-                  <label class="oobe-field-label" for="oobeCustomInput">自定义欢迎语</label>
-                  <input type="text" class="oobe-field-input" id="oobeCustomInput" maxlength="48" placeholder="写下一句想对自己说的话…" autocomplete="off" spellcheck="false">
-                </div>
-              </div>
-              <p class="oobe-wallpaper-tip" id="oobeWallpaperTip" hidden></p>
+      <header class="oobe-header">
+        <div class="oobe-brand"><img src="icons/icon128.png" alt="" width="28" height="28">MoonFog 朔雾</div>
+        <ol class="oobe-progress" id="oobeProgress" aria-label="设置进度"></ol>
+      </header>
+      <div class="oobe-scroll" id="oobeScroll">
+        <div class="oobe-layout">
+          <section class="oobe-stage" id="oobeStage">
+            <p class="oobe-kicker" id="oobeKicker">MoonFog 朔雾</p>
+            <h1 class="oobe-title" id="oobeTitle" tabindex="-1">让每次打开，都刚刚好</h1>
+            <p class="oobe-desc" id="oobeDesc">用三个小选择，布置属于你的新标签页。</p>
+            <div id="oobeFields"></div>
+          </section>
+          <aside class="oobe-preview-wrap" aria-label="主页示意预览">
+            <p class="oobe-preview-label">你的新标签页</p>
+            <div class="oobe-preview" id="oobePreview" aria-hidden="true">
+              <img class="oobe-preview-image" id="oobePreviewImage" alt="" hidden>
+              <p class="oobe-preview-greeting" id="oobePreviewGreeting">你好，朋友</p>
+              <div class="oobe-preview-search">搜索或输入网址…</div>
+              <div class="oobe-preview-shortcuts"><span>常用网站</span><span>灵感收藏</span><span>工作空间</span></div>
             </div>
-            <div class="oobe-media" id="oobeMedia" aria-hidden="true">
-              <div class="oobe-media-frame">
-                <div class="oobe-media-grain" id="oobeMediaGrain" aria-hidden="true"></div>
-                <img class="oobe-media-img" id="oobeMediaImg" alt="" hidden>
-                <div class="oobe-media-wash" aria-hidden="true"></div>
-                <div class="oobe-media-empty" id="oobeMediaEmpty">
-                  <span class="oobe-media-empty-icon mgc_pic_2_line" aria-hidden="true"></span>
-                  <span class="oobe-media-empty-text">介绍图</span>
-                </div>
-                <!-- 欢迎页：系统背景 + 居中 logo -->
-                <div class="oobe-logo-panel" id="oobeLogoPanel" hidden aria-hidden="true">
-                  <svg class="oobe-logo-svg" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 488 520" aria-hidden="true">
-                    <path d="M283.03995,0.44206059C272.75479,-1.4506053,262.31436,2.830163,256.20612,11.444452C250.09775,20.058743,249.40974,31.471998,254.4377,40.778713C283.47556,94.440727,274.12473,161.13083,231.49178,204.42798C188.85892,247.72514,123.19202,257.22174,70.353287,227.73146C61.189392,222.62523,49.951263,223.32393,41.469151,229.5274C32.987041,235.73087,28.771952,246.33395,30.635553,256.77936C34.030346,275.73111,39.873547,294.1449,48.013763,311.54358C52.514877,321.14139,62.054482,327.25015,72.522202,327.23764L415.5318,327.23764C425.99966,327.25015,435.53922,321.14139,440.04041,311.54358C501.16241,180.64401,423.38687,26.489088,283.06711,0.41451591L283.03995,0.44206059ZM0,382.33234C0,367.12595,12.138056,354.7988,27.111105,354.7988L460.88885,354.7988C475.86191,354.7988,488,367.12595,488,382.33234C488,397.53873,475.86191,409.86578,460.88885,409.86578L27.111105,409.86578C12.138056,409.86578,0,397.53873,0,382.33234ZM81.333328,492.46646C81.333328,477.26013,93.471375,464.93304,108.44442,464.93304L379.55554,464.93304C394.5285,464.93304,406.66666,477.26013,406.66666,492.46646C406.66666,507.67282,394.5285,520,379.55554,520L108.44442,520C93.471375,520,81.333328,507.67282,81.333328,492.46646Z" fill="currentColor" fill-opacity="0.88"/>
-                  </svg>
-                </div>
-                <!-- 设置引导：居中齿轮（正式按钮样式）+ 鼠标指针 -->
-                <div class="oobe-settings-tip" id="oobeSettingsTip" hidden aria-hidden="true">
-                  <div class="oobe-settings-center">
-                    <div class="oobe-settings-btn-mock" aria-hidden="true">
-                      <span class="mgc_settings_3_line settings-btn-icon"></span>
-                    </div>
-                    <div class="oobe-settings-cursor" aria-hidden="true">
-                      <!-- 标准鼠标箭头（无选区小尾巴） -->
-                      <svg class="oobe-cursor-svg" viewBox="0 0 24 24" width="40" height="40" aria-hidden="true">
-                        <path fill="currentColor" stroke="rgba(255,255,255,0.85)" stroke-width="1.2" stroke-linejoin="round" d="M5 3v15.2l4.1-3.7 2.8 6.7 2.5-1.05-2.8-6.65H18.5L5 3z"/>
-                      </svg>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <!-- 迷你主页叠在图框之上（框外层），图框保持 overflow 裁圆角 -->
-              <div class="oobe-mini-home" id="oobeMiniHome" hidden>
-                <div class="oobe-mini-scale">
-                  <div class="content oobe-mini-content">
-                    <section class="greeting-section">
-                      <h1 class="greeting-title" id="oobeMiniGreeting">午安，朋友</h1>
-                    </section>
-                    <section class="search-section">
-                      <div class="search-box" role="presentation">
-                        <span class="search-input oobe-mini-search-ph">搜索或输入网址…</span>
-                        <span class="search-btn" aria-hidden="true">
-                          <span class="mgc_search_line"></span>
-                        </span>
-                      </div>
-                    </section>
-                    <section class="shortcuts-section">
-                      <div class="shortcuts-row">
-                        <span class="shortcut-btn" role="presentation">
-                          <span class="shortcut-icon"><svg class="shortcut-fallback-icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path fill="currentColor" fill-rule="nonzero" d="M12 2c5.523 0 10 4.477 10 10s-4.477 10-10 10S2 17.523 2 12 6.477 2 12 2m2 11.4-1.564 1.251a.5.5 0 0 0-.041.744l1.239 1.239a2 2 0 0 1 .508.864l.175.613a1.8 1.8 0 0 0 1.017 1.163 8.021 8.021 0 0 0 2.533-1.835l-.234-1.877a2 2 0 0 0-1.09-1.54l-1.47-.736A1 1 0 0 0 14 13.4M12 4a7.987 7.987 0 0 0-6.335 3.114l-.165.221V9.02a3 3 0 0 0 1.945 2.809l.178.06 1.29.395c1.373.42 2.71-.697 2.577-2.096l-.019-.145-.175-1.049a1 1 0 0 1 .656-1.108l.108-.03.612-.14a2.667 2.667 0 0 0 1.989-3.263A7.987 7.987 0 0 0 12 4"/></svg></span>
-                          <span class="shortcut-label">GitHub</span>
-                        </span>
-                        <span class="shortcut-btn" role="presentation">
-                          <span class="shortcut-icon"><svg class="shortcut-fallback-icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path fill="currentColor" fill-rule="nonzero" d="M12 2c5.523 0 10 4.477 10 10s-4.477 10-10 10S2 17.523 2 12 6.477 2 12 2m2 11.4-1.564 1.251a.5.5 0 0 0-.041.744l1.239 1.239a2 2 0 0 1 .508.864l.175.613a1.8 1.8 0 0 0 1.017 1.163 8.021 8.021 0 0 0 2.533-1.835l-.234-1.877a2 2 0 0 0-1.09-1.54l-1.47-.736A1 1 0 0 0 14 13.4M12 4a7.987 7.987 0 0 0-6.335 3.114l-.165.221V9.02a3 3 0 0 0 1.945 2.809l.178.06 1.29.395c1.373.42 2.71-.697 2.577-2.096l-.019-.145-.175-1.049a1 1 0 0 1 .656-1.108l.108-.03.612-.14a2.667 2.667 0 0 0 1.989-3.263A7.987 7.987 0 0 0 12 4"/></svg></span>
-                          <span class="shortcut-label">笔记</span>
-                        </span>
-                        <span class="shortcut-btn" role="presentation">
-                          <span class="shortcut-icon"><svg class="shortcut-fallback-icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path fill="currentColor" fill-rule="nonzero" d="M12 2c5.523 0 10 4.477 10 10s-4.477 10-10 10S2 17.523 2 12 6.477 2 12 2m2 11.4-1.564 1.251a.5.5 0 0 0-.041.744l1.239 1.239a2 2 0 0 1 .508.864l.175.613a1.8 1.8 0 0 0 1.017 1.163 8.021 8.021 0 0 0 2.533-1.835l-.234-1.877a2 2 0 0 0-1.09-1.54l-1.47-.736A1 1 0 0 0 14 13.4M12 4a7.987 7.987 0 0 0-6.335 3.114l-.165.221V9.02a3 3 0 0 0 1.945 2.809l.178.06 1.29.395c1.373.42 2.71-.697 2.577-2.096l-.019-.145-.175-1.049a1 1 0 0 1 .656-1.108l.108-.03.612-.14a2.667 2.667 0 0 0 1.989-3.263A7.987 7.987 0 0 0 12 4"/></svg></span>
-                          <span class="shortcut-label">邮件</span>
-                        </span>
-                      </div>
-                    </section>
-                  </div>
-                </div>
-              </div>
-              <p class="oobe-mini-note" id="oobeMiniNote" hidden>仅供参考</p>
-            </div>
-          </div>
+            <p class="oobe-preview-note" id="oobePreviewNote">示意预览 · 完成后应用到主页</p>
+          </aside>
         </div>
-        <div class="oobe-footer">
-          <button class="oobe-btn oobe-btn-text" id="oobeSkipBtn" type="button">跳过引导</button>
-          <div class="oobe-footer-spacer"></div>
-          <div class="oobe-footer-actions">
-            <button class="oobe-btn oobe-btn-ghost" id="oobeBackBtn" type="button" hidden>上一步</button>
-            <button class="oobe-btn oobe-btn-primary" id="oobeNextBtn" type="button">开始</button>
-          </div>
-        </div>
+        <p class="oobe-status" id="oobeStatus" role="status" aria-live="polite" hidden></p>
       </div>
-      <div class="oobe-progress" id="oobeProgress" aria-hidden="true"></div>
+      <footer class="oobe-footer">
+        <button class="oobe-btn oobe-btn-text" id="oobeSkipBtn" type="button" title="保留当前设置">暂不设置</button>
+        <div class="oobe-footer-actions">
+          <button class="oobe-btn" id="oobeBackBtn" type="button" hidden>上一步</button>
+          <button class="oobe-btn oobe-btn-primary" id="oobeNextBtn" type="button">开始设置</button>
+        </div>
+      </footer>
     </div>
-  </div>
+  </dialog>
   <!-- 自定义引擎弹窗 -->
   <div class="modal-overlay" id="engineModal" role="dialog" aria-modal="true" aria-labelledby="engineModalTitle" aria-hidden="true" inert>
     <div class="modal-box">

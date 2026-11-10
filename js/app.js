@@ -226,6 +226,8 @@ function init() {
   }
 
   if (!showingOobe) {
+    document.documentElement.classList.remove('boot-oobe-pending');
+    document.body.classList.remove('oobe-active');
     startBootEnter();
   }
 
