@@ -145,3 +145,17 @@ test('mobile startup leaves the keyboard closed and settings can be tapped', asy
   await page.locator('#settingsBtn').tap();
   await expect(page.locator('body')).toHaveClass(/settings-open/);
 });
+
+test('mobile search still follows keyboard resize and restores after dismissal', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'edge-android', 'touch-only keyboard behavior');
+  const size = page.viewportSize();
+  await page.locator('#searchInput').tap();
+  await page.setViewportSize({ width: size.width, height: 500 });
+  await expect(page.locator('body')).toHaveClass(/kb-open/);
+  await expect(page.locator('body')).not.toHaveClass(/kb-busy/);
+  const top = await page.locator('.content > .search-section').evaluate(el => el.getBoundingClientRect().top);
+  expect(Math.abs(top - 14)).toBeLessThan(2);
+  await page.setViewportSize(size);
+  await expect(page.locator('body')).not.toHaveClass(/kb-open/);
+  await expect(page.locator('html')).not.toHaveClass(/kb-hpin/);
+});

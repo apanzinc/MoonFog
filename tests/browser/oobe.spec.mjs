@@ -142,13 +142,22 @@ test('reduced motion, rapid navigation and keyboard focus stay consistent', asyn
 });
 
 test('small and landscape viewports keep footer controls inside the visible area', async ({ page }) => {
+  const titles = ['从喜欢的背景开始', '找到舒服的光线', '给新的一页，一句开场白'];
+  let index = 0;
   for (const size of [{ width: 320, height: 568 }, { width: 844, height: 390 }, { width: 360, height: 360 }]) {
     await page.setViewportSize(size);
     await next(page);
+    await expect(page.locator('#oobeTitle')).toHaveText(titles[index++]);
+    await expect(page.locator('body')).not.toHaveClass(/kb-busy|kb-open/);
     const bounds = await page.locator('.oobe-footer').boundingBox();
     expect(bounds.y + bounds.height).toBeLessThanOrEqual(size.height + 1);
     expect(bounds.x).toBeGreaterThanOrEqual(0);
     expect(bounds.x + bounds.width).toBeLessThanOrEqual(size.width + 1);
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(size.width);
   }
+  await choose(page, 'oobeGreeting', 'custom');
+  await page.locator('#oobeCustomInput').fill('小屏幕也可以操作');
+  await page.setViewportSize({ width: 360, height: 300 });
+  await next(page);
+  await expect(page.locator('#oobe')).toBeHidden();
 });
