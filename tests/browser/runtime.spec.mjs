@@ -178,6 +178,34 @@ test('failed initial media still falls back to the theme solid background', asyn
   expect(result).toEqual({ kind: 'solid', color: 'var(--bg-warm)' });
 });
 
+test('failed wallpaper selection shows the retained background and can retry the selected item', async ({ page }) => {
+  const ids = await page.evaluate(async () => {
+    const wp = window.MoonFogWp;
+    const previous = wp.library.addSolid('已应用的蓝色', '#224466');
+    wp.spec.setStrategy({ kind: 'fixed', itemId: previous.id });
+    await wp.engine.render();
+    const candidate = await wp.library.addImageUrl('http://127.0.0.1:8132/retry-wallpaper.svg');
+    wp.library.renameItem(candidate.id, '新的风景');
+    return { previous: previous.id, candidate: candidate.id };
+  });
+  let fail = true;
+  await page.route('**/retry-wallpaper.svg', route => fail ? route.abort() : route.fulfill({ contentType: 'image/svg+xml', body: '<svg xmlns="http://www.w3.org/2000/svg" width="80" height="60"><rect width="80" height="60" fill="#335577"/></svg>' }));
+  await page.locator('#settingsBtn').click();
+  await page.locator('[data-settings-page="appearance"]').click();
+  await page.locator('[data-settings-page="appearance-bg"]').click();
+  await page.locator(`#wpLibraryGrid .wallpaper-item[data-id="${ids.candidate}"]`).click();
+  await expect(page.locator('#wpLoadError')).toBeVisible();
+  await expect(page.locator('#wpLoadErrorText')).toContainText('新的风景');
+  await expect(page.locator('#wpLoadErrorText')).toContainText('仍显示「已应用的蓝色」');
+  expect(await page.evaluate(() => window.MoonFogWp.engine.getCurrent().id)).toBe(ids.previous);
+  expect(await page.evaluate(() => window.MoonFogWp.spec.get().strategy.itemId)).toBe(ids.candidate);
+  fail = false;
+  await page.locator('#wpRetryBtn').click();
+  await page.waitForFunction(id => window.MoonFogWp.engine.getCurrent()?.id === id, ids.candidate);
+  await expect(page.locator('#wpLoadError')).toBeHidden();
+  await expect(page.locator('#wallpaperMediaInner img')).toBeVisible();
+});
+
 test('normalized wallpaper URLs apply palettes and delayed sampling rejects switched backgrounds', async ({ page }) => {
   await page.route('http://localhost:8132/palette.svg', route => route.fulfill({ contentType: 'image/svg+xml', body: '<svg xmlns="http://www.w3.org/2000/svg" width="80" height="60"><rect width="80" height="60" fill="#244466"/></svg>' }));
   const url = 'http://LOCALHOST:8132/palette.svg';

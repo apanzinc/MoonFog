@@ -66,12 +66,13 @@
     }
     return field;
   }
+  /** 同步保存锁及本地图可用状态，避免在读图中继续下一步。 */
   function syncButtons() {
     $('oobeFields').querySelectorAll('input').forEach(input => { input.disabled = saving; });
     $('oobeBackBtn').hidden = step === 0;
     $('oobeBackBtn').disabled = saving;
     $('oobeNextBtn').textContent = saving ? '正在保存…' : step === 0 ? '开始设置' : step === STEPS.length - 1 ? '开始使用' : '下一步';
-    $('oobeNextBtn').disabled = saving || (step === 1 && (loading || (draft.bgMode === 'local' && !draft.localUrl)));
+    $('oobeNextBtn').disabled = saving || (step === 1 && (loading || (draft.bgMode === 'local' && !draft.localUrl && !draft.localItemId)));
     $('oobeSkipBtn').disabled = saving;
   }
   function syncFields() {
@@ -149,6 +150,7 @@
     if (focus) $('oobeTitle').focus({ preventScroll: true });
   }
 
+  /** 压缩新文件到草稿，只有最新会话的读取结果可以替换已保存图片。 */
   async function loadLocal(file) {
     if (!file) return; // 取消文件选择保留先前的有效图片。
     const token = ++fileToken;
@@ -159,10 +161,29 @@
       if (file.type && !file.type.startsWith('image/')) throw new Error('请选择图片文件。');
       const url = await compressImageFile(file);
       if (token !== fileToken || currentSession !== session || !isOobeActive()) return;
-      draft.localUrl = url; draft.localName = file.name; draft.backgroundChanged = true;
+      draft.localUrl = url; draft.localName = file.name; draft.localItemId = null; draft.backgroundChanged = true;
       setStatus('已选择：' + file.name); preview();
     } catch (error) {
       if (token === fileToken && currentSession === session) setStatus(error.message || '图片读取失败，请重试。');
+    } finally {
+      if (token === fileToken && currentSession === session) { loading = false; syncButtons(); }
+    }
+  }
+  /** 从新壁纸库恢复预览；会话或文件已变化时不覆盖新草稿。 */
+  async function loadSavedLocal(item) {
+    const token = ++fileToken;
+    const currentSession = session;
+    loading = true; syncButtons();
+    try {
+      const url = await window.MoonFogWp.library.resolveItemUrl(item);
+      if (token !== fileToken || currentSession !== session || !isOobeActive()) return;
+      draft.localUrl = url;
+      if (!url) { draft.localItemId = null; setStatus('已保存的图片无法读取，请重新选择图片。'); }
+      preview();
+    } catch (_) {
+      if (token === fileToken && currentSession === session) {
+        draft.localItemId = null; setStatus('已保存的图片无法读取，请重新选择图片。');
+      }
     } finally {
       if (token === fileToken && currentSession === session) { loading = false; syncButtons(); }
     }
@@ -181,6 +202,7 @@
     }
   }
 
+  /** 保存草稿并同步壁纸策略；失败恢复偏好且只清理本次新增的库条目。 */
   async function save() {
     const wp = window.MoonFogWp;
     await wp.library.init();
@@ -188,7 +210,7 @@
     let added;
     try {
       // 图片入库会等待 IndexedDB；等它完成后才取快照并同步写偏好，避免回滚其他标签页在等待期间的新设置。
-      if (draft.backgroundChanged && draft.bgMode === 'local') {
+      if (draft.backgroundChanged && draft.bgMode === 'local' && !draft.localItemId) {
         added = await wp.library.addPreparedImage(draft.localUrl, draft.localName || '本地图片');
       }
       const keys = ['moonfog_tone', 'moonfog_mode_pref', 'moonfog_username', 'moonfog_greeting_mode', 'moonfog_custom_text', DONE_KEY];
@@ -202,7 +224,8 @@
       if (draft.backgroundChanged) {
         let strategy = { kind: 'fixed', itemId: null };
         if (draft.bgMode === 'local') {
-          strategy.itemId = added.id;
+          strategy.itemId = draft.localItemId || added.id;
+          if (!wp.library.getItem(strategy.itemId)) throw new Error('背景未能保存');
         } else if (draft.bgMode === 'grain') {
           let item = wp.library.listItems('effect').find(item => item.effect === 'grain');
           if (!item) item = added = wp.library.addEffect('流光渐变', 'grain', {});
@@ -233,6 +256,7 @@
     updateGreetingDisplay();
     if (draft.backgroundChanged) wp.engine.render();
   }
+  /** 保存或跳过后解除主页隐藏；保存失败保留草稿并恢复可重试的对话框。 */
   async function finish(commit) {
     if (saving) return;
     saving = true; syncButtons();
@@ -268,17 +292,21 @@
       finish(true);
     } else { step++; render(); }
   }
+  /** 从当前偏好与固定图片条目创建独立草稿，并恢复本地图预览。 */
   function openOobe() {
     const root = $('oobe');
     if (!root || saving || isOobeActive()) return !!root;
     const background = read('moonfog_bg_mode', 'solid');
     const mode = read('moonfog_mode_pref', 'system');
     const greeting = read('moonfog_greeting_mode', 'greeting');
+    const strategy = window.MoonFogWp?.spec?.get().strategy;
+    const savedItem = strategy?.kind === 'fixed' ? window.MoonFogWp.library.getItem(strategy.itemId) : null;
+    const localItem = savedItem?.kind === 'image' ? savedItem : null;
     draft = {
       bgMode: valid(background, BACKGROUNDS) ? background : 'solid', backgroundChanged: false,
       mode: valid(mode, MODES) ? mode : 'system', tone: valid(read('moonfog_tone'), TONES) ? read('moonfog_tone') : 'sand',
       greeting: valid(greeting, GREETINGS) ? greeting : 'greeting', name: read('moonfog_username'), custom: read('moonfog_custom_text'),
-      localUrl: read('moonfog_bg_local'), localName: '', bingUrl: ''
+      localUrl: localItem ? '' : read('moonfog_bg_local'), localItemId: localItem?.id || null, localName: '', bingUrl: ''
     };
     step = 0; session++; loading = saving = false;
     opener = document.activeElement;
@@ -286,6 +314,7 @@
     document.body.classList.add('oobe-active');
     document.documentElement.classList.add('boot-oobe-pending');
     root.hidden = false; root.showModal(); render(false);
+    if (localItem) loadSavedLocal(localItem);
     $('oobeNextBtn').focus({ preventScroll: true });
     return true;
   }

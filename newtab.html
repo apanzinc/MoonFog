@@ -426,6 +426,11 @@
 <section class="settings-page" data-page="appearance-bg" hidden aria-labelledby="sec-appearance-bg">
           <h4 class="settings-section-title" id="sec-appearance-bg" hidden>主题与背景</h4>
 
+          <div class="wallpaper-load-error" id="wpLoadError" role="status" hidden>
+            <p id="wpLoadErrorText"></p>
+            <button class="bg-action-btn" id="wpRetryBtn" type="button">重试加载</button>
+          </div>
+
           <div class="wp-subnav" id="wpSubnav" role="tablist" aria-label="背景设置">
             <button class="wp-subnav-btn is-active" type="button" role="tab" data-wp-tab="library" aria-selected="true" tabindex="0"><span class="wp-subnav-icon mgc_pic_fill" aria-hidden="true"></span><span class="wp-subnav-text">背景库</span></button>
             <button class="wp-subnav-btn" type="button" role="tab" data-wp-tab="sources" aria-selected="false" tabindex="-1"><span class="wp-subnav-icon mgc_plugin_2_fill" aria-hidden="true"></span><span class="wp-subnav-text">源</span></button>

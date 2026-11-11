@@ -217,6 +217,21 @@ html.perf-low .wallpaper-media-inner {
   flex-shrink: 0;
 }
 
+.wallpaper-load-error {
+  padding: 12px;
+  margin-bottom: 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--card-bg);
+  color: var(--text-primary);
+}
+
+.wallpaper-load-error p {
+  margin: 0 0 8px;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+}
+
 /* tabs */
 .wallpaper-tabs {
   display: flex;

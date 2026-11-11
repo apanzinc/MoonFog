@@ -21,6 +21,16 @@
     muted: true,
     rotateTimer: 0
   };
+  let renderError = null;
+
+  /** 发布当前加载失败状态；新请求或成功重试会清除旧提示。 */
+  function setRenderError(item) {
+    renderError = item ? {
+      itemName: item.name || (item.kind === 'video' ? '视频' : '图片'),
+      currentName: state.currentItem?.name || '当前背景'
+    } : null;
+    window.dispatchEvent(new CustomEvent('moonfog-wp-render-error', { detail: renderError }));
+  }
 
   function getMedia() {
     return document.getElementById('wallpaperMedia');
@@ -153,6 +163,7 @@
   let renderToken = 0;
   let mediaLoadController = null;
 
+  /** 作废候选媒体、停止后台任务并清除当前画面和失败状态。 */
   function cleanup() {
     renderToken++;
     mediaLoadController?.abort();
@@ -160,6 +171,7 @@
     stopTick();
     clearPresentation();
     state.currentItem = null;
+    setRenderError(null);
   }
 
   // 同步旧背景系统的模式，避免主题切换时用过期模式重刷流光/纯色
@@ -242,6 +254,7 @@
     return true;
   }
 
+  /** 加载候选条目；失败保留可用背景，首次失败则显示纯色，并返回 false。 */
   async function renderItem(item, token, signal) {
     if (!item) throw new Error('no item');
     try {
@@ -259,7 +272,8 @@
       }
       console.warn('[MoonFogWp] 渲染失败，降级:', err);
       if (item.kind !== 'solid') {
-        return await renderSolid(fallbackItem());
+        await renderSolid(fallbackItem());
+        return false;
       }
       throw err;
     }
@@ -332,13 +346,15 @@
     }, mins * 60000);
   }
 
+  /** 应用最新策略，返回是否成功；只有当前请求可以发布可重试的失败状态。 */
   async function render(options) {
     const my = ++renderToken;
+    setRenderError(null);
     mediaLoadController?.abort();
     mediaLoadController = new AbortController();
     const signal = mediaLoadController.signal;
     const spec = WP.spec && WP.spec.get();
-    if (!spec) return;
+    if (!spec) return false;
     clearRotateTimer();
 
     let item = null;
@@ -347,7 +363,7 @@
     } catch (err) {
       console.warn('[MoonFogWp] 策略解析失败:', err);
     }
-    if (my !== renderToken) return;
+    if (my !== renderToken) return false;
 
     if (!item) {
       item = fallbackItem();
@@ -358,13 +374,18 @@
     // 相同 item 且不是源/runtime 直接复用
     if (state.currentItem && state.currentItem.id && item.id && state.currentItem.id === item.id && item.source !== 'runtime') {
       applyGlobals(item);
-      return;
+      return true;
     }
 
     try {
-      await renderItem(item, my, signal);
+      const ok = await renderItem(item, my, signal);
+      if (my !== renderToken) return false;
+      if (!ok) setRenderError(item);
+      return ok;
     } catch (err) {
       console.error('[MoonFogWp] 渲染兜底失败:', err);
+      if (my === renderToken) setRenderError(item);
+      return false;
     }
   }
 
@@ -407,6 +428,7 @@
     render,
     setPaused,
     cleanup,
-    getCurrent
+    getCurrent,
+    getError: () => renderError
   };
 })();

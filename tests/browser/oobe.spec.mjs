@@ -131,6 +131,45 @@ test('unexpected native dialog close releases the home page and discards the dra
   expect(await page.evaluate(() => localStorage.getItem('moonfog_oobe_done'))).toBe('1');
 });
 
+for (const toggle of [false, true]) {
+  test(`reopened onboarding reuses its saved local image ${toggle ? 'after switching away and back' : 'without choosing another file'}`, async ({ page }) => {
+    await next(page); await choose(page, 'oobeBackground', 'local');
+    await page.locator('#oobeLocalInput').setInputFiles({ name: 'saved.svg', mimeType: 'image/svg+xml', buffer: fixtureImage });
+    await expect(page.locator('#oobeStatus')).toContainText('已选择');
+    await next(page); await next(page); await next(page);
+    await expect(page.locator('#oobe')).toBeHidden();
+    const original = await page.evaluate(() => ({ id: window.MoonFogWp.spec.get().strategy.itemId, count: window.MoonFogWp.library.listItems('image').length }));
+    expect(await page.evaluate(() => localStorage.getItem('moonfog_bg_local'))).toBeNull();
+    await page.reload();
+    await page.waitForFunction(() => window.MoonFogWp?.engine?.getCurrent()?.kind === 'image');
+    await page.evaluate(() => window.openOobe());
+    await next(page);
+    await expect(page.locator('#oobePreviewImage')).toBeVisible();
+    await expect(page.locator('#oobeNextBtn')).toBeEnabled();
+    if (toggle) { await choose(page, 'oobeBackground', 'solid'); await choose(page, 'oobeBackground', 'local'); }
+    await next(page); await next(page); await next(page);
+    await expect(page.locator('#oobe')).toBeHidden();
+    expect(await page.evaluate(() => ({ id: window.MoonFogWp.spec.get().strategy.itemId, count: window.MoonFogWp.library.listItems('image').length }))).toEqual(original);
+    await page.reload();
+    await page.waitForFunction(id => window.MoonFogWp?.engine?.getCurrent()?.id === id, original.id);
+  });
+}
+
+test('missing saved local image cannot be accepted as a valid onboarding background', async ({ page }) => {
+  await page.evaluate(() => {
+    const wp = window.MoonFogWp;
+    localStorage.setItem('moonfog_bg_mode', 'local');
+    localStorage.setItem('moonfog_wallpaper_items', JSON.stringify([{ id: 'missing-blob', kind: 'image', source: 'local' }]));
+    wp.spec.setStrategy({ kind: 'fixed', itemId: 'missing-blob' });
+  });
+  await page.locator('#oobeSkipBtn').click();
+  await expect(page.locator('#oobe')).toBeHidden();
+  await page.evaluate(() => window.openOobe());
+  await next(page);
+  await expect(page.locator('#oobeNextBtn')).toBeDisabled();
+  await expect(page.locator('#oobePreviewImage')).toBeHidden();
+});
+
 for (const failure of [false, true]) {
   test(`native close during pending save ${failure ? 'restores the draft for retry on failure' : 'waits for successful completion'}`, async ({ page }) => {
     await next(page); await choose(page, 'oobeTone', 'rose');

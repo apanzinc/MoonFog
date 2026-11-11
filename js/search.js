@@ -898,6 +898,7 @@ function performSearch(query) {
   openEngineSearch(query);
 }
 
+/** 识别 HTTP(S)、域名及完整 IP 地址；不将普通词、小数或版本号隐式扩成 IPv4。 */
 function resolveSearchAddress(query) {
   const text = String(query || '').trim();
   const explicit = /^https?:\/\//i.test(text);

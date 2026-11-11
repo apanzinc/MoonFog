@@ -16,6 +16,15 @@
   let itemMenu = null;
   let gridSig = '';
 
+  /** 显示已选壁纸与仍在展示的背景，并为同一策略提供重试入口。 */
+  function renderLoadError() {
+    const panel = $('wpLoadError');
+    if (!panel) return;
+    const error = WP.engine?.getError();
+    panel.hidden = !error;
+    if (error) $('wpLoadErrorText').textContent = '「' + error.itemName + '」加载失败，仍显示「' + error.currentName + '」。请检查文件或网络后重试，也可以选择其他背景。';
+  }
+
   function $(id) {
     return document.getElementById(id);
   }
@@ -809,6 +818,9 @@
     bindGlobals();
     bindAddModal();
     bindSourceModal();
+    $('wpRetryBtn')?.addEventListener('click', () => WP.engine?.render());
+    window.addEventListener('moonfog-wp-render-error', renderLoadError);
+    renderLoadError();
 
     // 弹层内按 Escape 只关闭弹层，设置面板保持打开
     document.addEventListener('keydown', (event) => {
