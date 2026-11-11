@@ -159,7 +159,7 @@
       if (file.type && !file.type.startsWith('image/')) throw new Error('请选择图片文件。');
       const url = await compressImageFile(file);
       if (token !== fileToken || currentSession !== session || !isOobeActive()) return;
-      draft.localUrl = url; draft.localName = file.name;
+      draft.localUrl = url; draft.localName = file.name; draft.backgroundChanged = true;
       setStatus('已选择：' + file.name); preview();
     } catch (error) {
       if (token === fileToken && currentSession === session) setStatus(error.message || '图片读取失败，请重试。');
@@ -184,10 +184,16 @@
   async function save() {
     const wp = window.MoonFogWp;
     await wp.library.init();
-    const keys = ['moonfog_tone', 'moonfog_mode', 'moonfog_mode_pref', 'moonfog_username', 'moonfog_greeting_mode', 'moonfog_custom_text', 'moonfog_bg_mode', 'moonfog_wallpaper_items', 'moonfog_wallpaper_sources', 'moonfog_wallpaper_spec', DONE_KEY];
-    const before = new Map(keys.map(key => [key, localStorage.getItem(key)]));
+    const before = new Map();
     let added;
     try {
+      // 图片入库会等待 IndexedDB；等它完成后才取快照并同步写偏好，避免回滚其他标签页在等待期间的新设置。
+      if (draft.backgroundChanged && draft.bgMode === 'local') {
+        added = await wp.library.addPreparedImage(draft.localUrl, draft.localName || '本地图片');
+      }
+      const keys = ['moonfog_tone', 'moonfog_mode_pref', 'moonfog_username', 'moonfog_greeting_mode', 'moonfog_custom_text', DONE_KEY];
+      if (draft.backgroundChanged) keys.push('moonfog_bg_mode', 'moonfog_wallpaper_spec');
+      keys.forEach(key => before.set(key, localStorage.getItem(key)));
       localStorage.setItem('moonfog_tone', draft.tone);
       localStorage.setItem('moonfog_mode_pref', draft.mode);
       localStorage.setItem('moonfog_username', draft.name.trim());
@@ -196,10 +202,10 @@
       if (draft.backgroundChanged) {
         let strategy = { kind: 'fixed', itemId: null };
         if (draft.bgMode === 'local') {
-          added = await wp.library.addPreparedImage(draft.localUrl, draft.localName || '本地图片');
           strategy.itemId = added.id;
         } else if (draft.bgMode === 'grain') {
-          const item = wp.library.listItems('effect').find(item => item.effect === 'grain') || wp.library.addEffect('流光渐变', 'grain', {});
+          let item = wp.library.listItems('effect').find(item => item.effect === 'grain');
+          if (!item) item = added = wp.library.addEffect('流光渐变', 'grain', {});
           if (!wp.library.getItem(item.id)) throw new Error('背景未能保存');
           strategy.itemId = item.id;
         } else if (draft.bgMode === 'bing') {
@@ -213,8 +219,9 @@
       }
       localStorage.setItem(DONE_KEY, '1');
     } catch (error) {
-      if (added) await wp.library.removeItem(added.id);
+      // 先同步恢复偏好，再异步清理本次条目；不恢复整份库 / 源列表，以免删除其他标签页添加的内容。
       for (const [key, value] of before) { try { if (value === null) localStorage.removeItem(key); else localStorage.setItem(key, value); } catch (_) {} }
+      if (added) { try { await wp.library.removeItem(added.id); } catch (_) {} }
       wp.engine.render();
       throw error;
     }
@@ -233,7 +240,12 @@
       if (commit) await save();
       else { try { localStorage.setItem(DONE_KEY, '1'); } catch (_) {} }
     } catch (_) {
-      saving = false; syncButtons(); setStatus('无法保存设置，请检查本机存储空间后重试，或选择「暂不设置」。');
+      saving = false;
+      const root = $('oobe');
+      const wasClosed = !root.open;
+      if (wasClosed) root.showModal();
+      syncButtons(); setStatus('无法保存设置，请检查本机存储空间后重试，或选择「暂不设置」。');
+      if (wasClosed) $('oobeNextBtn').focus({ preventScroll: true });
       return;
     }
     session++; fileToken++;
@@ -258,7 +270,7 @@
   }
   function openOobe() {
     const root = $('oobe');
-    if (!root || isOobeActive()) return !!root;
+    if (!root || saving || isOobeActive()) return !!root;
     const background = read('moonfog_bg_mode', 'solid');
     const mode = read('moonfog_mode_pref', 'system');
     const greeting = read('moonfog_greeting_mode', 'greeting');
@@ -284,6 +296,8 @@
     if (event.target.closest('#oobeSkipBtn')) finish(false);
   });
   root?.addEventListener('cancel', event => { event.preventDefault(); if (!saving && step > 0) { step--; render(); } });
+  // 系统关闭请求可能不可取消。保存时由 finish 收尾或恢复；其他关闭按跳过退出，解除主页隐藏。
+  root?.addEventListener('close', () => { if (!root.hidden && !root.open && !saving) finish(false); });
   root?.addEventListener('keydown', event => {
     if (event.key !== 'Tab') return;
     const controls = Array.from(root.querySelectorAll('button:not(:disabled), input:not(:disabled)'))

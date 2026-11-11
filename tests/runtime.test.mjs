@@ -144,6 +144,16 @@ test('missing fontSettings on mobile falls back without breaking the font picker
   assert.ok(fonts.length > 0);
 });
 
+test('numeric searches stay queries while complete IPv4 and explicit URLs remain addresses', () => {
+  const { context } = searchContext();
+  for (const input of ['3.14', '1.2.3', '42', '2130706433', '0x7f000001', '0x7f.1', '999.1.1.1']) {
+    assert.equal(context.resolveSearchAddress(input), '', input);
+  }
+  for (const input of ['127.0.0.1', '192.168.1.1:8080/a?b=1#c', 'https://3.14', 'http://0x7f000001']) {
+    assert.equal(context.resolveSearchAddress(input), new URL(/^https?:/.test(input) ? input : 'https://' + input).href, input);
+  }
+});
+
 test('font list callback failures are consumed and use the built-in fallback', async () => {
   let errorRead = false;
   const context = load('js/settings.js', {

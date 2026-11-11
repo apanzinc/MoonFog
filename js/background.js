@@ -490,7 +490,7 @@ function whenBgEnterSettled(cb, waitMs) {
 function samplePaletteSoon(url, delay) {
   if (!url) return;
   whenBgEnterSettled(function () {
-    if (getDisplayedWallpaperUrl() !== url) return;
+    if (!isDisplayedWallpaperUrl(url)) return;
     let cached = false;
     try {
       const p = JSON.parse(localStorage.getItem('moonfog_bg_palette') || 'null');
@@ -502,11 +502,11 @@ function samplePaletteSoon(url, delay) {
     }
     if (typeof requestIdleCallback === 'function') {
       requestIdleCallback(function () {
-        if (getDisplayedWallpaperUrl() === url) applyPaletteForUrl(url);
+        if (isDisplayedWallpaperUrl(url)) applyPaletteForUrl(url);
       }, { timeout: 2500 });
     } else {
       setTimeout(function () {
-        if (getDisplayedWallpaperUrl() === url) applyPaletteForUrl(url);
+        if (isDisplayedWallpaperUrl(url)) applyPaletteForUrl(url);
       }, 1200);
     }
   }, delay);
@@ -2615,8 +2615,16 @@ function getDisplayedWallpaperUrl() {
   return getCurrentImageBgUrl();
 }
 
-/**
- * 对当前背景图取样并应用（按壁纸亮度自动黑/白字（ */
+/** 按浏览器解析后的绝对地址匹配，兼容相对路径与主机名大小写。 */
+function isDisplayedWallpaperUrl(url) {
+  const displayed = getDisplayedWallpaperUrl();
+  if (!displayed || !url) return false;
+  try {
+    return new URL(displayed, document.baseURI).href === new URL(url, document.baseURI).href;
+  } catch (_) { return false; }
+}
+
+/** 对当前背景图取样并应用，按壁纸亮度自动选择黑 / 白字。 */
 async function applyPaletteForUrl(url) {
   if (!url) {
     clearImagePalette();
@@ -2625,9 +2633,9 @@ async function applyPaletteForUrl(url) {
     document.body.classList.remove('img-ui-dark', 'img-ui-light', 'img-scene-dark', 'img-scene-light');
     return;
   }
-  if (getDisplayedWallpaperUrl() !== url) return;
+  if (!isDisplayedWallpaperUrl(url)) return;
   const generation = ++imagePaletteGeneration;
-  const isCurrent = () => generation === imagePaletteGeneration && getDisplayedWallpaperUrl() === url;
+  const isCurrent = () => generation === imagePaletteGeneration && isDisplayedWallpaperUrl(url);
   // 同图已取色：只按当前明暗重算，避免进场中再跑 canvas
   if (
     lastDominant &&

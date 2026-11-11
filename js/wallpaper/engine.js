@@ -251,8 +251,13 @@
       if (item.kind === 'solid') return await renderSolid(item);
       throw new Error('unknown item kind');
     } catch (err) {
-      console.warn('[MoonFogWp] 渲染失败，降级:', err);
       if (token !== undefined && token !== renderToken) return false;
+      // 图片 / 视频失败发生在替换前，继续展示当前背景，首屏无背景时才用纯色兜底。
+      if ((item.kind === 'image' || item.kind === 'video') && state.currentItem) {
+        console.warn('[MoonFogWp] 媒体加载失败，保留当前背景:', err);
+        return false;
+      }
+      console.warn('[MoonFogWp] 渲染失败，降级:', err);
       if (item.kind !== 'solid') {
         return await renderSolid(fallbackItem());
       }

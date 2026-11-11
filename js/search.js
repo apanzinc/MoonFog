@@ -907,6 +907,11 @@ function resolveSearchAddress(query) {
     if (!['https:', 'http:'].includes(url.protocol) || !url.hostname) return '';
     if (!explicit && (url.username || url.password)) return '';
     const hostname = url.hostname;
+    // URL 会把小数、版本号及十六进制简写扩成 IPv4；隐式地址只接受原样四段数字。
+    if (!explicit && /^\d+\.\d+\.\d+\.\d+$/.test(hostname)) {
+      const rawHost = text.split(/[/:?#]/)[0];
+      if (!/^\d{1,3}(\.\d{1,3}){3}$/.test(rawHost)) return '';
+    }
     return explicit || hostname === 'localhost' || hostname.includes('.') || hostname.startsWith('[') ? url.href : '';
   } catch (_) { return ''; }
 }

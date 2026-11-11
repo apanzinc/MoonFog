@@ -99,6 +99,148 @@ test('grain background selection persists in the new strategy, not just the lega
   await expect(page.locator('#pageBgGrain')).toHaveClass(/grain-ready/);
 });
 
+test('reopening with local background saves a newly selected image without toggling its mode', async ({ page }) => {
+  await next(page); await choose(page, 'oobeBackground', 'local');
+  await page.locator('#oobeLocalInput').setInputFiles({ name: 'first.svg', mimeType: 'image/svg+xml', buffer: fixtureImage });
+  await expect(page.locator('#oobeStatus')).toContainText('已选择');
+  await next(page); await next(page); await next(page);
+  await expect(page.locator('#oobe')).toBeHidden();
+  const first = await page.evaluate(() => window.MoonFogWp.spec.get().strategy.itemId);
+  await page.evaluate(() => window.openOobe());
+  await next(page);
+  await expect(page.locator('input[name="oobeBackground"][value="local"]')).toBeChecked();
+  await page.locator('#oobeLocalInput').setInputFiles({ name: 'replacement.svg', mimeType: 'image/svg+xml', buffer: fixtureImage });
+  await expect(page.locator('#oobeStatus')).toContainText('已选择');
+  await next(page); await next(page); await next(page);
+  await expect(page.locator('#oobe')).toBeHidden();
+  const second = await page.evaluate(() => window.MoonFogWp.spec.get().strategy.itemId);
+  expect(second).not.toBe(first);
+  await page.reload();
+  await page.waitForFunction(id => window.MoonFogWp?.engine?.getCurrent()?.id === id, second);
+  expect(await page.evaluate(id => window.MoonFogWp.library.getItem(id).name, second)).toBe('replacement.svg');
+});
+
+test('unexpected native dialog close releases the home page and discards the draft', async ({ page }) => {
+  await next(page); await choose(page, 'oobeTone', 'rose');
+  await page.evaluate(() => document.getElementById('oobe').close());
+  await expect(page.locator('#oobe')).toBeHidden();
+  await expect(page.locator('html')).not.toHaveClass(/boot-oobe-pending/);
+  await expect(page.locator('body')).not.toHaveClass(/oobe-active/);
+  await expect(page.locator('#searchInput')).toBeVisible();
+  expect(await page.evaluate(() => localStorage.getItem('moonfog_tone'))).not.toBe('rose');
+  expect(await page.evaluate(() => localStorage.getItem('moonfog_oobe_done'))).toBe('1');
+});
+
+for (const failure of [false, true]) {
+  test(`native close during pending save ${failure ? 'restores the draft for retry on failure' : 'waits for successful completion'}`, async ({ page }) => {
+    await next(page); await choose(page, 'oobeTone', 'rose');
+    await next(page); await next(page);
+    await page.evaluate(failure => {
+      const init = window.MoonFogWp.library.init;
+      window.MoonFogWp.library.init = () => new Promise((resolve, reject) => {
+        window.settleSave = () => {
+          window.MoonFogWp.library.init = init;
+          if (failure) reject(new Error('one-time failure'));
+          else resolve();
+        };
+      });
+    }, failure);
+    await next(page);
+    await page.waitForFunction(() => window.settleSave);
+    await page.evaluate(() => document.getElementById('oobe').close());
+    await expect(page.locator('html')).toHaveClass(/boot-oobe-pending/);
+    expect(await page.evaluate(() => localStorage.getItem('moonfog_oobe_done'))).toBeNull();
+    await page.evaluate(() => window.settleSave());
+    if (failure) {
+      await expect(page.locator('#oobe')).toBeVisible();
+      await expect(page.locator('#oobeStatus')).toContainText('无法保存');
+      await expect(page.locator('#oobeTitle')).toContainText('开场白');
+      await expect(page.locator('#oobeNextBtn')).toBeFocused();
+      await next(page);
+    }
+    await expect(page.locator('#oobe')).toBeHidden();
+    await expect(page.locator('html')).not.toHaveClass(/boot-oobe-pending/);
+    await expect(page.locator('html')).toHaveAttribute('data-tone', 'rose');
+    expect(await page.evaluate(() => localStorage.getItem('moonfog_oobe_done'))).toBe('1');
+  });
+}
+
+test('failure after image insertion preserves another tab settings, library entries and sources', async ({ page, context }) => {
+  await next(page); await choose(page, 'oobeBackground', 'local');
+  await page.locator('#oobeLocalInput').setInputFiles({ name: 'draft.svg', mimeType: 'image/svg+xml', buffer: fixtureImage });
+  await expect(page.locator('#oobeStatus')).toContainText('已选择');
+  await next(page); await next(page);
+  await page.evaluate(() => {
+    const library = window.MoonFogWp.library;
+    const add = library.addPreparedImage;
+    library.addPreparedImage = async (...args) => {
+      const item = await add(...args);
+      window.pendingAddedId = item.id;
+      await new Promise(resolve => { window.releaseImageSave = resolve; });
+      library.addPreparedImage = add;
+      return item;
+    };
+    const set = Storage.prototype.setItem;
+    Storage.prototype.setItem = function (key, value) {
+      if (key === 'moonfog_oobe_done') {
+        Storage.prototype.setItem = set;
+        throw new DOMException('one-time failure after image insertion', 'QuotaExceededError');
+      }
+      return set.call(this, key, value);
+    };
+  });
+  await next(page);
+  await page.waitForFunction(() => window.pendingAddedId);
+  const pendingId = await page.evaluate(() => window.pendingAddedId);
+  const other = await context.newPage();
+  await other.route('**/*', route => route.request().url().startsWith('http://127.0.0.1:8132/') ? route.continue() : route.abort());
+  await other.goto('/?raw=1');
+  await other.waitForFunction(() => window.MoonFogWp?.engine?.getCurrent());
+  const saved = await other.evaluate(async url => {
+    const wp = window.MoonFogWp;
+    const item = await wp.library.addPreparedImage(url, 'other-tab');
+    const source = wp.library.addSource('api', 'other-tab source', { url: 'https://example.test/api' });
+    wp.spec.setStrategy({ kind: 'fixed', itemId: item.id });
+    wp.spec.setGlobals({ mute: 'allow', performance: 'low' });
+    localStorage.setItem('moonfog_tone', 'sky');
+    localStorage.setItem('moonfog_mode_pref', 'dark');
+    localStorage.setItem('moonfog_username', '另一个标签页');
+    localStorage.setItem('moonfog_bg_mode', 'local');
+    return { itemId: item.id, sourceId: source.id, spec: localStorage.getItem('moonfog_wallpaper_spec') };
+  }, 'data:image/svg+xml;base64,' + fixtureImage.toString('base64'));
+  await page.evaluate(() => window.releaseImageSave());
+  await expect(page.locator('#oobeStatus')).toContainText('无法保存');
+  const state = await other.evaluate(async ({ saved, pendingId }) => {
+    // 直接查 IndexedDB；其他标签页可能仍缓存着已删除条目的 blob URL。
+    const db = await new Promise((resolve, reject) => {
+      const req = indexedDB.open('moonfog-wallpaper', 1);
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+    const hasBlob = id => new Promise((resolve, reject) => {
+      const req = db.transaction('blobs', 'readonly').objectStore('blobs').get(id);
+      req.onsuccess = () => resolve(!!req.result);
+      req.onerror = () => reject(req.error);
+    });
+    const blob = await hasBlob(saved.itemId), draftBlob = await hasBlob(pendingId);
+    db.close();
+    return {
+      spec: localStorage.getItem('moonfog_wallpaper_spec'),
+      tone: localStorage.getItem('moonfog_tone'), mode: localStorage.getItem('moonfog_mode_pref'),
+      name: localStorage.getItem('moonfog_username'), bg: localStorage.getItem('moonfog_bg_mode'),
+      ids: window.MoonFogWp.library.listItems('image').map(item => item.id),
+      source: !!window.MoonFogWp.library.getSource(saved.sourceId),
+      blob, draftBlob
+    };
+  }, { saved, pendingId });
+  expect(state).toEqual({ spec: saved.spec, tone: 'sky', mode: 'dark', name: '另一个标签页', bg: 'local', ids: [saved.itemId], source: true, blob: true, draftBlob: false });
+  expect(await page.evaluate(() => localStorage.getItem('moonfog_oobe_done'))).toBeNull();
+  await next(page);
+  await expect(page.locator('#oobe')).toBeHidden();
+  expect(await page.evaluate(() => window.MoonFogWp.library.listItems('image').length)).toBe(2);
+  await other.close();
+});
+
 test('offline daily wallpaper does not trap the user in onboarding', async ({ page }) => {
   await next(page); await choose(page, 'oobeBackground', 'bing');
   await expect(page.locator('#oobeStatus')).toContainText('暂时无法加载');

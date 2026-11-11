@@ -123,6 +123,120 @@ test('delegated grain animation has no duplicate engine frame loop', async ({ pa
   })).toBe('undefined');
 });
 
+for (const failure of ['video-timeout', 'video-error', 'image-error']) {
+  test(`a ${failure} preserves the working image and releases the failed candidate`, async ({ page }) => {
+    await page.clock.install();
+    await page.evaluate(async () => {
+      const wp = window.MoonFogWp;
+      const url = 'data:image/svg+xml;base64,' + btoa('<svg xmlns="http://www.w3.org/2000/svg" width="8" height="8"><rect width="8" height="8" fill="#224466"/></svg>');
+      wp.sources.resolveStrategy = async () => ({ id: 'working', kind: 'image', url });
+      await wp.engine.render();
+      window.workingImage = document.querySelector('#wallpaperMediaInner img');
+    });
+    await page.evaluate(failure => {
+      const wp = window.MoonFogWp;
+      const create = document.createElement.bind(document);
+      window.failedReleases = 0;
+      window.failedPlays = 0;
+      document.createElement = function (name, ...args) {
+        const el = create(name, ...args);
+        if (name === 'video') {
+          window.failedCandidate = el;
+          Object.defineProperty(el, 'src', { set() {} });
+          el.pause = () => {};
+          el.load = () => { window.failedReleases++; };
+          el.play = () => { window.failedPlays++; return Promise.resolve(); };
+        }
+        return el;
+      };
+      wp.sources.resolveStrategy = async () => ({ id: 'broken', kind: failure.startsWith('image') ? 'image' : 'video', url: 'data:image/png;base64,AAAA' });
+      window.failedRender = wp.engine.render();
+    }, failure);
+    if (failure.startsWith('video')) {
+      await page.waitForFunction(() => window.failedCandidate);
+      expect(await page.evaluate(() => window.workingImage.isConnected)).toBe(true);
+      if (failure === 'video-timeout') await page.clock.runFor(9001);
+      else await page.evaluate(() => window.failedCandidate.dispatchEvent(new Event('error')));
+    }
+    const result = await page.evaluate(async () => {
+      await window.failedRender;
+      return { id: window.MoonFogWp.engine.getCurrent()?.id, same: document.querySelector('#wallpaperMediaInner img') === window.workingImage,
+        visible: document.documentElement.classList.contains('wp-media-live'), releases: window.failedReleases, plays: window.failedPlays };
+    });
+    expect(result).toEqual({ id: 'working', same: true, visible: true, releases: failure.startsWith('video') ? 1 : 0, plays: 0 });
+  });
+}
+
+test('failed initial media still falls back to the theme solid background', async ({ page }) => {
+  const result = await page.evaluate(async () => {
+    const wp = window.MoonFogWp;
+    wp.engine.cleanup();
+    wp.sources.resolveStrategy = async () => ({ id: 'broken', kind: 'image', url: 'data:image/png;base64,AAAA' });
+    await wp.engine.render();
+    return { kind: wp.engine.getCurrent()?.kind, color: wp.engine.getCurrent()?.color };
+  });
+  expect(result).toEqual({ kind: 'solid', color: 'var(--bg-warm)' });
+});
+
+test('normalized wallpaper URLs apply palettes and delayed sampling rejects switched backgrounds', async ({ page }) => {
+  await page.route('http://localhost:8132/palette.svg', route => route.fulfill({ contentType: 'image/svg+xml', body: '<svg xmlns="http://www.w3.org/2000/svg" width="80" height="60"><rect width="80" height="60" fill="#244466"/></svg>' }));
+  const url = 'http://LOCALHOST:8132/palette.svg';
+  await page.evaluate(async url => {
+    window.MoonFogWp.sources.resolveStrategy = async () => ({ id: 'normalized-image', kind: 'image', url });
+    await window.MoonFogWp.engine.render();
+  }, url);
+  await expect(page.locator('body')).toHaveClass(/img-scene-(dark|light)/);
+  expect(await page.evaluate(url => isDisplayedWallpaperUrl(url), url)).toBe(true);
+  expect(await page.evaluate(() => isDisplayedWallpaperUrl('http://localhost:8132/other.svg'))).toBe(false);
+  const sampled = await page.evaluate(url => {
+    const applied = [];
+    let displayed = getDisplayedWallpaperUrl();
+    getDisplayedWallpaperUrl = () => displayed;
+    whenBgEnterSettled = callback => callback();
+    applyPaletteForUrl = value => applied.push(value);
+    localStorage.setItem('moonfog_bg_palette', JSON.stringify({ text: '#fff', v: 4 }));
+    for (const idle of [true, false]) {
+      const callbacks = [];
+      window.requestIdleCallback = idle ? callback => callbacks.push(callback) : undefined;
+      const timeout = window.setTimeout;
+      window.setTimeout = (callback, ms, ...args) => ms === 1200 ? callbacks.push(callback) : timeout(callback, ms, ...args);
+      samplePaletteSoon(url);
+      callbacks.shift()?.();
+      samplePaletteSoon(url);
+      displayed = 'http://localhost:8132/other.svg';
+      callbacks.shift()?.();
+      displayed = new URL(url).href;
+      window.setTimeout = timeout;
+    }
+    return applied;
+  }, url);
+  expect(sampled).toEqual([url, url]);
+});
+
+test('closing suggestions aborts a controlled request and ignores its late browser result', async ({ page }) => {
+  await page.evaluate(() => {
+    window.suggestionRequests = [];
+    currentSuggestProviders = () => ['bing'];
+    isSearchSuggestEnabled = () => true;
+    isShortcutSuggestEnabled = () => false;
+    fetchSuggestFromEndpoint = (_provider, query, signal) => new Promise(resolve => {
+      window.suggestionRequests.push({ query, signal, resolve });
+    });
+  });
+  await page.locator('#searchInput').fill('old query');
+  await page.waitForFunction(() => window.suggestionRequests.length === 1);
+  await page.locator('#searchInput').press('Escape');
+  expect(await page.evaluate(() => window.suggestionRequests[0].signal.aborted)).toBe(true);
+  await page.evaluate(() => window.suggestionRequests[0].resolve(['late old result']));
+  await expect(page.locator('#searchSuggest')).toBeHidden();
+  await page.locator('#searchInput').fill('new query');
+  await page.waitForFunction(() => window.suggestionRequests.length === 2);
+  await page.evaluate(() => window.suggestionRequests[1].resolve(['new result']));
+  await expect(page.locator('#searchSuggest')).toBeVisible();
+  await expect(page.locator('#searchSuggest')).toContainText('new result');
+  await expect(page.locator('#searchSuggest')).not.toContainText('late old result');
+});
+
 test('late palette failure cannot recolor a solid background after switching away', async ({ page }) => {
   const result = await page.evaluate(async () => {
     let displayed = 'https://example.test/old.jpg';
