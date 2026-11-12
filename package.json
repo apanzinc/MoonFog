@@ -2,15 +2,19 @@
   "name": "moonfog",
   "private": true,
   "scripts": {
+    "test": "node --test scripts/*.test.mjs tests/*.test.mjs",
+    "test:e2e": "playwright test",
     "check": "node scripts/check.mjs",
     "pack": "node scripts/pack-extension.mjs",
     "pack:firefox": "node scripts/pack-extension.mjs --target firefox",
+    "pack:edge-mobile": "node scripts/pack-extension.mjs --target edge-mobile",
     "build:web": "node scripts/build-web.mjs",
     "serve": "node scripts/dev-serve.mjs 8132",
     "fonts": "python scripts/build-font-slices.py",
     "icons": "python scripts/build-icon-subset.py"
   },
   "devDependencies": {
+    "@playwright/test": "^1.65.0",
     "crx3": "2.0.0"
   }
 }

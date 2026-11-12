@@ -869,10 +869,10 @@ function setGreetingSub(text) {
   const sub = document.getElementById("greetingSub");
   if (!sub) return;
   if (text) {
-    sub.textContent = text;
+    if (sub.textContent !== text) sub.textContent = text;
     sub.hidden = false;
   } else {
-    sub.textContent = "";
+    if (sub.textContent) sub.textContent = "";
     sub.hidden = true;
   }
 }
@@ -1446,7 +1446,7 @@ function updateGreetingPreview(now = new Date()) {
     prevHidden !== nextHidden ||
     preview.dataset.mode !== (currentGreetingMode || GREETING_MODES.greeting);
 
-  titleEl.textContent = nextTitle;
+  if (titleEl.textContent !== nextTitle) titleEl.textContent = nextTitle;
   titleEl.classList.toggle("is-clock", !!content.isClock);
   titleEl.classList.toggle("is-quote", !!content.isQuote);
   titleEl.classList.toggle("is-custom", !!content.isCustom);
@@ -1455,10 +1455,10 @@ function updateGreetingPreview(now = new Date()) {
 
   if (subEl) {
     if (nextSub) {
-      subEl.textContent = nextSub;
+      if (subEl.textContent !== nextSub) subEl.textContent = nextSub;
       subEl.hidden = false;
     } else {
-      subEl.textContent = "";
+      if (subEl.textContent) subEl.textContent = "";
       subEl.hidden = true;
     }
   }
@@ -1497,7 +1497,8 @@ function updateGreetingDisplay() {
 
   if (mode === GREETING_MODES.clock) {
     title.classList.remove("is-quote-loading");
-    title.textContent = formatClock(now);
+    const text = formatClock(now);
+    if (title.textContent !== text) title.textContent = text;
     setGreetingSub(currentClockShowDate ? formatDateLabel(now) : "");
     updateGreetingPreview(now);
     return;
@@ -1505,7 +1506,8 @@ function updateGreetingDisplay() {
 
   if (mode === GREETING_MODES.date) {
     title.classList.remove("is-quote-loading");
-    title.textContent = formatDateLabel(now);
+    const text = formatDateLabel(now);
+    if (title.textContent !== text) title.textContent = text;
     setGreetingSub("");
     updateGreetingPreview(now);
     return;
@@ -1541,7 +1543,8 @@ function updateGreetingDisplay() {
   if (mode === GREETING_MODES.custom) {
     title.classList.remove("is-quote-loading");
     const custom = normalizeCustomText(currentCustomText);
-    title.textContent = custom || "\u5199\u4e0b\u4e00\u53e5\u6b22\u8fce\u8bed\u2026";
+    const text = custom || "\u5199\u4e0b\u4e00\u53e5\u6b22\u8fce\u8bed\u2026";
+    if (title.textContent !== text) title.textContent = text;
     title.classList.toggle("is-custom-placeholder", !custom);
     setGreetingSub("");
     updateGreetingPreview(now);
@@ -1549,7 +1552,8 @@ function updateGreetingDisplay() {
   }
 
   title.classList.remove("is-quote-loading", "is-custom-placeholder");
-  title.textContent = getTimeGreeting(currentUsername, now.getHours());
+  const text = getTimeGreeting(currentUsername, now.getHours());
+  if (title.textContent !== text) title.textContent = text;
   setGreetingSub("");
   updateGreetingPreview(now);
 }

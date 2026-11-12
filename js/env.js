@@ -21,7 +21,7 @@
     } else {
       var ua = '';
       try { ua = navigator.userAgent || ''; } catch (_) {}
-      host = /Edg\//.test(ua) ? 'edge' : 'chrome';
+      host = /Edg(?:A|iOS)?\//.test(ua) ? 'edge' : 'chrome';
     }
   }
 
@@ -53,18 +53,12 @@
     if (isExtension) return url;
     var str = String(url || '');
     if (!/^https?:/i.test(str)) return str;
-    // 同源判定：location.origin 相等即同源（URL 构造失败时退回前缀比较，避免误放行跨源）
+    // 只比较解析后的 origin；字符串前缀会把同名子域、其他端口误判为同源。
     var sameOrigin = false;
     try {
       sameOrigin = new URL(str).origin === location.origin;
     } catch (_) {
       sameOrigin = false;
-    }
-    if (!sameOrigin) {
-      try {
-        var origin = String(location.origin || '');
-        if (origin && str.toLowerCase().indexOf(origin.toLowerCase()) === 0) sameOrigin = true;
-      } catch (_) {}
     }
     if (sameOrigin) return str;
     var cfg = null;

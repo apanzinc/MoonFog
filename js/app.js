@@ -8,7 +8,7 @@
 // 根据浏览器设置标签页标题
 (function() {
   const ua = navigator.userAgent;
-  if (ua.includes('Edg/')) {
+  if (/Edg(?:A|iOS)?\//.test(ua)) {
     document.title = '新建标签页';
   } else {
     document.title = '新标签页';
@@ -76,6 +76,19 @@ function markBootEntered() {
 /**
  * 进场之后再挂交互 / 后台任务（不挡首帧动画）
  */
+let greetingTickTimer = 0;
+function startGreetingTicker() {
+  const tick = () => {
+    clearTimeout(greetingTickTimer);
+    if (document.hidden) return;
+    if (typeof updateGreetingDisplay === 'function') updateGreetingDisplay();
+    // 时钟只显示时分；问候和日期同样不需要每秒重写 DOM。
+    greetingTickTimer = setTimeout(tick, 60000 - Date.now() % 60000);
+  };
+  document.addEventListener('visibilitychange', tick);
+  tick();
+}
+
 function initDeferred(boot) {
   // 主题 / 字体：boot 已上首屏；这里只做完整同步与偏好解析
   const savedTone = boot.tone || localStorage.getItem('moonfog_tone') || DEFAULT_TONE;
@@ -114,9 +127,7 @@ function initDeferred(boot) {
   } else if (typeof initQuoteClick === 'function') {
     // 确保点击换句已绑定（init 时 settings 未齐也没关系）
   }
-  setInterval(() => {
-    if (typeof updateGreetingDisplay === 'function') updateGreetingDisplay();
-  }, 1000);
+  startGreetingTicker();
 
   try { if (typeof initQuoteClick === 'function') initQuoteClick(); } catch (err) {
     console.error('[MoonFog] initQuoteClick failed:', err);
@@ -215,6 +226,8 @@ function init() {
   }
 
   if (!showingOobe) {
+    document.documentElement.classList.remove('boot-oobe-pending');
+    document.body.classList.remove('oobe-active');
     startBootEnter();
   }
 

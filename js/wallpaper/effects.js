@@ -21,7 +21,6 @@
         window.applyBackgroundMode('grain', { persist: false, force: true });
       }
       return {
-        render() {},
         pause() {},
         resume() {},
         destroy() {}
@@ -44,7 +43,7 @@
       if (typeof window.applyBackgroundMode === 'function') {
         window.applyBackgroundMode('solid', { persist: false, force: true });
       }
-      return { render() {}, pause() {}, resume() {}, destroy() {} };
+      return { pause() {}, resume() {}, destroy() {} };
     }
   });
 

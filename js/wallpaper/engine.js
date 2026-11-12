@@ -21,6 +21,16 @@
     muted: true,
     rotateTimer: 0
   };
+  let renderError = null;
+
+  /** 发布当前加载失败状态；新请求或成功重试会清除旧提示。 */
+  function setRenderError(item) {
+    renderError = item ? {
+      itemName: item.name || (item.kind === 'video' ? '视频' : '图片'),
+      currentName: state.currentItem?.name || '当前背景'
+    } : null;
+    window.dispatchEvent(new CustomEvent('moonfog-wp-render-error', { detail: renderError }));
+  }
 
   function getMedia() {
     return document.getElementById('wallpaperMedia');
@@ -63,7 +73,7 @@
     state.effectHandle = null;
   }
 
-  function cleanup() {
+  function clearPresentation() {
     stopVideo();
     destroyEffect();
     clearMediaInner();
@@ -79,7 +89,7 @@
     }
   }
 
-  function loadImage(url, timeoutMs) {
+  function loadImage(url, timeoutMs, signal) {
     return new Promise((resolve) => {
       const img = new Image();
       let done = false;
@@ -87,9 +97,15 @@
         if (done) return;
         done = true;
         clearTimeout(timer);
+        signal?.removeEventListener('abort', abort);
+        img.onload = img.onerror = null;
+        if (!ok) img.removeAttribute('src');
         resolve(ok ? img : null);
       };
+      const abort = () => finish(false);
       const timer = setTimeout(() => finish(false), timeoutMs || 12000);
+      signal?.addEventListener('abort', abort, { once: true });
+      if (signal?.aborted) { finish(false); return; }
       img.decoding = 'async';
       img.alt = '';
       img.onload = () => finish(true);
@@ -98,7 +114,7 @@
     });
   }
 
-  function waitVideo(video, timeoutMs) {
+  function waitVideo(video, timeoutMs, signal) {
     return new Promise((resolve) => {
       let done = false;
       const finish = (ok) => {
@@ -107,13 +123,17 @@
         clearTimeout(timer);
         video.removeEventListener('loadeddata', onReady);
         video.removeEventListener('error', onError);
+        signal?.removeEventListener('abort', onAbort);
         resolve(ok);
       };
       const onReady = () => finish(true);
       const onError = () => finish(false);
+      const onAbort = () => finish(false);
       const timer = setTimeout(() => finish(false), timeoutMs || 9000);
       video.addEventListener('loadeddata', onReady);
       video.addEventListener('error', onError);
+      signal?.addEventListener('abort', onAbort, { once: true });
+      if (signal?.aborted) finish(false);
     });
   }
 
@@ -141,6 +161,18 @@
   }
 
   let renderToken = 0;
+  let mediaLoadController = null;
+
+  /** 作废候选媒体、停止后台任务并清除当前画面和失败状态。 */
+  function cleanup() {
+    renderToken++;
+    mediaLoadController?.abort();
+    clearRotateTimer();
+    stopTick();
+    clearPresentation();
+    state.currentItem = null;
+    setRenderError(null);
+  }
 
   // 同步旧背景系统的模式，避免主题切换时用过期模式重刷流光/纯色
   function syncLegacyBgMode(mode) {
@@ -149,13 +181,14 @@
     } catch (_) {}
   }
 
-  async function renderImage(item, token) {
+  async function renderImage(item, token, signal) {
     const url = await WP.library.resolveItemUrl(item);
+    if (token !== renderToken) return false;
     if (!url) throw new Error('no image url');
-    const img = await loadImage(url);
-    if (!img) throw new Error('image load failed');
+    const img = await loadImage(url, 12000, signal);
     if (token !== undefined && token !== renderToken) return false;
-    cleanup();
+    if (!img) throw new Error('image load failed');
+    clearPresentation();
     const inner = getInner();
     inner.appendChild(img);
     setMediaVisible(true);
@@ -166,26 +199,34 @@
     return true;
   }
 
-  async function renderVideo(item, token) {
+  async function renderVideo(item, token, signal) {
     const url = await WP.library.resolveItemUrl(item);
+    if (token !== renderToken) return false;
     if (!url) throw new Error('no video url');
-    cleanup();
     const video = document.createElement('video');
-    video.src = url;
     video.loop = true;
     video.playsInline = true;
-    video.autoplay = true;
+    // 候选视频加载期间不播放、不拆当前背景；校验 token 后再原子替换。
+    video.autoplay = false;
     video.muted = state.muted;
     video.preload = 'auto';
-    const ready = await waitVideo(video);
-    if (!ready) throw new Error('video load failed');
-    if (token !== undefined && token !== renderToken) return false;
+    const readyPromise = waitVideo(video, 9000, signal);
+    video.src = url;
+    const ready = await readyPromise;
+    if (!ready || token !== renderToken) {
+      video.pause();
+      video.removeAttribute('src');
+      video.load();
+      if (token !== renderToken) return false;
+      throw new Error('video load failed');
+    }
+    clearPresentation();
     const inner = getInner();
     inner.appendChild(video);
     setMediaVisible(true);
     state.video = video;
     applyGlobals(item);
-    if (!state.paused) video.play().catch(() => {});
+    if (!state.paused && !document.hidden) video.play().catch(() => {});
     state.currentItem = item;
     syncLegacyBgMode('local');
     if (WP.theme && typeof WP.theme.apply === 'function') WP.theme.apply('video', url);
@@ -193,7 +234,7 @@
   }
 
   async function renderEffect(item) {
-    cleanup();
+    clearPresentation();
     const renderer = WP.effects && WP.effects.get(item.effect || 'grain');
     if (!renderer) throw new Error('unknown effect');
     state.effectHandle = renderer.mount(getInner(), item);
@@ -205,7 +246,7 @@
   }
 
   async function renderSolid(item) {
-    cleanup();
+    clearPresentation();
     const renderer = WP.effects && WP.effects.get('solid');
     if (renderer) state.effectHandle = renderer.mount(getInner(), item);
     state.currentItem = item;
@@ -213,19 +254,26 @@
     return true;
   }
 
-  async function renderItem(item, token) {
+  /** 加载候选条目；失败保留可用背景，首次失败则显示纯色，并返回 false。 */
+  async function renderItem(item, token, signal) {
     if (!item) throw new Error('no item');
     try {
-      if (item.kind === 'image') return await renderImage(item, token);
-      if (item.kind === 'video') return await renderVideo(item, token);
+      if (item.kind === 'image') return await renderImage(item, token, signal);
+      if (item.kind === 'video') return await renderVideo(item, token, signal);
       if (item.kind === 'effect') return await renderEffect(item);
       if (item.kind === 'solid') return await renderSolid(item);
       throw new Error('unknown item kind');
     } catch (err) {
-      console.warn('[MoonFogWp] 渲染失败，降级:', err);
       if (token !== undefined && token !== renderToken) return false;
+      // 图片 / 视频失败发生在替换前，继续展示当前背景，首屏无背景时才用纯色兜底。
+      if ((item.kind === 'image' || item.kind === 'video') && state.currentItem) {
+        console.warn('[MoonFogWp] 媒体加载失败，保留当前背景:', err);
+        return false;
+      }
+      console.warn('[MoonFogWp] 渲染失败，降级:', err);
       if (item.kind !== 'solid') {
-        return await renderSolid(fallbackItem());
+        await renderSolid(fallbackItem());
+        return false;
       }
       throw err;
     }
@@ -250,7 +298,7 @@
   }
 
   function scheduleTick() {
-    if (state.raf) return;
+    if (state.raf || state.paused || document.hidden || typeof state.effectHandle?.render !== 'function') return;
     state.raf = window.requestAnimationFrame(tick);
   }
 
@@ -298,10 +346,15 @@
     }, mins * 60000);
   }
 
+  /** 应用最新策略，返回是否成功；只有当前请求可以发布可重试的失败状态。 */
   async function render(options) {
     const my = ++renderToken;
+    setRenderError(null);
+    mediaLoadController?.abort();
+    mediaLoadController = new AbortController();
+    const signal = mediaLoadController.signal;
     const spec = WP.spec && WP.spec.get();
-    if (!spec) return;
+    if (!spec) return false;
     clearRotateTimer();
 
     let item = null;
@@ -310,7 +363,7 @@
     } catch (err) {
       console.warn('[MoonFogWp] 策略解析失败:', err);
     }
-    if (my !== renderToken) return;
+    if (my !== renderToken) return false;
 
     if (!item) {
       item = fallbackItem();
@@ -320,13 +373,19 @@
 
     // 相同 item 且不是源/runtime 直接复用
     if (state.currentItem && state.currentItem.id && item.id && state.currentItem.id === item.id && item.source !== 'runtime') {
-      return;
+      applyGlobals(item);
+      return true;
     }
 
     try {
-      await renderItem(item, my);
+      const ok = await renderItem(item, my, signal);
+      if (my !== renderToken) return false;
+      if (!ok) setRenderError(item);
+      return ok;
     } catch (err) {
       console.error('[MoonFogWp] 渲染兜底失败:', err);
+      if (my === renderToken) setRenderError(item);
+      return false;
     }
   }
 
@@ -369,6 +428,7 @@
     render,
     setPaused,
     cleanup,
-    getCurrent
+    getCurrent,
+    getError: () => renderError
   };
 })();

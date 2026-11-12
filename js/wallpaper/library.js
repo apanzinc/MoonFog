@@ -156,20 +156,26 @@
   }
 
   async function addImageFile(file) {
-    const dataUrl = await readFileAsDataUrl(file);
-    let compressed = dataUrl;
-    if (typeof window.compressImageFile === 'function') {
-      compressed = await window.compressImageFile(file);
-    }
+    const compressed = typeof window.compressImageFile === 'function'
+      ? await window.compressImageFile(file) : await readFileAsDataUrl(file);
+    return addPreparedImage(compressed, stripExt(file.name));
+  }
+
+  // 引导中已压缩的图片直接入库，避免再读原文件、再次解码压缩。
+  async function addPreparedImage(dataUrl, name) {
+    if (!/^data:image\//i.test(String(dataUrl))) throw new Error('无效的图片');
     const item = {
       id: uid('image'),
       kind: 'image',
       source: 'local',
-      name: stripExt(file.name),
+      name: String(name || '本地图片').slice(0, 60),
       createdAt: Date.now()
     };
-    await idbPut(item.id, dataUrlToBlob(compressed));
-    writeJson(ITEMS_KEY, readJson(ITEMS_KEY).concat([item]));
+    await idbPut(item.id, dataUrlToBlob(dataUrl));
+    if (!writeJson(ITEMS_KEY, readJson(ITEMS_KEY).concat([item]))) {
+      await idbDelete(item.id);
+      throw new Error('图片未能保存');
+    }
     emit(EVENT_ITEMS);
     return item;
   }
@@ -403,6 +409,7 @@
     getItem,
     addMediaFiles,
     addImageUrl,
+    addPreparedImage,
     addVideoUrl,
     addSolid,
     addEffect,

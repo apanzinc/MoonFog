@@ -3,6 +3,8 @@
 
 /**
  * 规范化背景模式 */
+let imagePaletteGeneration = 0;
+
 function normalizeBgMode(mode) {
   return mode === 'local' || mode === 'bing' || mode === 'grain' || mode === 'solid'
     ? mode
@@ -488,6 +490,7 @@ function whenBgEnterSettled(cb, waitMs) {
 function samplePaletteSoon(url, delay) {
   if (!url) return;
   whenBgEnterSettled(function () {
+    if (!isDisplayedWallpaperUrl(url)) return;
     let cached = false;
     try {
       const p = JSON.parse(localStorage.getItem('moonfog_bg_palette') || 'null');
@@ -498,9 +501,13 @@ function samplePaletteSoon(url, delay) {
       return;
     }
     if (typeof requestIdleCallback === 'function') {
-      requestIdleCallback(function () { applyPaletteForUrl(url); }, { timeout: 2500 });
+      requestIdleCallback(function () {
+        if (isDisplayedWallpaperUrl(url)) applyPaletteForUrl(url);
+      }, { timeout: 2500 });
     } else {
-      setTimeout(function () { applyPaletteForUrl(url); }, 1200);
+      setTimeout(function () {
+        if (isDisplayedWallpaperUrl(url)) applyPaletteForUrl(url);
+      }, 1200);
     }
   }, delay);
 }
@@ -1291,6 +1298,7 @@ function initBingCreditPop() {
  * 清除图片取色 CSS 变量，回到主题token
  * 同时清掉快捷标签上的内联对比度样式，避免切回纯色浅色后仍像「灰胶囊。 */
 function clearImagePalette() {
+  imagePaletteGeneration++;
   const root = document.documentElement;
   const keys = [
     '--img-text',
@@ -1707,13 +1715,14 @@ function detectScenePolarity(data, sw, sh) {
 /**
  * 从图片URL 取样
  * Android Dynamic Color 流程（ * 1) cover 视口上量区→源色 / 主辅第三色 * 2) 问候区感知亮度 →裸露文字黙 * 3) seed + 用户浅深 →tonal 角色色 */
-async function extractPaletteFromImage(url, mode) {
+async function extractPaletteFromImage(url, mode, isCurrent = () => true) {
   if (!url) return null;
   const uiMode = mode || getUiMode();
   const { w: sw, h: sh } = getPaletteSampleSize();
 
   try {
     const img = await loadImageForPalette(url);
+    if (!isCurrent()) return null;
     const canvas = document.createElement('canvas');
     canvas.width = sw;
     canvas.height = sh;
@@ -1783,6 +1792,7 @@ async function extractPaletteFromImage(url, mode) {
     lastPalette = palette;
     return palette;
   } catch (err) {
+    if (!isCurrent()) return null;
     lastDominant = {
       url,
       r: 103,
@@ -2605,8 +2615,16 @@ function getDisplayedWallpaperUrl() {
   return getCurrentImageBgUrl();
 }
 
-/**
- * 对当前背景图取样并应用（按壁纸亮度自动黑/白字（ */
+/** 按浏览器解析后的绝对地址匹配，兼容相对路径与主机名大小写。 */
+function isDisplayedWallpaperUrl(url) {
+  const displayed = getDisplayedWallpaperUrl();
+  if (!displayed || !url) return false;
+  try {
+    return new URL(displayed, document.baseURI).href === new URL(url, document.baseURI).href;
+  } catch (_) { return false; }
+}
+
+/** 对当前背景图取样并应用，按壁纸亮度自动选择黑 / 白字。 */
 async function applyPaletteForUrl(url) {
   if (!url) {
     clearImagePalette();
@@ -2615,6 +2633,9 @@ async function applyPaletteForUrl(url) {
     document.body.classList.remove('img-ui-dark', 'img-ui-light', 'img-scene-dark', 'img-scene-light');
     return;
   }
+  if (!isDisplayedWallpaperUrl(url)) return;
+  const generation = ++imagePaletteGeneration;
+  const isCurrent = () => generation === imagePaletteGeneration && isDisplayedWallpaperUrl(url);
   // 同图已取色：只按当前明暗重算，避免进场中再跑 canvas
   if (
     lastDominant &&
@@ -2626,10 +2647,12 @@ async function applyPaletteForUrl(url) {
     applyImagePalette(rebuilt);
     return;
   }
-  const palette = await extractPaletteFromImage(url, getUiMode());
+  const palette = await extractPaletteFromImage(url, getUiMode(), isCurrent);
+  if (!palette || !isCurrent()) return;
   if (lastDominant) lastDominant.url = url;
   lastPaletteUrl = url;
-  applyImagePalette(palette);
+  // 图片加载期间可能切换了明暗，以当前模式重建，避免旧模式覆盖新选择。
+  applyImagePalette(lastDominant ? buildPaletteFromDominant(lastDominant, getUiMode()) : palette);
 }
 
 /**

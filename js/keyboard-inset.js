@@ -235,6 +235,8 @@
    */
   function swallowPointer(e) {
     if (!document.body.classList.contains('kb-busy')) return;
+    // 主页的过渡锁不能吞掉引导、设置或其他模态层的交互。
+    if (e.target.closest?.('#oobe, #settingsPanel, .settings-wrapper, .modal-overlay')) return;
     e.preventDefault();
     e.stopPropagation();
   }
@@ -330,6 +332,32 @@
 
   function measure() {
     frame = 0;
+    const mobile = window.matchMedia('(max-width: 600px), (pointer: coarse) and (hover: none) and (max-width: 915px)').matches;
+    const overlay = document.body.classList.contains('oobe-active') || document.body.classList.contains('settings-open') || document.querySelector('.modal-overlay.active');
+    const searching = document.activeElement?.id === 'searchInput';
+    if (!mobile || overlay) {
+      // 模态输入框让原生视口负责露出；不要移动被盖住的主页，也不要留下全页点击锁。
+      const wasOpen = document.body.classList.contains('kb-open');
+      clearTimeout(pinTimer); pinTimer = 0;
+      const previous = contentAnim; contentAnim = 0;
+      if (previous) previous.cancel();
+      const content = document.querySelector('.content');
+      if (content) content.style.transition = '';
+      document.body.classList.remove('kb-open', 'kb-busy');
+      root.classList.remove('kb-lock', 'kb-hpin');
+      root.style.setProperty('--kb-lift', '0px');
+      root.style.setProperty('--kb-h', '0px');
+      lastHeight = 0; lastVisible = -1; pinHeight = 0;
+      baseHeight = naturalHeight = Math.round(window.innerHeight);
+      if (wasOpen) window.dispatchEvent(new CustomEvent('moonfog:keyboard', { detail: { height: 0 } }));
+      return;
+    }
+    // 未聚焦搜索时的窗口缩放、工具栏变化不算软键盘。已打开时仍跟踪收起动画。
+    if (!searching && !document.body.classList.contains('kb-open')) {
+      baseHeight = naturalHeight = Math.round(window.innerHeight);
+      measureBackdrop();
+      return;
+    }
     // 壁纸层原高度先记下来（键盘还没弹的时候才量得到真实值）
     measureBackdrop();
     // 双指缩放同样会让可视视口变矮，但那是缩放不是键盘
@@ -400,6 +428,8 @@
 
   vv.addEventListener('resize', schedule);
   vv.addEventListener('scroll', schedule);
+  document.addEventListener('focusin', schedule);
+  document.addEventListener('focusout', schedule);
   window.addEventListener('orientationchange', () => setTimeout(resetBase, 260));
   window.addEventListener('pageshow', (e) => { if (e.persisted) resetBase(); });
   measure();

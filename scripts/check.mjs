@@ -46,6 +46,8 @@ const newtab = resolveInside(manifest.chrome_url_overrides?.newtab);
 if (!newtab || !existsSync(newtab)) {
   fail(`chrome_url_overrides.newtab 不存在或不在扩展目录内: ${manifest.chrome_url_overrides?.newtab || '(空)'}`);
 }
+const worker = resolveInside(manifest.background?.service_worker);
+if (!worker || !existsSync(worker)) fail('background.service_worker 必须指向扩展内的有效文件');
 
 // Chrome Web Store 单一用途（Single Purpose）：替换新标签页是唯一用途。
 // 1) 不允许 chrome_settings_overrides：覆盖默认搜索引擎/主页/启动页会叠加第二用途；

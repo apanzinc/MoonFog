@@ -18,7 +18,11 @@ jobs:
 
       - run: npm ci
       - run: npm run check
-      - run: node --test scripts/publish-preview.test.mjs
+      - run: npm test
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+      - run: npm run pack:firefox
+      - run: npm run pack:edge-mobile
       - run: npm run pack
 
       - name: Assert CRX3 package
@@ -28,11 +32,24 @@ jobs:
           import pathlib
           crx_files = glob.glob("dist/*.crx")
           zip_files = glob.glob("dist/*.zip")
-          assert len(crx_files) == 1, crx_files
-          assert len(zip_files) == 1, zip_files
+          assert len(crx_files) == 2, crx_files
+          assert len(zip_files) == 3, zip_files
           data = pathlib.Path(crx_files[0]).read_bytes()
           assert data[:4] == b"Cr24", data[:4]
           assert int.from_bytes(data[4:8], "little") == 3
           print(pathlib.Path(crx_files[0]).name, len(data))
+          import json, zipfile
+          firefox = next(p for p in zip_files if p.endswith('-firefox.zip'))
+          with zipfile.ZipFile(firefox) as archive:
+              manifest = json.loads(archive.read('manifest.json'))
+              assert manifest['background']['scripts'] == ['js/extension-background.js']
+              assert 'fontSettings' not in manifest['permissions']
+              assert 'search' not in manifest['permissions']
+          mobile = next(p for p in zip_files if p.endswith('-edge-mobile.zip'))
+          with zipfile.ZipFile(mobile) as archive:
+              manifest = json.loads(archive.read('manifest.json'))
+              assert 'fontSettings' not in manifest['permissions']
+              assert 'search' in manifest['permissions']
+              assert manifest['background']['service_worker'] == 'js/extension-background.js'
           PY
           test -z "$(find dist -name '*.pem' -print)"

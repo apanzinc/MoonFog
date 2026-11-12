@@ -20,10 +20,9 @@
     root.classList.add('settings-btn-hover');
   }
 
-  // OOBE 因编码损坏暂不可用，跳过 boot-oobe-pending
-  // if (get('moonfog_oobe_done') !== '1') {
-  //   root.classList.add('boot-oobe-pending');
-  // }
+  if (get('moonfog_oobe_done') !== '1') {
+    root.classList.add('boot-oobe-pending');
+  }
 
   const DEF_BG_BLUR = 20;
   const DEF_PANEL_BLUR = 10;
