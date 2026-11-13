@@ -13,8 +13,18 @@ export function previewFileName(sha) {
   return `MoonFog-preview-${sha}.crx`;
 }
 
-export function previewDownloadUrl(repository, sha, fileName) {
-  return `https://github.com/${repository}/releases/download/preview-${sha}/${fileName}`;
+export const PREVIEW_ARTIFACT_NAME = 'preview-crx';
+
+/* 预览包只作为 Actions artifact 分发，不创建 GitHub Release。
+   artifact 页面需要登录 GitHub；拿不到 artifact id 时退回 run 页的 Artifacts 区。 */
+export function previewDownloadUrl(repository, runId, artifactId) {
+  const base = `https://github.com/${repository}/actions/runs/${runId}`;
+  return artifactId ? `${base}/artifacts/${artifactId}` : `${base}#artifacts`;
+}
+
+export function chooseArtifactId(artifacts, name) {
+  const match = (artifacts || []).find((item) => item?.name === name && item?.expired !== true);
+  return match?.id ?? null;
 }
 
 export function previewCommentBody({ fileName, sizeLabel, url, sha }) {
@@ -25,7 +35,9 @@ export function previewCommentBody({ fileName, sizeLabel, url, sha }) {
     '',
     '| File Name | Size | Download |',
     '| --- | --- | --- |',
-    `| [${fileName}](${url}) | ${sizeLabel} | [Download](${url}) |`,
+    `| ${fileName} | ${sizeLabel} | [Download](${url}) |`,
+    '',
+    `预览包存于 Actions 的 \`${PREVIEW_ARTIFACT_NAME}\` artifact，下载需登录 GitHub，保留 14 天。`,
     '',
   ].join('\n');
 }
@@ -145,42 +157,16 @@ export function findPreviewComment(comments, marker) {
   ));
 }
 
-function releaseExists(repository, tag) {
+function findArtifactId(repository, runId, name) {
   const result = spawnSync('gh', [
-    'release', 'view', tag, '--repo', repository, '--json', 'tagName',
+    'api',
+    `repos/${repository}/actions/runs/${runId}/artifacts?per_page=100`,
   ], { encoding: 'utf8', env: process.env });
-  return result.status === 0;
-}
-
-function publishRelease({ repository, tag, sha, fileName, crxPath, notes, defaultBranch }) {
-  const title = `preview-${sha}`;
-  if (!releaseExists(repository, tag)) {
-    const attempt = (target) => spawnSync('gh', [
-      'release', 'create', tag, crxPath,
-      '--repo', repository,
-      '--prerelease',
-      '--latest=false',
-      '--target', target,
-      '--title', title,
-      '--notes', notes,
-    ], { encoding: 'utf8', env: process.env });
-    let created = attempt(sha);
-    if (created.status !== 0) created = attempt(defaultBranch);
-    if (created.status !== 0 && !releaseExists(repository, tag)) {
-      throw new Error((created.stderr || created.stdout || '创建 preview release 失败').trim());
-    }
-  }
-  const uploaded = spawnSync('gh', [
-    'release', 'upload', tag, crxPath, '--repo', repository, '--clobber',
-  ], { encoding: 'utf8', env: process.env });
-  if (uploaded.status !== 0) {
-    throw new Error((uploaded.stderr || uploaded.stdout || '上传 crx 失败').trim());
-  }
-  const view = JSON.parse(gh([
-    'release', 'view', tag, '--repo', repository, '--json', 'assets',
-  ]));
-  if (!view.assets?.some((asset) => asset.name === fileName)) {
-    throw new Error(`release 中没有 ${fileName}`);
+  if (result.status !== 0) return null;
+  try {
+    return chooseArtifactId(JSON.parse(result.stdout).artifacts, name);
+  } catch {
+    return null;
   }
 }
 
@@ -221,10 +207,11 @@ export function main() {
   const sha = requiredEnv('WORKFLOW_HEAD_SHA');
   const branch = requiredEnv('WORKFLOW_HEAD_BRANCH');
   const headRepository = requiredEnv('WORKFLOW_HEAD_REPOSITORY');
-  const defaultBranch = requiredEnv('DEFAULT_BRANCH');
+  const runId = requiredEnv('WORKFLOW_RUN_ID');
   const previewDir = requiredEnv('PREVIEW_DIR');
   if (!SHA_RE.test(sha)) throw new Error(`无效的 commit: ${sha}`);
   if (!/^[^/\s]+\/[^/\s]+$/.test(repository)) throw new Error(`无效的仓库: ${repository}`);
+  if (!/^[1-9][0-9]*$/.test(runId)) throw new Error(`无效的 workflow run id: ${runId}`);
 
   const fileName = previewFileName(sha);
   const crxPath = findPreviewCrx(previewDir, fileName);
@@ -242,25 +229,16 @@ export function main() {
     headRepository,
     number: parsePullRequestNumber(process.env.PULL_REQUEST_NUMBER),
   });
-  const tag = `preview-${sha}`;
-  const url = previewDownloadUrl(repository, sha, fileName);
+  const artifactId = findArtifactId(repository, runId, PREVIEW_ARTIFACT_NAME);
+  const url = previewDownloadUrl(repository, runId, artifactId);
   const sizeLabel = formatMegabytes(statSync(crxPath).size);
-  publishRelease({
-    repository,
-    tag,
-    sha,
-    fileName,
-    crxPath,
-    defaultBranch,
-    notes: `PR #${pr.number} 的预览构建。扩展 version 为 0.0.1，version_name 为 preview-${sha}。这不是正式发布。`,
-  });
   upsertComment(
     repository,
     pr.number,
     sha,
     previewCommentBody({ fileName, sizeLabel, url, sha }),
   );
-  console.log(`preview ${fileName} -> PR #${pr.number} ${sizeLabel}`);
+  console.log(`preview ${fileName} -> PR #${pr.number} ${sizeLabel} ${url}`);
 }
 
 const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);

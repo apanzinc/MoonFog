@@ -6,6 +6,8 @@ import path from 'node:path';
 import test from 'node:test';
 
 import {
+  PREVIEW_ARTIFACT_NAME,
+  chooseArtifactId,
   choosePullRequest,
   findPreviewComment,
   findPreviewCrx,
@@ -18,15 +20,30 @@ import {
 
 const sha = '0123456789abcdef0123456789abcdef01234567';
 const fileName = 'MoonFog-preview-0123456789abcdef0123456789abcdef01234567.crx';
-const url = 'https://github.com/lonely-4/MoonFog/releases/download/preview-0123456789abcdef0123456789abcdef01234567/MoonFog-preview-0123456789abcdef0123456789abcdef01234567.crx';
+const runId = '1234567890';
+const artifactId = 98765;
+const url = `https://github.com/lonely-4/MoonFog/actions/runs/${runId}/artifacts/${artifactId}`;
+const fallbackUrl = `https://github.com/lonely-4/MoonFog/actions/runs/${runId}#artifacts`;
 
 test('file size uses MB with two decimals', () => {
   assert.equal(formatMegabytes(1.5 * 1024 * 1024), '1.50MB');
 });
 
-test('preview filename and release URL are fixed', () => {
+test('preview filename and artifact URL are fixed', () => {
   assert.equal(previewFileName(sha), fileName);
-  assert.equal(previewDownloadUrl('lonely-4/MoonFog', sha, fileName), url);
+  assert.equal(PREVIEW_ARTIFACT_NAME, 'preview-crx');
+  assert.equal(previewDownloadUrl('lonely-4/MoonFog', runId, artifactId), url);
+  assert.equal(previewDownloadUrl('lonely-4/MoonFog', runId, null), fallbackUrl);
+});
+
+test('chooseArtifactId only takes a live preview artifact', () => {
+  const artifacts = [
+    { name: 'other', id: 1, expired: false },
+    { name: 'preview-crx', id: 42, expired: true },
+    { name: 'preview-crx', id: 43, expired: false },
+  ];
+  assert.equal(chooseArtifactId(artifacts, PREVIEW_ARTIFACT_NAME), 43);
+  assert.equal(chooseArtifactId([], PREVIEW_ARTIFACT_NAME), null);
 });
 
 test('preview comment matches the download table', () => {
@@ -41,7 +58,9 @@ test('preview comment matches the download table', () => {
 
 | File Name | Size | Download |
 | --- | --- | --- |
-| [${fileName}](${url}) | 8.25MB | [Download](${url}) |
+| ${fileName} | 8.25MB | [Download](${url}) |
+
+预览包存于 Actions 的 \`preview-crx\` artifact，下载需登录 GitHub，保留 14 天。
 `);
 });
 
