@@ -296,9 +296,8 @@ html[data-mode="dark"] .mode-segment-btn:not(.active):hover {
   padding: 0 10px;
   --seg-icon-w: 21px;
   --seg-icon-gap: 12px;
-  /* 图标字形左右带透明边距，直接对齐会让「图标+文字」整组看着偏左，
-     往右补一点回来 */
-  --seg-icon-nudge: 2px;
+  /* 字形偏左已由 base.css 的全局图标补偿处理，这里不再重复右推 */
+  --seg-icon-nudge: 0px;
 }
 
 .mode-segment--3 .mode-segment-btn > .mode-segment-icon {

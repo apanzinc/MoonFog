@@ -851,8 +851,8 @@ html.wp-solid-bg body {
   gap: 0;
   --seg-icon-w: 1.1875rem;
   --seg-icon-gap: 7px;
-  /* 图标字形左右带透明边距，直接对齐会让「图标+文字」整组看着偏左 */
-  --seg-icon-nudge: 2.5px;
+  /* 字形偏左已由 base.css 的全局图标补偿处理，这里不再重复右推 */
+  --seg-icon-nudge: 0px;
   box-shadow: none;
   cursor: pointer;
   user-select: none;

@@ -8,9 +8,16 @@
   box-sizing: border-box;
 }
 
-/* MingCute 图标统一继承颜色 */
+/* MingCute 图标统一继承颜色。
+   子集字体里字形墨迹相对字符框系统性偏左约 0.1em、偏下约 0.04em
+   （对全部字形用 canvas measureText 量过），按布局盒居中时看着就是歪的。
+   这里只做视觉补偿：伪元素用 relative 微调，不改布局盒、不占位置，
+   也不会和控件自己的 transform / 动画冲突。改图标字号时补偿按比例缩放。 */
 [class^="mgc_"]::before,
 [class*=" mgc_"]::before {
+  position: relative;
+  left: 0.1em;
+  top: -0.04em;
   color: inherit !important;
 }
 
