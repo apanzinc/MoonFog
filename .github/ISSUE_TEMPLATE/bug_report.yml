@@ -1,0 +1,66 @@
+name: 缺陷报告
+description: 报告 MoonFog 可复现的异常行为
+body:
+  - type: markdown
+    attributes:
+      value: |
+        提交前请搜索已有 Issue 与 PR，并阅读仓库根目录 [贡献指南](../../CONTRIBUTING.md)。
+
+        > [!IMPORTANT]
+        > 一个 Issue 只报告一个问题。仅填写定位问题所必需的环境、版本与复现信息，请勿提供本地偏好、配置内容、真实书签、Token、Cookie 或可识别个人信息；日志与截图须脱敏。
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: 检查清单
+      options:
+        - label: 我已使用最新版本复现，并检索过已有 Issue 与 PR
+          required: true
+  - type: dropdown
+    id: distribution
+    attributes:
+      label: 形态
+      description: 选择可复现该问题的分发形态
+      options:
+        - 扩展版
+        - 网页版
+        - 两者均可复现
+    validations:
+      required: true
+  - type: input
+    id: browser
+    attributes:
+      label: 浏览器与版本
+      description: 仅当问题与系统或移动端相关时，在版本号后一并注明
+      placeholder: Chrome 1xx
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: 版本
+      description: 扩展版填 manifest.json 的 version；网页版填部署版本或提交号
+      placeholder: 1.1.1
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: 复现步骤
+      placeholder: |
+        1. 打开新标签页
+        2. 进入设置并切换背景来源
+        3. 刷新页面
+    validations:
+      required: true
+  - type: textarea
+    id: behavior
+    attributes:
+      label: 预期行为与实际行为
+      description: 分别写明预期与实际
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: 控制台错误与截图
+      description: 仅粘贴相关报错；附件请用 GitHub 附件上传
