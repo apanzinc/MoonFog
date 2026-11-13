@@ -4,7 +4,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        提交前请搜索已有 Issue 与 PR，并阅读仓库根目录 [贡献指南](../../CONTRIBUTING.md)。
+        提交前请搜索已有 Issue、讨论与 PR，并阅读仓库根目录 [贡献指南](../../CONTRIBUTING.md)。功能建议与方案讨论请前往 [Discussions 的 Ideas 分类](https://github.com/apanzinc/MoonFog/discussions/categories/ideas)，不要提交 Issue。
 
         > [!IMPORTANT]
         > 一个 Issue 只报告一个问题。仅填写定位问题所必需的环境、版本与复现信息，请勿提供本地偏好、配置内容、真实书签、Token、Cookie 或可识别个人信息；日志与截图须脱敏。
@@ -13,8 +13,16 @@ body:
     attributes:
       label: 检查清单
       options:
-        - label: 我已使用最新版本复现，并检索过已有 Issue 与 PR
+        - label: 我已使用最新版本复现，并检索过已有 Issue、讨论与 PR
           required: true
+  - type: checkboxes
+    id: inverted
+    attributes:
+      label: 反选确认
+      description: 满足下列条件时本项保持未勾选；未能完整复现、未阅读指引或无法确认所填信息时勾选
+      options:
+        - label: 我已完整复现此问题，已阅读本反馈指引并如实填写信息，并确定本项不需要勾选
+          required: false
   - type: dropdown
     id: distribution
     attributes:

@@ -1,1 +1,6 @@
 blank_issues_enabled: false
+contact_links:
+  - name: 功能建议与方案讨论
+    url: https://github.com/apanzinc/MoonFog/discussions/categories/ideas
+    about: 新功能、交互调整与架构改动请在 Ideas 分类发起讨论，不要提交 Issue
+

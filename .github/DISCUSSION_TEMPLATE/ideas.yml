@@ -1,19 +1,17 @@
-name: 功能建议
-description: 提出新功能或交互调整，实施前须经方向确认
 body:
   - type: markdown
     attributes:
       value: |
-        提交前请搜索已有 Issue 与 PR，并阅读仓库根目录 [贡献指南](../../CONTRIBUTING.md) 第 1 节。
+        提交前请搜索已有讨论、Issue 与 PR，并阅读仓库根目录 [贡献指南](../../CONTRIBUTING.md) 第 1 节。缺陷报告请前往 [Issue 缺陷报告模板](https://github.com/apanzinc/MoonFog/issues/new/choose)，不要在此提交。
 
         > [!IMPORTANT]
-        > 一个 Issue 只提出一项功能。项目以替换浏览器新标签页为唯一用途，不接收账号体系、云同步、统计上报、广告或超出该用途的权限申请。请勿提供本地偏好、真实书签或可识别个人信息。
+        > 一个讨论只提出一项功能。项目以替换浏览器新标签页为唯一用途，不接收账号体系、云同步、统计上报、广告或超出该用途的权限申请。请勿提供本地偏好、配置内容、真实书签、Token、Cookie 或可识别个人信息；示意图须脱敏。
   - type: checkboxes
     id: checklist
     attributes:
       label: 检查清单
       options:
-        - label: 我已使用最新版本，并检索过已有 Issue 与 PR
+        - label: 我已使用最新版本，并检索过已有讨论、Issue 与 PR
           required: true
   - type: textarea
     id: scenario
